@@ -158,6 +158,7 @@ def encode_live(visual, images, device):
 def validate(model, val_loader, criterion, device, visual):
     model.eval()
     total_loss, n = 0.0, 0
+    tok_correct, tok_total = 0, 0
     for batch in val_loader:
         visual_tokens = encode_live(visual, batch['images'], device)
         ego_state     = batch['ego_state'].to(device, dtype=torch.float32)
@@ -166,12 +167,19 @@ def validate(model, val_loader, criterion, device, visual):
         loss   = criterion(logits.reshape(-1, TRAJ_VOCAB).float(), traj_tokens.reshape(-1))
         total_loss += loss.item()
         n += 1
+        # Observability only (no grad, eval mode): per-token argmax accuracy.
+        preds = logits.argmax(dim=-1)                     # [B, 24]
+        tok_correct += (preds == traj_tokens).sum().item()
+        tok_total   += traj_tokens.numel()
 
     # Average across all DDP ranks
-    total_tensor = torch.tensor([total_loss, float(n)], device=device)
-    dist.all_reduce(total_tensor, op=dist.ReduceOp.SUM)
+    stats = torch.tensor([total_loss, float(n), float(tok_correct), float(tok_total)],
+                         device=device)
+    dist.all_reduce(stats, op=dist.ReduceOp.SUM)
     model.train()
-    return (total_tensor[0] / total_tensor[1]).item()
+    val_loss = (stats[0] / stats[1]).item()
+    tok_acc  = (stats[2] / stats[3]).item() if stats[3] > 0 else 0.0
+    return val_loss, tok_acc
 
 # ── Training ──────────────────────────────────────────────────────────────────
 
@@ -323,11 +331,11 @@ def train(cfg, resume=False):
         if is_main():
             print(f"\n[epoch {epoch+1}] train_loss={avg_train:.4f} — validating...")
 
-        val_loss = validate(model, val_loader, criterion, device, visual)
+        val_loss, tok_acc = validate(model, val_loader, criterion, device, visual)
 
         if is_main():
             gap = val_loss - avg_train
-            print(f"[epoch {epoch+1}] val_loss={val_loss:.4f}  "
+            print(f"[epoch {epoch+1}] val_loss={val_loss:.4f}  tok_acc={100*tok_acc:.2f}%  "
                   f"train_loss={avg_train:.4f}  gap={gap:.4f}  best={best_val:.4f}")
 
             if val_loss < best_val:
