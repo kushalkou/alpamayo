@@ -1,0 +1,27 @@
+# ── Data & weights live INSIDE this repo tree (Alpamayo-Kushal/Alpamayo/...) ──
+# Never stage them. Committing 32GB nuScenes / 16GB weights would wreck the repo.
+Alpamayo/nuscenes/
+Alpamayo/models/
+Alpamayo/data/
+Alpamayo/_ref_tokens/
+Alpamayo/results/
+
+# Precomputed / checkpoint tensors anywhere
+*.pt
+*.pth
+*.safetensors
+*.pkl
+
+# Logs & scratch
+*.log
+Alpamayo/transfer.log
+Alpamayo/gate3.log
+Alpamayo/gate4*.log
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+Alpamayo/code/__pycache__/
+Alpamayo/transfer.sh
