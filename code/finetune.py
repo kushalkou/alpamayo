@@ -1,28 +1,24 @@
 """
-finetune.py — Alpamayo VLA Training (DDP version)
+finetune.py — Alpamayo VLA Training (DGX / V100 DDP + live vision)
 
-Changes vs previous version:
-  - DistributedDataParallel via torchrun (symmetric all-reduce, no primary GPU OOM)
-  - lr=5e-5 (was 2e-4, too aggressive)
-  - weight_decay=0.05 (was 0.01)
-  - FlashAttention2 + gradient checkpointing (in model.py)
-  - Ego noise augmentation (in model.py)
-  - Early stopping patience=3
-  - DistributedSampler for proper data distribution across GPUs
+Changes vs the RTX-workstation version:
+  - LIVE vision: the 6 images are run through the FROZEN encoder every step
+    (vision_live.encode_batch, no_grad) instead of loading a token cache.
+  - torch.amp.GradScaler for stable fp16 mixed precision (fp32 adapter masters).
+  - Live encode in BOTH train and validate.
+  - Smoke / gate args: --batch_size --grad_accum_steps --max_steps --augment
+    --find_unused (+ --overfit_one_batch for Gate 3).
+  - Per-step peak-VRAM and sec/step reporting.
+  - Paths repointed drive1 -> DGX. No bf16, no flash-attn (see model.py).
 
-Launch (3 GPUs):
-    cd /home/drive1/Alpamayo
-    PYTHONPATH=data:tokenization:training:/home/drive1/python_packages \
-    torchrun --nproc_per_node=3 training/finetune.py
+Launch (8-GPU DDP, Gate 4 smoke):
+    cd /home/dgx1user/Alpamayo-Kushal/code
+    python -m torch.distributed.run --nproc_per_node=8 finetune.py \
+        --batch_size 2 --grad_accum_steps 1 --max_steps 60 --augment
 
-Launch (2 GPUs):
-    torchrun --nproc_per_node=2 training/finetune.py
-
-Launch (1 GPU, debug):
-    torchrun --nproc_per_node=1 training/finetune.py
-
-Resume:
-    torchrun --nproc_per_node=3 training/finetune.py --resume
+Launch (single-GPU Gate 3, overfit one batch, aug off):
+    python -m torch.distributed.run --nproc_per_node=1 finetune.py \
+        --batch_size 2 --grad_accum_steps 1 --max_steps 200 --overfit_one_batch
 """
 
 import os
@@ -38,45 +34,41 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 
-sys.path.insert(0, '/home/drive1/Alpamayo/data')
-sys.path.insert(0, '/home/drive1/Alpamayo/tokenization')
-sys.path.insert(0, '/home/drive1/Alpamayo/training')
+_CODE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(_CODE_DIR))
 
-from dataset import get_dataloaders, get_class_weights, NuScenesVLADataset, build_scene_split
+from dataset import (get_class_weights, NuScenesVLADataset, build_scene_split)
 from model import AlpamayoVLA, load_model, TRAJ_VOCAB, TRAJ_LEN
+from vision_live import encode_batch
 import pickle
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
 CFG = {
-    'trajectories_path': '/home/drive1/Alpamayo/data/trajectories_full.pkl',
-    'nuscenes_root':     '/home/drive1/Alpamayo/nuscenes_full',
-    'checkpoint_dir':    '/home/drive1/Alpamayo/models/checkpoints',
-    'cosmos_path':       '/home/drive1/Alpamayo/models/cosmos_reason',
+    'trajectories_path': '/home/dgx1user/Alpamayo-Kushal/Alpamayo/data/trajectories_full.pkl',
+    'nuscenes_root':     '/home/dgx1user/Alpamayo-Kushal/Alpamayo/nuscenes',
+    'checkpoint_dir':    '/home/dgx1user/Alpamayo-Kushal/Alpamayo/models/checkpoints',
+    'cosmos_path':       '/home/dgx1user/Alpamayo-Kushal/Alpamayo/models/cosmos_reason',
 
     # Training
     'epochs':            15,
     'batch_size':        1,           # per GPU
-    'grad_accum_steps':  8,           # effective batch = 1 * n_gpus * 8
+    'grad_accum_steps':  8,
     'num_workers':       4,
     'grad_clip':         1.0,
     'seed':              42,
     'patience':          7,
 
-    # LR — reduced from 2e-4 to 5e-5
     'lr':                5e-5,
     'warmup_steps':      100,
-    'min_lr_ratio':      0.1,
+    'min_lr_ratio':      0.1,         # cosine floor = 5e-6
 
-    # Regularization
-    'weight_decay':      0.05,        # increased from 0.01
+    'weight_decay':      0.05,
 
-    # LoRA
     'lora_rank':         16,
     'lora_alpha':        32,
     'lora_dropout':      0.1,
 
-    # Logging
     'log_every':         50,
 }
 
@@ -143,6 +135,16 @@ def load_checkpoint(model, optimizer, cfg, tag='latest'):
         print(f"[ckpt] Resumed from {path}  epoch={ckpt['epoch']} val_loss={ckpt['val_loss']:.4f}")
     return ckpt['epoch'], ckpt['step'], ckpt['val_loss']
 
+# ── Live encode helper ────────────────────────────────────────────────────────
+
+def encode(model, batch, device):
+    """Run the FROZEN encoder live on this batch's images -> fp16 visual tokens."""
+    raw    = model.module if isinstance(model, DDP) else model
+    visual = raw.cosmos.model.visual
+    images = batch['images'].to(device, non_blocking=True)
+    with torch.no_grad():
+        return encode_batch(visual, images)          # [B, 1536, 3584] fp16
+
 # ── Validation ────────────────────────────────────────────────────────────────
 
 @torch.no_grad()
@@ -150,15 +152,14 @@ def validate(model, val_loader, criterion, device):
     model.eval()
     total_loss, n = 0.0, 0
     for batch in val_loader:
-        visual_tokens = batch['visual_tokens'].to(device)
-        ego_state     = batch['ego_state'].to(device, dtype=torch.bfloat16)
+        visual_tokens = encode(model, batch, device)
+        ego_state     = batch['ego_state'].to(device)          # fp32
         traj_tokens   = batch['traj_tokens'].to(device)
         logits = model(visual_tokens, ego_state, traj_tokens)
-        loss   = criterion(logits.reshape(-1, TRAJ_VOCAB).float(), traj_tokens.reshape(-1))
+        loss   = criterion(logits.reshape(-1, TRAJ_VOCAB), traj_tokens.reshape(-1))
         total_loss += loss.item()
         n += 1
 
-    # Average across all DDP ranks
     total_tensor = torch.tensor([total_loss, float(n)], device=device)
     dist.all_reduce(total_tensor, op=dist.ReduceOp.SUM)
     model.train()
@@ -166,12 +167,13 @@ def validate(model, val_loader, criterion, device):
 
 # ── Training ──────────────────────────────────────────────────────────────────
 
-def train(cfg, resume=False):
+def train(cfg, resume=False, max_steps=None, augment=False,
+          find_unused=False, overfit_one_batch=False):
     local_rank = setup_ddp()
     device     = f'cuda:{local_rank}'
     torch.manual_seed(cfg['seed'] + local_rank)
+    torch.cuda.reset_peak_memory_stats(device)
 
-    # Model on this GPU
     model = load_model(
         cosmos_path  = cfg['cosmos_path'],
         lora_rank    = cfg['lora_rank'],
@@ -180,44 +182,34 @@ def train(cfg, resume=False):
         device       = device,
     )
 
-    # Wrap with DDP
-    model = DDP(model, device_ids=[local_rank], find_unused_parameters=False)
+    model = DDP(model, device_ids=[local_rank], find_unused_parameters=find_unused)
     model.train()
 
-    # Optimizer
     trainable = [p for p in model.parameters() if p.requires_grad]
     if is_main():
         print(f"[train] Trainable params: {sum(p.numel() for p in trainable):,}")
     optimizer = torch.optim.AdamW(trainable, lr=cfg['lr'], weight_decay=cfg['weight_decay'])
+    scaler    = torch.amp.GradScaler('cuda')
 
-    # Data — build scene split once on main rank, share via broadcast
-    if is_main():
-        print("[train] Building scene split...")
+    # Data — build scene split (also resolves the 6 cam paths per sample)
     with open(cfg['trajectories_path'], 'rb') as f:
         all_trajs = pickle.load(f)
     train_trajs, val_trajs, _ = build_scene_split(all_trajs, cfg['nuscenes_root'])
 
-    train_dataset = NuScenesVLADataset(train_trajs, split='train')
-    val_dataset   = NuScenesVLADataset(val_trajs,   split='val')
+    train_dataset = NuScenesVLADataset(train_trajs, split='train', augment=augment)
+    val_dataset   = NuScenesVLADataset(val_trajs,   split='val',   augment=False)
 
-    # DistributedSampler ensures each GPU gets different data
-    train_sampler = DistributedSampler(train_dataset, shuffle=True,
-                                       seed=cfg['seed'])
+    train_sampler = DistributedSampler(train_dataset, shuffle=True, seed=cfg['seed'])
     val_sampler   = DistributedSampler(val_dataset,   shuffle=False)
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=cfg['batch_size'],
-        sampler=train_sampler, num_workers=cfg['num_workers'],
-        pin_memory=True, drop_last=True,
-    )
+        train_dataset, batch_size=cfg['batch_size'], sampler=train_sampler,
+        num_workers=cfg['num_workers'], pin_memory=True, drop_last=True)
     val_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=cfg['batch_size'],
-        sampler=val_sampler, num_workers=cfg['num_workers'],
-        pin_memory=True,
-    )
+        val_dataset, batch_size=cfg['batch_size'], sampler=val_sampler,
+        num_workers=cfg['num_workers'], pin_memory=True)
 
-    # Class weights (compute on train set, same across ranks)
-    # Compute class weights on rank 0 only, broadcast to all ranks
+    # Class weights (rank 0, broadcast)
     if local_rank == 0:
         class_weights = get_class_weights(train_dataset, device=device)
     else:
@@ -226,102 +218,113 @@ def train(cfg, resume=False):
     criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     steps_per_epoch     = len(train_loader)
-    effective_per_epoch = steps_per_epoch // cfg['grad_accum_steps']
+    effective_per_epoch = max(steps_per_epoch // cfg['grad_accum_steps'], 1)
     world_size          = dist.get_world_size()
     total_eff_steps     = effective_per_epoch * cfg['epochs']
 
     if is_main():
         print(f"[train] World size: {world_size} GPUs")
-        print(f"[train] {steps_per_epoch} steps/epoch/GPU, "
-              f"{effective_per_epoch} effective/epoch, "
+        print(f"[train] {steps_per_epoch} steps/epoch/GPU, {effective_per_epoch} effective/epoch, "
               f"effective batch = {cfg['batch_size'] * world_size * cfg['grad_accum_steps']}")
+        if max_steps:
+            print(f"[train] max_steps={max_steps} (smoke/gate mode)")
+        if overfit_one_batch:
+            print("[train] OVERFIT-ONE-BATCH mode (Gate 3)")
 
     start_epoch = 0
     eff_step    = 0
     best_val    = float('inf')
     no_improve  = 0
+    fixed_batch = None
 
     if resume:
         start_epoch, eff_step, best_val = load_checkpoint(model, optimizer, cfg)
 
-    if is_main():
-        print(f"\n[train] Starting from epoch {start_epoch}...\n")
-
+    stop = False
     for epoch in range(start_epoch, cfg['epochs']):
-        train_sampler.set_epoch(epoch)   # ensures different shuffle per epoch
-        lr = get_lr(eff_step, total_eff_steps, cfg)
-
+        train_sampler.set_epoch(epoch)
         if is_main():
-            print(f"── Epoch {epoch+1}/{cfg['epochs']}  |  lr={lr:.2e}  |  "
-                  f"no_improve={no_improve}/{cfg['patience']}")
+            print(f"── Epoch {epoch+1}/{cfg['epochs']}  |  no_improve={no_improve}/{cfg['patience']}")
 
         epoch_loss = 0.0
-        t_start    = time.time()
         optimizer.zero_grad()
+        t_step = time.time()
 
         for batch_idx, batch in enumerate(train_loader):
-            visual_tokens = batch['visual_tokens'].to(device)
-            ego_state     = batch['ego_state'].to(device, dtype=torch.bfloat16)
+            if overfit_one_batch:
+                if fixed_batch is None:
+                    fixed_batch = batch
+                batch = fixed_batch
+
+            visual_tokens = encode(model, batch, device)
+            ego_state     = batch['ego_state'].to(device)          # fp32
             traj_tokens   = batch['traj_tokens'].to(device)
 
             logits = model(visual_tokens, ego_state, traj_tokens)
-            loss   = criterion(logits.reshape(-1, TRAJ_VOCAB).float(), traj_tokens.reshape(-1))
+            loss   = criterion(logits.reshape(-1, TRAJ_VOCAB), traj_tokens.reshape(-1))
 
-            (loss / cfg['grad_accum_steps']).backward()
+            scaler.scale(loss / cfg['grad_accum_steps']).backward()
             epoch_loss += loss.item()
 
             if (batch_idx + 1) % cfg['grad_accum_steps'] == 0:
-                nn.utils.clip_grad_norm_(model.parameters(), cfg['grad_clip'])
+                scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(trainable, cfg['grad_clip'])
                 lr = get_lr(eff_step, total_eff_steps, cfg)
                 for pg in optimizer.param_groups:
                     pg['lr'] = lr
-                optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
                 optimizer.zero_grad()
                 eff_step += 1
 
-                if is_main() and eff_step % cfg['log_every'] == 0:
-                    avg = epoch_loss / (batch_idx + 1)
-                    print(f"  eff_step {eff_step:5d} | loss {loss.item():.4f} | "
-                          f"avg {avg:.4f} | lr {lr:.2e} | "
-                          f"{(time.time()-t_start)/60:.1f}min")
+                if is_main():
+                    dt        = time.time() - t_step
+                    peak_gb   = torch.cuda.max_memory_allocated(device) / 1e9
+                    n_nonfin  = int((~torch.isfinite(loss)).sum().item())
+                    print(f"  eff_step {eff_step:5d} | loss {loss.item():.4f} | lr {lr:.2e} | "
+                          f"{dt:.2f}s/step | peakVRAM {peak_gb:.1f}G | nonfinite {n_nonfin}")
+                t_step = time.time()
 
-        # End of epoch
-        avg_train = epoch_loss / steps_per_epoch
+                if max_steps and eff_step >= max_steps:
+                    stop = True
+                    break
+
+        if stop or overfit_one_batch:
+            # smoke/gate/overfit runs don't do the full validate/early-stop cycle
+            if not stop:
+                stop = (max_steps is not None and eff_step >= max_steps)
+            if stop:
+                break
+
+        # Full training path: validate + checkpoint + early stopping
+        avg_train = epoch_loss / max(steps_per_epoch, 1)
         if is_main():
             print(f"\n[epoch {epoch+1}] train_loss={avg_train:.4f} — validating...")
-
         val_loss = validate(model, val_loader, criterion, device)
 
         if is_main():
             gap = val_loss - avg_train
-            print(f"[epoch {epoch+1}] val_loss={val_loss:.4f}  "
-                  f"train_loss={avg_train:.4f}  gap={gap:.4f}  best={best_val:.4f}")
-
+            print(f"[epoch {epoch+1}] val_loss={val_loss:.4f}  train_loss={avg_train:.4f}  "
+                  f"gap={gap:.4f}  best={best_val:.4f}")
             if val_loss < best_val:
-                best_val   = val_loss
-                no_improve = 0
+                best_val, no_improve = val_loss, 0
                 save_checkpoint(model, optimizer, epoch+1, eff_step, val_loss, cfg, 'best')
             else:
                 no_improve += 1
                 print(f"[epoch {epoch+1}] No improvement ({no_improve}/{cfg['patience']})")
-
             save_checkpoint(model, optimizer, epoch+1, eff_step, val_loss, cfg, 'latest')
 
-        # Broadcast no_improve to all ranks for early stopping
         no_improve_tensor = torch.tensor(no_improve, device=device)
         dist.broadcast(no_improve_tensor, src=0)
         no_improve = no_improve_tensor.item()
-
         if no_improve >= cfg['patience']:
             if is_main():
-                print(f"\n[train] Early stopping.")
+                print("\n[train] Early stopping.")
             break
 
-        if is_main():
-            print()
-
     if is_main():
-        print(f"[train] Done. Best val loss: {best_val:.4f}")
+        peak_gb = torch.cuda.max_memory_allocated(device) / 1e9
+        print(f"[train] Done. best_val={best_val:.4f}  final_eff_step={eff_step}  peakVRAM={peak_gb:.1f}G")
 
     cleanup_ddp()
 
@@ -332,9 +335,18 @@ if __name__ == '__main__':
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--epochs', type=int, default=CFG['epochs'])
     parser.add_argument('--lr',     type=float, default=CFG['lr'])
+    parser.add_argument('--batch_size',      type=int, default=CFG['batch_size'])
+    parser.add_argument('--grad_accum_steps', type=int, default=CFG['grad_accum_steps'])
+    parser.add_argument('--max_steps',       type=int, default=None)
+    parser.add_argument('--augment',         action='store_true')
+    parser.add_argument('--find_unused',     action='store_true')
+    parser.add_argument('--overfit_one_batch', action='store_true')
     args = parser.parse_args()
 
-    CFG['epochs'] = args.epochs
-    CFG['lr']     = args.lr
+    CFG['epochs']           = args.epochs
+    CFG['lr']               = args.lr
+    CFG['batch_size']       = args.batch_size
+    CFG['grad_accum_steps'] = args.grad_accum_steps
 
-    train(CFG, resume=args.resume)
+    train(CFG, resume=args.resume, max_steps=args.max_steps, augment=args.augment,
+          find_unused=args.find_unused, overfit_one_batch=args.overfit_one_batch)
