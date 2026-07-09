@@ -1,13 +1,21 @@
 """
-model.py — Alpamayo VLA Model
+model.py — Alpamayo VLA Model (DGX / V100 edition)
 
-Changes vs previous version:
-  - FlashAttention2 (attn_implementation="flash_attention_2")
-  - Gradient checkpointing on LM
-  - LoRA rank=16 restored (more coverage + regularization > less coverage)
-  - LoRA dropout=0.1 kept
-  - Ego state noise augmentation (sigma=0.05, training only)
-  - DDP compatible (no next(parameters()) calls)
+Changes vs the RTX-workstation version:
+  - V100 (sm70): fp16 everywhere for the frozen backbone, NEVER bf16.
+  - No FlashAttention (needs Ampere+). Default ("eager"/sdpa) attention only.
+  - Mixed-precision dtype policy (STANDING ARCHITECTURE):
+      * Frozen Cosmos backbone (LM + visual encoder) stays fp16.
+      * Trainable adapters (LoRA A/B, ego MLP, traj_embed, output_head) are
+        fp32 master weights. GradScaler refuses to unscale fp16 grads, and
+        fp32 masters give stable AdamW on V100.
+      * The fp16<->fp32 boundary is handled by explicit casts inside
+        LoRALinear.forward and AlpamayoVLA.forward.
+  - `augment` flag gates the LEGACY token-space aug path (default OFF — the
+    real augmentation now lives in the dataloader / vision_live.py, image-space).
+  - Paths repointed drive1 -> DGX (/home/dgx1user/Alpamayo-Kushal/Alpamayo).
+  - Gradient checkpointing on the LM for training (disable for inference).
+  - DDP compatible (no next(parameters()) calls in forward).
 """
 
 import sys
@@ -16,9 +24,7 @@ import torch
 import torch.nn as nn
 from transformers import Qwen2_5_VLForConditionalGeneration
 
-sys.path.insert(0, '/home/drive1/Alpamayo/training')
-
-COSMOS_PATH  = '/home/drive1/Alpamayo/models/cosmos_reason'
+COSMOS_PATH  = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/models/cosmos_reason'
 TEXT_DIM     = 3584
 EGO_DIM      = 4
 TRAJ_VOCAB   = 129
@@ -28,9 +34,14 @@ LORA_ALPHA   = 32
 LORA_DROPOUT = 0.1
 EGO_NOISE    = 0.05   # Gaussian noise std on ego features during training
 
+# Dtype policy
+BACKBONE_DTYPE = torch.float16   # frozen Cosmos (LM + visual encoder)
+ADAPTER_DTYPE  = torch.float32   # trainable master weights
+
 # ── LoRA ──────────────────────────────────────────────────────────────────────
 
 class LoRALinear(nn.Module):
+    """Frozen fp16 base linear + fp32 LoRA update. Cast at the boundary."""
     def __init__(self, linear, rank=LORA_RANK, alpha=LORA_ALPHA, dropout=LORA_DROPOUT):
         super().__init__()
         self.linear  = linear
@@ -45,11 +56,17 @@ class LoRALinear(nn.Module):
             linear.bias.requires_grad_(False)
 
     def forward(self, x):
-        return self.linear(x) + self.lora_B(self.dropout(self.lora_A(x))) * self.scaling
+        # Base path runs in the frozen backbone dtype (fp16).
+        base = self.linear(x)
+        # LoRA update runs in the fp32 adapter dtype, then casts back.
+        lora_dtype = self.lora_A.weight.dtype
+        update = self.lora_B(self.dropout(self.lora_A(x.to(lora_dtype)))) * self.scaling
+        return base + update.to(base.dtype)
 
 
 def apply_lora(model, rank=LORA_RANK, alpha=LORA_ALPHA, dropout=LORA_DROPOUT):
-    """Apply LoRA to q_proj, v_proj, o_proj in all LM attention layers."""
+    """Apply LoRA to q_proj, v_proj, o_proj in all LM attention layers.
+    LoRA A/B are placed as fp32 master weights on the layer's device."""
     count = 0
     for layer in model.model.language_model.layers:
         attn = layer.self_attn
@@ -58,9 +75,8 @@ def apply_lora(model, rank=LORA_RANK, alpha=LORA_ALPHA, dropout=LORA_DROPOUT):
                 original = getattr(attn, name)
                 lora     = LoRALinear(original, rank, alpha, dropout)
                 dev      = next(original.parameters()).device
-                dtype    = next(original.parameters()).dtype
-                lora.lora_A.to(device=dev, dtype=dtype)
-                lora.lora_B.to(device=dev, dtype=dtype)
+                lora.lora_A.to(device=dev, dtype=ADAPTER_DTYPE)
+                lora.lora_B.to(device=dev, dtype=ADAPTER_DTYPE)
                 setattr(attn, name, lora)
                 count += 1
     return count
@@ -68,7 +84,7 @@ def apply_lora(model, rank=LORA_RANK, alpha=LORA_ALPHA, dropout=LORA_DROPOUT):
 # ── Ego Encoder ───────────────────────────────────────────────────────────────
 
 class EgoEncoderMLP(nn.Module):
-    """[B, 4, 4] -> [B, 4, 3584]"""
+    """[B, 4, 4] -> [B, 4, 3584].  Trainable fp32 master weights."""
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
@@ -89,33 +105,36 @@ class EgoEncoderMLP(nn.Module):
 class AlpamayoVLA(nn.Module):
     """
     Forward:
-        visual_tokens [B, 1536, 3584]  precomputed float16
-        ego_state     [B, 4, 4]
+        visual_tokens [B, 1536, 3584]  fp16 (from the live frozen encoder)
+        ego_state     [B, 4, 4]        fp32
         traj_tokens   [B, 24]          long
-        training      bool             if True, adds ego noise augmentation
     Returns:
-        logits [B, 24, 129]
+        logits [B, 24, 129]            fp32 (ready for CE)
+
+    `augment` gates the LEGACY token-space aug (default OFF; superseded by the
+    image-space photometric aug in the dataloader / vision_live.py). Ego noise
+    is applied in training regardless (it is not part of the legacy path).
     """
 
-    def __init__(self, cosmos):
+    def __init__(self, cosmos, augment=False):
         super().__init__()
         self.cosmos      = cosmos
+        self.augment     = augment
         self.ego_encoder = EgoEncoderMLP()
         self.traj_embed  = nn.Embedding(TRAJ_VOCAB, TEXT_DIM)
         self.output_head = nn.Linear(TEXT_DIM, TRAJ_VOCAB, bias=False)
 
-    def _build_context(self, visual_tokens, ego_state, add_noise=False):
-        vis = visual_tokens.to(dtype=torch.bfloat16)
+    def _build_context(self, visual_tokens, ego_state):
+        vis = visual_tokens.to(dtype=BACKBONE_DTYPE)
 
-        if self.training:
+        if self.training and self.augment:
+            # ── LEGACY token-space augmentation (superseded, default OFF) ──
             # 1. Token dropout — zero out 15% of visual tokens
             mask = (torch.rand(vis.shape[0], vis.shape[1], 1,
                     device=vis.device) > 0.15).to(dtype=vis.dtype)
             vis = vis * mask
-
             # 2. Gaussian noise sigma=0.02
             vis = vis + torch.randn_like(vis) * 0.02
-
             # 3. Shuffle 5% of token positions
             B, N, D = vis.shape
             n_shuffle = max(1, int(N * 0.05))
@@ -124,17 +143,21 @@ class AlpamayoVLA(nn.Module):
                 shuffled = idx[torch.randperm(n_shuffle, device=vis.device)]
                 vis[b, idx] = vis[b, shuffled]
 
-            # 4. Ego noise
+        if self.training:
+            # Ego noise (always on in training).
             ego_state = ego_state + torch.randn_like(ego_state) * EGO_NOISE
 
-        ego = self.ego_encoder(ego_state.to(dtype=torch.bfloat16))
+        # Ego MLP runs in fp32 (master weights), then casts to the context dtype.
+        ego = self.ego_encoder(ego_state.to(dtype=ADAPTER_DTYPE))
+        ego = ego.to(dtype=vis.dtype)
         return torch.cat([vis, ego], dim=1)
 
     def forward(self, visual_tokens, ego_state, traj_tokens):
-        context = self._build_context(visual_tokens, ego_state, add_noise=True)
+        context = self._build_context(visual_tokens, ego_state)
         ctx_len = context.shape[1]   # 1540
 
-        gt_embeds = self.traj_embed(traj_tokens).to(dtype=torch.bfloat16)
+        # traj_embed is fp32; cast embeds to the context (fp16) dtype for the LM.
+        gt_embeds = self.traj_embed(traj_tokens).to(dtype=context.dtype)
         lm_input  = torch.cat([context, gt_embeds[:, :-1, :]], dim=1)  # [B, 1563, 3584]
 
         lm_out = self.cosmos.model.language_model(
@@ -143,7 +166,8 @@ class AlpamayoVLA(nn.Module):
         )
         hidden      = lm_out.last_hidden_state
         traj_hidden = hidden[:, ctx_len - 1 : ctx_len + TRAJ_LEN - 1, :]
-        logits      = self.output_head(traj_hidden)   # [B, 24, 129]
+        # output_head is fp32; cast LM hidden to fp32 so logits are fp32 for CE.
+        logits      = self.output_head(traj_hidden.to(dtype=ADAPTER_DTYPE))   # [B, 24, 129]
         return logits
 
     def count_parameters(self):
@@ -154,40 +178,35 @@ class AlpamayoVLA(nn.Module):
 # ── Factory ───────────────────────────────────────────────────────────────────
 
 def load_model(cosmos_path=COSMOS_PATH, lora_rank=LORA_RANK, lora_alpha=LORA_ALPHA,
-               lora_dropout=LORA_DROPOUT, device='cuda:0'):
+               lora_dropout=LORA_DROPOUT, device='cuda:0', augment=False,
+               grad_checkpointing=True):
     print(f"[model] Loading Cosmos-Reason from {cosmos_path} ...")
 
-    # FlashAttention2 for memory + speed
-    try:
-        cosmos = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            cosmos_path,
-            torch_dtype=torch.bfloat16,
-            device_map=device,
-            attn_implementation="flash_attention_2",
-        )
-        print("[model] FlashAttention2 enabled")
-    except Exception as e:
-        print(f"[model] FlashAttention2 failed ({e}), falling back to default attention")
-        cosmos = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            cosmos_path, torch_dtype=torch.bfloat16, device_map=device,
-        )
+    # V100: fp16 + default attention. NEVER bf16, NEVER flash-attn.
+    cosmos = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+        cosmos_path,
+        torch_dtype=BACKBONE_DTYPE,
+        device_map=device,
+    )
+    print("[model] Loaded fp16 with default attention (no flash-attn on V100)")
 
-    print("[model] Freezing all weights...")
+    print("[model] Freezing all backbone weights...")
     for p in cosmos.parameters():
         p.requires_grad_(False)
 
-    # Gradient checkpointing — trades 30% compute for ~60% activation memory
-    cosmos.model.language_model.gradient_checkpointing_enable()
-    print("[model] Gradient checkpointing enabled on LM")
+    if grad_checkpointing:
+        cosmos.model.language_model.gradient_checkpointing_enable()
+        print("[model] Gradient checkpointing enabled on LM")
 
     n_lora = apply_lora(cosmos, lora_rank, lora_alpha, lora_dropout)
     print(f"[model] LoRA on {n_lora} projections (q,v,o) "
           f"rank={lora_rank} alpha={lora_alpha} dropout={lora_dropout}")
 
-    model = AlpamayoVLA(cosmos)
-    model.ego_encoder.to(device=device, dtype=torch.bfloat16)
-    model.traj_embed.to(device=device,  dtype=torch.bfloat16)
-    model.output_head.to(device=device, dtype=torch.bfloat16)
+    model = AlpamayoVLA(cosmos, augment=augment)
+    # Trainable adapters live as fp32 master weights.
+    model.ego_encoder.to(device=device, dtype=ADAPTER_DTYPE)
+    model.traj_embed.to(device=device,  dtype=ADAPTER_DTYPE)
+    model.output_head.to(device=device, dtype=ADAPTER_DTYPE)
 
     stats = model.count_parameters()
     print(f"[model] Total: {stats['total']:,} | Trainable: {stats['trainable']:,} "
@@ -203,16 +222,17 @@ if __name__ == '__main__':
     model.train()
 
     B             = 1
-    visual_tokens = torch.randn(B, 1536, TEXT_DIM, dtype=torch.bfloat16, device=device)
-    ego_state     = torch.randn(B, 4, EGO_DIM,     dtype=torch.bfloat16, device=device)
+    visual_tokens = torch.randn(B, 1536, TEXT_DIM, dtype=BACKBONE_DTYPE, device=device)
+    ego_state     = torch.randn(B, 4, EGO_DIM,     dtype=ADAPTER_DTYPE,  device=device)
     traj_tokens   = torch.randint(0, TRAJ_VOCAB, (B, TRAJ_LEN),          device=device)
 
     print(f"[smoke test] Forward pass B={B}...")
     logits = model(visual_tokens, ego_state, traj_tokens)
-    print(f"[smoke test] logits: {logits.shape}")
+    print(f"[smoke test] logits: {logits.shape}  dtype={logits.dtype}")
     assert logits.shape == (B, TRAJ_LEN, TRAJ_VOCAB)
+    assert logits.dtype == torch.float32
 
-    loss = nn.CrossEntropyLoss()(logits.reshape(-1, TRAJ_VOCAB).float(), traj_tokens.reshape(-1))
+    loss = nn.CrossEntropyLoss()(logits.reshape(-1, TRAJ_VOCAB), traj_tokens.reshape(-1))
     print(f"[smoke test] loss: {loss.item():.4f}")
     loss.backward()
     n_grads = sum(1 for p in model.parameters() if p.grad is not None)
