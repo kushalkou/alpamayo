@@ -1,11 +1,15 @@
 """
-dataset.py — NuScenes VLA Dataset
+dataset.py — NuScenes VLA Dataset (DGX / live-vision edition)
 
-Key fixes vs previous version:
-  - Split by SCENE (not sample) to prevent data leakage
-  - Compute class weights for weighted loss (fixes modal token collapse)
-  - Load precomputed visual tokens from disk
-  - No nuScenes API needed at __getitem__ time
+Changes vs the RTX-workstation (cached-token) version:
+  - LIVE 6-image loading — returns raw normalized camera images, NOT a
+    precomputed [1536,3584] visual-token cache (the 246GB cache is abandoned).
+    The frozen encoder is run live in the training loop (see vision_live.py).
+  - The 6 camera file paths are resolved ONCE, during the scene split, from the
+    nuScenes API — so __getitem__ never touches the nuScenes API.
+  - Photometric augmentation flag threaded through (train split only).
+  - Still splits by SCENE (595/127/128 scenes, seed=42) — never by sample.
+  - Class weights: sqrt inverse-frequency (fixes modal-token collapse).
 
 Usage:
     from dataset import get_dataloaders, get_class_weights
@@ -18,27 +22,27 @@ import sys
 import pickle
 import random
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-sys.path.insert(0, '/home/drive1/Alpamayo/tokenization')
+_CODE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(_CODE_DIR))
 from tokenizer import TrajectoryTokenizer
+from vision_live import CAMERAS, load_camera_images
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-NUSCENES_ROOT    = '/home/drive1/Alpamayo/nuscenes_full'
-VISUAL_TOKENS_DIR = Path('/home/drive1/Alpamayo/data/visual_tokens')
-TRAJ_PATH        = '/home/drive1/Alpamayo/data/trajectories_full.pkl'
-TRAJ_VOCAB       = 129
-TRAJ_LEN         = 24
+NUSCENES_ROOT = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/nuscenes'
+TRAJ_PATH     = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/data/trajectories_full.pkl'
+TRAJ_VOCAB    = 129
+TRAJ_LEN      = 24
 
 SPLIT_SEED  = 42
 TRAIN_FRAC  = 0.70
 VAL_FRAC    = 0.15
-# test = remaining 0.15
+# test = remaining 0.15  ->  595 / 127 / 128 scenes for 850 scenes
 
 # ── Ego state ─────────────────────────────────────────────────────────────────
 
@@ -77,12 +81,15 @@ def compute_ego_state(traj):
 
     return torch.tensor(states, dtype=torch.float32)   # [4, 4]
 
-# ── Scene-based split ─────────────────────────────────────────────────────────
+# ── Scene-based split (+ camera path resolution) ──────────────────────────────
 
-def build_scene_split(trajectories, nuscenes_root=NUSCENES_ROOT, seed=SPLIT_SEED):
+def build_scene_split(trajectories, nuscenes_root=NUSCENES_ROOT, seed=SPLIT_SEED,
+                      resolve_cam_paths=True):
     """
-    Split trajectories by SCENE to prevent data leakage.
-    Consecutive frames from the same scene must all go to the same split.
+    Split trajectories by SCENE to prevent data leakage. Consecutive frames from
+    the same scene all go to the same split. Also resolves the 6 camera file
+    paths for each trajectory here (once), attaching them as traj['cam_paths'],
+    so __getitem__ never calls the nuScenes API.
 
     Returns (train_trajs, val_trajs, test_trajs)
     """
@@ -90,15 +97,24 @@ def build_scene_split(trajectories, nuscenes_root=NUSCENES_ROOT, seed=SPLIT_SEED
     print("[dataset] Loading nuScenes to build scene-based split...")
     nusc = NuScenes(version='v1.0-trainval', dataroot=nuscenes_root, verbose=False)
 
-    # sample_token -> scene_token
+    # sample_token -> scene_token  (and, once, sample_token -> cam_paths)
     sample_to_scene = {}
+    sample_cam_paths = {}
     for scene in nusc.scene:
         token = scene['first_sample_token']
         while token:
+            sample = nusc.get('sample', token)
             sample_to_scene[token] = scene['token']
-            token = nusc.get('sample', token)['next']
+            if resolve_cam_paths:
+                paths = {}
+                for cam in CAMERAS:
+                    if cam in sample['data']:
+                        sd = nusc.get('sample_data', sample['data'][cam])
+                        paths[cam] = str(Path(nuscenes_root) / sd['filename'])
+                sample_cam_paths[token] = paths
+            token = sample['next']
 
-    # Group trajectories by scene
+    # Group trajectories by scene; attach cam paths.
     scene_to_trajs = {}
     missing = 0
     for traj in trajectories:
@@ -107,6 +123,8 @@ def build_scene_split(trajectories, nuscenes_root=NUSCENES_ROOT, seed=SPLIT_SEED
         if sc is None:
             missing += 1
             continue
+        if resolve_cam_paths:
+            traj['cam_paths'] = sample_cam_paths.get(st, {})
         scene_to_trajs.setdefault(sc, []).append(traj)
 
     if missing:
@@ -138,55 +156,51 @@ def build_scene_split(trajectories, nuscenes_root=NUSCENES_ROOT, seed=SPLIT_SEED
 class NuScenesVLADataset(Dataset):
     """
     Returns per sample:
-        visual_tokens : float16 [1536, 3584]
+        images        : float32 [6, 3, 448, 448]  (normalized; photometric aug if train)
         ego_state     : float32 [4, 4]
         traj_tokens   : int64   [24]
         sample_token  : str
     """
 
-    def __init__(self, trajectories, split='train'):
+    def __init__(self, trajectories, split='train', augment=None):
         self.trajs     = trajectories
         self.split     = split
+        # Photometric aug defaults ON for train, OFF otherwise (override with augment=).
+        self.augment   = (split == 'train') if augment is None else augment
         self.tokenizer = TrajectoryTokenizer()
-        print(f"[dataset] {split}: {len(trajectories)} samples")
+        print(f"[dataset] {split}: {len(trajectories)} samples (augment={self.augment})")
 
     def __len__(self):
         return len(self.trajs)
+
+    def _traj_tokens(self, traj):
+        token_pairs  = self.tokenizer.tokenize(traj)
+        accel_tokens = [p[0] for p in token_pairs]
+        curv_tokens  = [p[1] for p in token_pairs]
+        return torch.tensor(accel_tokens + curv_tokens, dtype=torch.long)  # [24]
 
     def __getitem__(self, idx):
         traj         = self.trajs[idx]
         sample_token = traj['sample_token']
 
-        # Visual tokens
-        token_path = VISUAL_TOKENS_DIR / f"{sample_token}.pt"
-        if token_path.exists():
-            visual_tokens = torch.load(token_path, map_location='cpu', weights_only=True)
-        else:
-            visual_tokens = torch.zeros(1536, 3584, dtype=torch.float16)
-            print(f"[dataset] WARNING: missing visual tokens for {sample_token}")
-
-        # Ego state
-        ego_state = compute_ego_state(traj)   # [4, 4]
-
-        # Trajectory tokens
-        token_pairs  = self.tokenizer.tokenize(traj)
-        accel_tokens = [p[0] for p in token_pairs]
-        curv_tokens  = [p[1] for p in token_pairs]
-        traj_tokens  = torch.tensor(accel_tokens + curv_tokens, dtype=torch.long)  # [24]
+        cam_paths = traj.get('cam_paths', {})
+        images    = load_camera_images(cam_paths, augment=self.augment)   # [6, 3, 448, 448]
+        ego_state = compute_ego_state(traj)                               # [4, 4]
+        traj_tokens = self._traj_tokens(traj)                             # [24]
 
         return {
-            'visual_tokens': visual_tokens,
-            'ego_state':     ego_state,
-            'traj_tokens':   traj_tokens,
-            'sample_token':  sample_token,
+            'images':       images,
+            'ego_state':    ego_state,
+            'traj_tokens':  traj_tokens,
+            'sample_token': sample_token,
         }
 
 # ── Class weights ─────────────────────────────────────────────────────────────
 
 def get_class_weights(dataset, device='cuda:0'):
     """
-    Compute inverse-frequency class weights for the trajectory token vocabulary.
-    Samples up to 5000 trajectories for efficiency.
+    Sqrt inverse-frequency class weights over the trajectory-token vocabulary.
+    Computed from traj tokens directly (no image loading). Samples up to 5000.
 
     Returns: float32 tensor [TRAJ_VOCAB] on device
     """
@@ -197,15 +211,13 @@ def get_class_weights(dataset, device='cuda:0'):
     indices  = random.sample(range(len(dataset)), n_sample)
 
     for i in indices:
-        item = dataset[i]
-        for tok in item['traj_tokens'].tolist():
+        for tok in dataset._traj_tokens(dataset.trajs[i]).tolist():
             counts[tok] += 1
 
-    # Sqrt inverse frequency — softer than raw inverse frequency
-    # Raw inv-freq makes modal token weight ~0, which is too aggressive
-    # Sqrt gives a gentler rebalancing: common tokens get lower weight,
-    # rare tokens get higher weight, but neither extreme is zeroed out
-    counts  = counts + 1.0                        # smoothing
+    # Sqrt inverse frequency — softer than raw inverse frequency (which zeros the
+    # modal token). Common tokens get lower weight, rare tokens higher, neither
+    # extreme is zeroed.
+    counts  = counts + 1.0                          # smoothing
     weights = 1.0 / torch.sqrt(counts)
     weights = weights / weights.sum() * TRAJ_VOCAB  # normalize so mean weight ≈ 1
 
@@ -222,6 +234,7 @@ def get_dataloaders(
     num_workers       = 4,
     pin_memory        = True,
     seed              = SPLIT_SEED,
+    augment           = True,
     load_test         = False,
 ):
     print(f"[dataset] Loading trajectories from {trajectories_path}")
@@ -231,8 +244,8 @@ def get_dataloaders(
 
     train_trajs, val_trajs, test_trajs = build_scene_split(all_trajs, nuscenes_root, seed)
 
-    train_dataset = NuScenesVLADataset(train_trajs, split='train')
-    val_dataset   = NuScenesVLADataset(val_trajs,   split='val')
+    train_dataset = NuScenesVLADataset(train_trajs, split='train', augment=augment)
+    val_dataset   = NuScenesVLADataset(val_trajs,   split='val',   augment=False)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                               num_workers=num_workers, pin_memory=pin_memory, drop_last=True)
@@ -241,7 +254,7 @@ def get_dataloaders(
 
     test_loader = None
     if load_test:
-        test_dataset = NuScenesVLADataset(test_trajs, split='test')
+        test_dataset = NuScenesVLADataset(test_trajs, split='test', augment=False)
         test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
                                   num_workers=num_workers, pin_memory=pin_memory)
         print("[dataset] WARNING: Test loader created. Only for final eval.")
@@ -258,10 +271,9 @@ if __name__ == '__main__':
     print(f"[smoke test] Val   batches: {len(val_loader)}")
 
     batch = next(iter(train_loader))
-    print(f"\n[smoke test] visual_tokens : {batch['visual_tokens'].shape}")
+    print(f"\n[smoke test] images        : {batch['images'].shape}")
     print(f"[smoke test] ego_state     : {batch['ego_state'].shape}")
     print(f"[smoke test] traj_tokens   : {batch['traj_tokens'].shape}")
-    print(f"[smoke test] traj_tokens[0]: {batch['traj_tokens'][0]}")
 
     weights = get_class_weights(train_loader.dataset)
     print(f"\n[smoke test] class weights shape: {weights.shape}")
