@@ -59,6 +59,7 @@ CFG = {
     'augment':           False,       # image-space photometric aug (dataloader)
     'max_steps':         0,           # >0 => smoke mode: stop after N optimizer steps
     'find_unused':       False,       # set True only if DDP hangs on unused params
+    'zero_vision':       False,       # ablation: feed zeros for the 1536 visual tokens (ego-only)
     'grad_clip':         1.0,
     'seed':              42,
     'patience':          7,
@@ -155,12 +156,14 @@ def encode_live(visual, images, device):
 
 
 @torch.no_grad()
-def validate(model, val_loader, criterion, device, visual):
+def validate(model, val_loader, criterion, device, visual, zero_vision=False):
     model.eval()
     total_loss, n = 0.0, 0
     tok_correct, tok_total = 0, 0
     for batch in val_loader:
         visual_tokens = encode_live(visual, batch['images'], device)
+        if zero_vision:
+            visual_tokens = torch.zeros_like(visual_tokens)
         ego_state     = batch['ego_state'].to(device, dtype=torch.float32)
         traj_tokens   = batch['traj_tokens'].to(device)
         logits = model(visual_tokens, ego_state, traj_tokens)
@@ -287,6 +290,8 @@ def train(cfg, resume=False):
 
         for batch_idx, batch in enumerate(train_loader):
             visual_tokens = encode_live(visual, batch['images'], device)   # frozen, no_grad
+            if cfg['zero_vision']:
+                visual_tokens = torch.zeros_like(visual_tokens)            # ego-only ablation
             ego_state     = batch['ego_state'].to(device, dtype=torch.float32)
             traj_tokens   = batch['traj_tokens'].to(device)
 
@@ -331,7 +336,8 @@ def train(cfg, resume=False):
         if is_main():
             print(f"\n[epoch {epoch+1}] train_loss={avg_train:.4f} — validating...")
 
-        val_loss, tok_acc = validate(model, val_loader, criterion, device, visual)
+        val_loss, tok_acc = validate(model, val_loader, criterion, device, visual,
+                                     zero_vision=cfg['zero_vision'])
 
         if is_main():
             gap = val_loss - avg_train
@@ -380,6 +386,7 @@ if __name__ == '__main__':
                         help='>0 => smoke mode: stop after N optimizer steps')
     parser.add_argument('--augment',     action='store_true', help='image-space photometric aug ON')
     parser.add_argument('--find_unused', action='store_true', help='DDP find_unused_parameters (use if it hangs)')
+    parser.add_argument('--zero_vision', action='store_true', help='ablation: zero the 1536 visual tokens (ego-only)')
     args = parser.parse_args()
 
     CFG['epochs']           = args.epochs
@@ -390,5 +397,6 @@ if __name__ == '__main__':
     CFG['max_steps']        = args.max_steps
     CFG['augment']          = args.augment
     CFG['find_unused']      = args.find_unused
+    CFG['zero_vision']      = args.zero_vision
 
     train(CFG, resume=args.resume)
