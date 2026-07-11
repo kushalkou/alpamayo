@@ -60,6 +60,7 @@ CFG = {
     'max_steps':         0,           # >0 => smoke mode: stop after N optimizer steps
     'find_unused':       False,       # set True only if DDP hangs on unused params
     'zero_vision':       False,       # ablation: feed zeros for the 1536 visual tokens (ego-only)
+    'zero_ego':          False,       # ablation: feed zeros for the 4 ego tokens (vision-only)
     'grad_clip':         1.0,
     'seed':              42,
     'patience':          7,
@@ -199,6 +200,9 @@ def train(cfg, resume=False):
         lora_dropout = cfg['lora_dropout'],
         device       = device,
     )
+
+    # Ablation: zero the 4 ego tokens post-encoder (vision-only mirror of --zero_vision)
+    model.zero_ego = cfg['zero_ego']
 
     # Frozen visual tower handle for live encoding (runs under no_grad, not in DDP graph)
     visual = model.cosmos.model.visual
@@ -387,6 +391,7 @@ if __name__ == '__main__':
     parser.add_argument('--augment',     action='store_true', help='image-space photometric aug ON')
     parser.add_argument('--find_unused', action='store_true', help='DDP find_unused_parameters (use if it hangs)')
     parser.add_argument('--zero_vision', action='store_true', help='ablation: zero the 1536 visual tokens (ego-only)')
+    parser.add_argument('--zero_ego', action='store_true', help='ablation: zero the 4 ego tokens (vision-only)')
     args = parser.parse_args()
 
     CFG['epochs']           = args.epochs
@@ -398,5 +403,6 @@ if __name__ == '__main__':
     CFG['augment']          = args.augment
     CFG['find_unused']      = args.find_unused
     CFG['zero_vision']      = args.zero_vision
+    CFG['zero_ego']         = args.zero_ego
 
     train(CFG, resume=args.resume)

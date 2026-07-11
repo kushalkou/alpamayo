@@ -115,6 +115,9 @@ class AlpamayoVLA(nn.Module):
         # Legacy token-space augmentation. OFF by default — canonical aug is
         # image-space photometric (dataloader). Kept for ablation only.
         self.augment = False
+        # Ablation: zero the 4 ego tokens post-encoder (vision-only mirror of
+        # finetune.py --zero_vision). Default OFF.
+        self.zero_ego = False
 
     def _build_context(self, visual_tokens, ego_state):
         vis = visual_tokens.to(dtype=torch.float16)
@@ -141,6 +144,8 @@ class AlpamayoVLA(nn.Module):
 
         # ego_encoder is fp32; run it in fp32 then cast back to backbone dtype
         ego = self.ego_encoder(ego_state.float()).to(vis.dtype)
+        if self.zero_ego:
+            ego = torch.zeros_like(ego)          # vision-only ablation
         return torch.cat([vis, ego], dim=1)
 
     def forward(self, visual_tokens, ego_state, traj_tokens):
