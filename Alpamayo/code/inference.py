@@ -1,17 +1,21 @@
 """
-inference.py — Alpamayo VLA Full Evaluation
+inference.py — Alpamayo VLA Full Evaluation  (DGX / V100 live-vision build)
 
-Metrics:
-  - ADE/FDE at 1s, 2s, 3s, 6s horizons
-  - Mean and median ADE/FDE
-  - Per-token accuracy (overall + per position)
-  - Token sequence accuracy
-  - Trajectory plots (GT vs predicted)
+Autoregressive decode => NO GT-token leak (unlike teacher-forced val loss), so
+ADE/FDE is the only metric that can actually separate the input modalities.
+
+Ported for the current stack:
+  - fp16 backbone (NOT bf16 — V100/Volta has no bf16 hardware)
+  - LIVE vision: the 6 camera images are encoded on the fly by the frozen visual
+    tower (the 246GB precomputed token cache is gone)
+  - gradient checkpointing OFF (inference)
+  - current AlpamayoVLA._build_context(visual_tokens, ego_state) signature
+  - predicted accel/curv tokens clamped to 0..63 before detokenize (STOP=128 -> center)
 
 Usage:
-    cd /home/drive1/Alpamayo
-    PYTHONPATH=data:tokenization:training:/home/drive1/python_packages \
-    /opt/miniconda3/bin/python training/inference.py
+    cd /home/dgx1user/Alpamayo-Kushal/Alpamayo/code
+    python inference.py --n_samples 200 \
+        --checkpoint /home/dgx1user/.../checkpoints/_livevision_run_jul9/alpamayo_best_e1_val2.0806.pt
 
 IMPORTANT: Only run on TEST set. Never tune hyperparameters based on these numbers.
 """
@@ -20,53 +24,39 @@ import sys
 import os
 import pickle
 import math
+import argparse
 import numpy as np
 import torch
 import torch.nn as nn
 from pathlib import Path
 from collections import defaultdict
 
-sys.path.insert(0, '/home/drive1/Alpamayo/data')
-sys.path.insert(0, '/home/drive1/Alpamayo/tokenization')
-sys.path.insert(0, '/home/drive1/Alpamayo/training')
+sys.path.insert(0, '/home/dgx1user/Alpamayo-Kushal/Alpamayo/code')
 
-from dataset import build_scene_split, NuScenesVLADataset, VISUAL_TOKENS_DIR
+from dataset import build_scene_split, NuScenesVLADataset
 from model import load_model, TRAJ_VOCAB, TRAJ_LEN, TEXT_DIM
 from tokenizer import TrajectoryTokenizer
+from vision_live import encode_normalized_images
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-CHECKPOINT_PATH  = '/home/drive1/Alpamayo/models/checkpoints/alpamayo_best.pt'
-TRAJECTORIES_PATH = '/home/drive1/Alpamayo/data/trajectories_full.pkl'
-NUSCENES_ROOT    = '/home/drive1/Alpamayo/nuscenes_full'
-COSMOS_PATH      = '/home/drive1/Alpamayo/models/cosmos_reason'
-OUTPUT_DIR       = Path('/home/drive1/Alpamayo/results')
-DEVICE           = 'cuda:0'
+DEFAULT_CKPT      = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/models/checkpoints/_livevision_run_jul9/alpamayo_best_e1_val2.0806.pt'
+TRAJECTORIES_PATH = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/data/trajectories_full.pkl'
+NUSCENES_ROOT     = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/nuscenes'
+COSMOS_PATH       = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/models/cosmos_reason'
+OUTPUT_DIR        = Path('/home/dgx1user/Alpamayo-Kushal/Alpamayo/results')
+DEVICE            = 'cuda:0'
+DTYPE             = torch.float16   # V100: fp16, never bf16
 
-DT          = 0.5   # nuScenes @ 2Hz
-N_STEPS     = 12    # 6 seconds
-HORIZONS    = {     # step index -> label
-    2:  '1s',
-    4:  '2s',
-    6:  '3s',
-    12: '6s',
-}
+DT       = 0.5   # nuScenes @ 2Hz
+N_STEPS  = 12    # 6 seconds
+HORIZONS = {2: '1s', 4: '2s', 6: '3s', 12: '6s'}
 
 # ── Unicycle model ────────────────────────────────────────────────────────────
 
 def unicycle_rollout(accels, curvatures, v0, yaw0, x0=0.0, y0=0.0, dt=DT):
-    """
-    Integrate unicycle dynamics from initial state.
-    accels:     [12] m/s²
-    curvatures: [12] rad/m
-    v0:         initial speed (m/s)
-    yaw0:       initial yaw (rad)
-    Returns:    positions [12, 2], yaws [12]
-    """
-    positions = []
-    yaws      = []
+    positions, yaws = [], []
     x, y, yaw, v = x0, y0, yaw0, v0
-
     for a, k in zip(accels, curvatures):
         v   = max(0.0, v + a * dt)
         yaw = yaw + v * k * dt
@@ -74,62 +64,61 @@ def unicycle_rollout(accels, curvatures, v0, yaw0, x0=0.0, y0=0.0, dt=DT):
         y   = y + v * math.sin(yaw) * dt
         positions.append([x, y])
         yaws.append(yaw)
-
     return np.array(positions), np.array(yaws)
+
+# ── Live vision encode ────────────────────────────────────────────────────────
+
+@torch.no_grad()
+def encode_live(visual, images):
+    """images [6,3,448,448] (one sample) -> visual_tokens [1,1536,3584] fp16."""
+    flat   = images.to(DEVICE)                        # [6,3,448,448]
+    pooled = encode_normalized_images(visual, flat)   # [6*256, 3584]
+    return pooled.reshape(1, 6 * 256, -1)             # [1,1536,3584]
 
 # ── Autoregressive decoding ───────────────────────────────────────────────────
 
 @torch.no_grad()
 def decode_trajectory(model, visual_tokens, ego_state, tokenizer):
-    """
-    Autoregressively decode 24 trajectory tokens from the model.
-    At each step, feed previously generated tokens as context.
-
-    Returns:
-        pred_tokens: [24] int
-        accels:      [12] float (m/s²)
-        curvatures:  [12] float (rad/m)
-    """
-    model.eval()
-    dtype = torch.bfloat16
-
-    # Build visual + ego context
-    vis = visual_tokens.to(DEVICE, dtype=dtype).unsqueeze(0)   # [1, 1536, 3584]
-    ego = ego_state.to(DEVICE, dtype=dtype).unsqueeze(0)        # [1, 4, 4]
-
+    """Autoregressively decode 24 trajectory tokens (NO GT-token leak)."""
     raw = model.module if hasattr(model, 'module') else model
-    context = raw._build_context(vis, ego, add_noise=False)     # [1, 1540, 3584]
-    ctx_len = context.shape[1]
+    raw.eval()
 
-    generated_tokens  = []
-    generated_embeds  = torch.zeros(1, 0, TEXT_DIM, device=DEVICE, dtype=dtype)
+    vis = visual_tokens.to(DEVICE, dtype=DTYPE)               # [1,1536,3584]
+    ego = ego_state.to(DEVICE, dtype=torch.float32).unsqueeze(0)  # [1,4,4]
 
-    for step in range(TRAJ_LEN):
-        lm_input = torch.cat([context, generated_embeds], dim=1)
-        lm_out   = raw.cosmos.model.language_model(
-            inputs_embeds=lm_input,
-            use_cache=False,
-        )
-        hidden      = lm_out.last_hidden_state
-        step_logits = raw.output_head(hidden[:, -1, :])         # [1, 129]
-        next_token  = step_logits.argmax(dim=-1)                # [1]
-        generated_tokens.append(next_token.item())
+    context = raw._build_context(vis, ego)                    # [1,1540,3584]
+    lm = raw.cosmos.model.language_model
 
-        next_embed      = raw.traj_embed(next_token).unsqueeze(1)  # [1, 1, 3584]
-        generated_embeds = torch.cat([generated_embeds, next_embed], dim=1)
+    generated_tokens = []
 
-    pred_tokens = generated_tokens   # [24]
+    # Prefill the context once, then decode with a KV cache: each step feeds only
+    # the single new token embedding instead of recomputing the whole prefix.
+    # Greedy argmax => output-identical to the full-recompute path, ~24x cheaper.
+    lm_out = lm(inputs_embeds=context, use_cache=True)
+    past   = lm_out.past_key_values
+    hidden = lm_out.last_hidden_state
+    step_logits = raw.output_head(hidden[:, -1, :].float())        # [1,129]
+    next_token  = step_logits.argmax(dim=-1)                       # [1]
+    generated_tokens.append(int(next_token.item()))
+
+    for _ in range(TRAJ_LEN - 1):
+        next_embed = raw.traj_embed(next_token).unsqueeze(1).to(context.dtype)  # [1,1,3584]
+        lm_out = lm(inputs_embeds=next_embed, past_key_values=past, use_cache=True)
+        past   = lm_out.past_key_values
+        hidden = lm_out.last_hidden_state
+        step_logits = raw.output_head(hidden[:, -1, :].float())    # [1,129]
+        next_token  = step_logits.argmax(dim=-1)                   # [1]
+        generated_tokens.append(int(next_token.item()))
+
+    pred_tokens  = generated_tokens          # [24] = [accel_0..11, curv_0..11]
     accel_tokens = pred_tokens[:12]
     curv_tokens  = pred_tokens[12:]
 
-    # Detokenize — detokenize_step(accel_token, curv_token) -> (accel, curv)
-    accels     = []
-    curvatures = []
+    accels, curvatures = [], []
     for a_tok, k_tok in zip(accel_tokens, curv_tokens):
-    # Both accel and curv tokens must be in 0-63 range
-    # STOP=128 handled separately
-        a_tok = 32 if a_tok == 128 else min(int(a_tok), 63)
-        k_tok = 32 if k_tok == 128 else min(int(k_tok), 63)
+        # accel/curv tokens must be in 0..63; STOP(128) -> bin center (32)
+        a_tok = 32 if a_tok == 128 else min(max(int(a_tok), 0), 63)
+        k_tok = 32 if k_tok == 128 else min(max(int(k_tok), 0), 63)
         a, k = tokenizer.detokenize_step(a_tok, k_tok)
         accels.append(a)
         curvatures.append(k)
@@ -139,27 +128,17 @@ def decode_trajectory(model, visual_tokens, ego_state, tokenizer):
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
 def compute_ade_fde(pred_positions, gt_positions, horizon_steps=None):
-    """
-    pred_positions: [N, 2]
-    gt_positions:   [N, 2]
-    horizon_steps:  if set, only evaluate up to this step
-    Returns: ADE (float), FDE (float)
-    """
     if horizon_steps is not None:
         pred_positions = pred_positions[:horizon_steps]
         gt_positions   = gt_positions[:horizon_steps]
-
-    errors = np.linalg.norm(pred_positions - gt_positions, axis=1)  # [N]
-    ade    = errors.mean()
-    fde    = errors[-1]
-    return float(ade), float(fde)
+    errors = np.linalg.norm(pred_positions - gt_positions, axis=1)
+    return float(errors.mean()), float(errors[-1])
 
 # ── Main evaluation ───────────────────────────────────────────────────────────
 
-def evaluate(n_samples=None):
+def evaluate(n_samples=None, checkpoint=DEFAULT_CKPT, zero_vision=False, zero_ego=False, out=None):
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load test trajectories
     print("[inference] Loading trajectories...")
     with open(TRAJECTORIES_PATH, 'rb') as f:
         all_trajs = pickle.load(f)
@@ -170,260 +149,129 @@ def evaluate(n_samples=None):
         test_trajs = test_trajs[:n_samples]
         print(f"[inference] Limiting to {n_samples} samples")
 
-    # Load model
     print("[inference] Loading model...")
     model = load_model(cosmos_path=COSMOS_PATH, device=DEVICE)
-
-    # Load checkpoint
-    print(f"[inference] Loading checkpoint from {CHECKPOINT_PATH}")
-    ckpt = torch.load(CHECKPOINT_PATH, map_location='cpu')
+    ckpt = torch.load(checkpoint, map_location='cpu')
     raw  = model.module if hasattr(model, 'module') else model
     raw.load_state_dict(ckpt['model_state'], strict=False)
-    print(f"[inference] Checkpoint: epoch={ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f}")
+    # Inference must zero the SAME modality the checkpoint was trained with
+    # (mirror of finetune.py --zero_vision / --zero_ego). zero_ego handled inside
+    # _build_context; zero_vision applied to visual_tokens right after encode_live.
+    raw.zero_ego = zero_ego
+    print(f"[inference] Checkpoint: {checkpoint}")
+    print(f"[inference]   epoch={ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f}")
+    print(f"[inference]   zero_vision={zero_vision}  zero_ego={zero_ego}")
     model.eval()
 
     raw.cosmos.model.language_model.gradient_checkpointing_disable()
-    print("[inference] Gradient checkpointing disabled for inference")
+    print("[inference] Gradient checkpointing disabled")
 
+    visual    = raw.cosmos.model.visual
     tokenizer = TrajectoryTokenizer()
+    dataset   = NuScenesVLADataset(test_trajs, split='test', augment=False)
 
-    # Metrics storage
-    all_ade   = defaultdict(list)   # horizon -> [ade per sample]
-    all_fde   = defaultdict(list)
-    token_correct = 0
-    token_total   = 0
-    seq_correct   = 0
-    gt_tokens_all = []
-    pred_tokens_all = []
+    all_ade, all_fde = defaultdict(list), defaultdict(list)
+    token_correct = token_total = seq_correct = 0
 
-    # Also store for plotting
-    plot_samples = []
-
-    print(f"\n[inference] Evaluating {len(test_trajs)} test trajectories...\n")
-
-    dataset = NuScenesVLADataset(test_trajs, split='test')
+    print(f"\n[inference] Evaluating {len(test_trajs)} test trajectories (autoregressive)...\n")
 
     for idx, traj in enumerate(test_trajs):
-        if idx % 100 == 0:
-            print(f"  [{idx}/{len(test_trajs)}]")
+        if idx % 50 == 0:
+            print(f"  [{idx}/{len(test_trajs)}]", flush=True)
 
-        sample_token = traj['sample_token']
+        item      = dataset[idx]
+        images    = item['images']         # [6,3,448,448]
+        ego_state = item['ego_state']      # [4,4]
+        gt_tok    = item['traj_tokens'].tolist()
 
-        # Load visual tokens
-        token_path = VISUAL_TOKENS_DIR / f"{sample_token}.pt"
-        if not token_path.exists():
-            continue
-        visual_tokens = torch.load(token_path, map_location='cpu', weights_only=True)
+        gt_positions = np.array(traj['future_positions'])[:N_STEPS]        # [12,2] global
+        cx, cy       = traj['current_pose']['translation'][0], traj['current_pose']['translation'][1]
+        gt_local     = gt_positions - np.array([cx, cy])                    # global-axes, origin at ego
 
-        # Get ego state and GT tokens from dataset
-        item        = dataset[idx]
-        ego_state   = item['ego_state']
-        gt_tok      = item['traj_tokens'].tolist()   # [24]
+        v0   = float(ego_state[3, 0])   # current speed
+        yaw0 = float(ego_state[3, 1])   # current (global) yaw
 
-        # Get GT trajectory for ADE/FDE
-        gt_positions = np.array(traj['future_positions'])[:N_STEPS]  # [12, 2] global coords
-        # Convert to local (ego-centric) frame
-        current_x   = traj['current_pose']['translation'][0]
-        current_y   = traj['current_pose']['translation'][1]
-        gt_local    = gt_positions - np.array([current_x, current_y])
-
-        # Initial ego state for unicycle
-        v0   = float(ego_state[3, 0])   # speed at current timestep
-        yaw0 = float(ego_state[3, 1])   # yaw at current timestep
-
-        # Decode
         try:
-            pred_tok, pred_accels, pred_curvatures = decode_trajectory(
-                model, visual_tokens, ego_state, tokenizer
-            )
+            visual_tokens = encode_live(visual, images)
+            if zero_vision:
+                visual_tokens = torch.zeros_like(visual_tokens)   # ego-only ablation
+            pred_tok, pred_accels, pred_curvs = decode_trajectory(
+                model, visual_tokens, ego_state, tokenizer)
         except Exception as e:
-            print(f"  [WARNING] Failed on {sample_token}: {e}")
+            print(f"  [WARNING] failed on sample {idx}: {e}")
             continue
 
-        # Rollout unicycle
-        pred_positions, _ = unicycle_rollout(pred_accels, pred_curvatures, v0, yaw0)
+        pred_positions, _ = unicycle_rollout(pred_accels, pred_curvs, v0, yaw0)
 
-        # ADE/FDE at multiple horizons
         for step, label in HORIZONS.items():
             if step <= len(pred_positions) and step <= len(gt_local):
                 ade, fde = compute_ade_fde(pred_positions, gt_local, horizon_steps=step)
                 all_ade[label].append(ade)
                 all_fde[label].append(fde)
 
-        # Token accuracy
         for gt_t, pred_t in zip(gt_tok, pred_tok):
             token_correct += int(gt_t == pred_t)
             token_total   += 1
         if gt_tok == list(pred_tok):
             seq_correct += 1
 
-        gt_tokens_all.extend(gt_tok)
-        pred_tokens_all.extend(pred_tok)
-
-        # Store first 10 for plotting
-        if len(plot_samples) < 10:
-            plot_samples.append({
-                'gt_positions':   gt_local,
-                'pred_positions': pred_positions,
-                'gt_tokens':      gt_tok,
-                'pred_tokens':    pred_tok,
-                'sample_token':   sample_token,
-            })
-
-    # ── Print results ─────────────────────────────────────────────────────────
-
+    # ── Results ─────────────────────────────────────────────────────────────
     print("\n" + "="*60)
-    print("INFERENCE RESULTS — TEST SET")
+    print("INFERENCE RESULTS — TEST SET (autoregressive, live vision)")
     print("="*60)
     print(f"Checkpoint: epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f}")
     print(f"Trajectories evaluated: {len(all_ade['6s'])}")
     print()
-
-    print("── ADE (Average Displacement Error) ──")
-    print(f"{'Horizon':<10} {'Mean (m)':<12} {'Median (m)':<12}")
-    print("-"*34)
+    print("── ADE (mean / median, meters) ──")
     for label in ['1s', '2s', '3s', '6s']:
-        vals = all_ade[label]
-        if vals:
-            print(f"{label:<10} {np.mean(vals):<12.3f} {np.median(vals):<12.3f}")
-
+        v = all_ade[label]
+        if v:
+            print(f"  {label:<4} ADE  mean={np.mean(v):.3f}  median={np.median(v):.3f}")
     print()
-    print("── FDE (Final Displacement Error) ──")
-    print(f"{'Horizon':<10} {'Mean (m)':<12} {'Median (m)':<12}")
-    print("-"*34)
+    print("── FDE (mean / median, meters) ──")
     for label in ['1s', '2s', '3s', '6s']:
-        vals = all_fde[label]
-        if vals:
-            print(f"{label:<10} {np.mean(vals):<12.3f} {np.median(vals):<12.3f}")
-
+        v = all_fde[label]
+        if v:
+            print(f"  {label:<4} FDE  mean={np.mean(v):.3f}  median={np.median(v):.3f}")
     print()
-    print("── Token Metrics ──")
-    print(f"Per-token accuracy:     {100*token_correct/max(token_total,1):.2f}%")
-    print(f"Sequence accuracy:      {100*seq_correct/max(len(test_trajs),1):.2f}%")
-
-    # Roundtrip ADE baseline reminder
+    print("── Token Metrics (autoregressive) ──")
+    print(f"  Per-token accuracy: {100*token_correct/max(token_total,1):.2f}%")
+    print(f"  Sequence accuracy:  {100*seq_correct/max(len(test_trajs),1):.2f}%")
     print()
-    print("── Baseline Reference ──")
-    print(f"Roundtrip ADE (tokenizer):  0.885m (theoretical floor)")
-    print(f"Modal token baseline loss:  ~2.33 nats")
+    print("── Reference ── roundtrip ADE floor 0.885m ; old baseline tok-acc 41.49%")
 
-    # ── Save results ──────────────────────────────────────────────────────────
-
+    import json
     results = {
         'ade': {k: {'mean': float(np.mean(v)), 'median': float(np.median(v))}
-                for k, v in all_ade.items()},
+                for k, v in all_ade.items() if v},
         'fde': {k: {'mean': float(np.mean(v)), 'median': float(np.median(v))}
-                for k, v in all_fde.items()},
-        'token_accuracy':    float(token_correct / max(token_total, 1)),
-        'sequence_accuracy': float(seq_correct / max(len(test_trajs), 1)),
+                for k, v in all_fde.items() if v},
+        'token_accuracy':    float(token_correct/max(token_total,1)),
+        'sequence_accuracy': float(seq_correct/max(len(test_trajs),1)),
         'n_evaluated':       len(all_ade['6s']),
+        'checkpoint':        str(checkpoint),
         'checkpoint_epoch':  ckpt['epoch'],
         'checkpoint_val_loss': ckpt['val_loss'],
     }
-
-    import json
-    results_path = OUTPUT_DIR / 'inference_results.json'
-    with open(results_path, 'w') as f:
+    rp = OUTPUT_DIR / (out if out else 'inference_results.json')
+    with open(rp, 'w') as f:
         json.dump(results, f, indent=2)
-    print(f"\n[inference] Results saved → {results_path}")
-
-    # ── Plots ─────────────────────────────────────────────────────────────────
-
-    try:
-        import matplotlib
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-
-        # Plot 1: trajectory comparison grid
-        fig, axes = plt.subplots(2, 5, figsize=(20, 8))
-        axes = axes.flatten()
-
-        for i, sample in enumerate(plot_samples):
-            ax = axes[i]
-            gt  = sample['gt_positions']
-            pred = sample['pred_positions']
-
-            ax.plot(gt[:, 0],   gt[:, 1],   'b.-', label='GT',   linewidth=2, markersize=4)
-            ax.plot(pred[:, 0], pred[:, 1], 'r.-', label='Pred', linewidth=2, markersize=4)
-            ax.plot(0, 0, 'ko', markersize=6)  # ego start
-
-            ade_val = np.linalg.norm(pred - gt, axis=1).mean()
-            ax.set_title(f'ADE={ade_val:.2f}m', fontsize=9)
-            ax.set_aspect('equal')
-            ax.grid(True, alpha=0.3)
-            if i == 0:
-                ax.legend(fontsize=8)
-            ax.set_xlabel('x (m)', fontsize=7)
-            ax.set_ylabel('y (m)', fontsize=7)
-
-        plt.suptitle('GT vs Predicted Trajectories (Test Set, First 10 Samples)',
-                     fontsize=12, fontweight='bold')
-        plt.tight_layout()
-        traj_plot_path = OUTPUT_DIR / 'trajectory_comparison.png'
-        plt.savefig(traj_plot_path, dpi=150, bbox_inches='tight')
-        plt.close()
-        print(f"[inference] Trajectory plot saved → {traj_plot_path}")
-
-        # Plot 2: ADE distribution
-        fig, axes = plt.subplots(1, 4, figsize=(16, 4))
-        for i, label in enumerate(['1s', '2s', '3s', '6s']):
-            vals = all_ade[label]
-            if vals:
-                axes[i].hist(vals, bins=50, edgecolor='black', alpha=0.7, color='steelblue')
-                axes[i].axvline(np.mean(vals), color='red', linestyle='--',
-                                label=f'Mean={np.mean(vals):.2f}m')
-                axes[i].axvline(np.median(vals), color='orange', linestyle='--',
-                                label=f'Median={np.median(vals):.2f}m')
-                axes[i].set_title(f'ADE @ {label}')
-                axes[i].set_xlabel('ADE (m)')
-                axes[i].set_ylabel('Count')
-                axes[i].legend(fontsize=8)
-
-        plt.suptitle('ADE Distribution at Multiple Horizons (Test Set)',
-                     fontsize=12, fontweight='bold')
-        plt.tight_layout()
-        ade_plot_path = OUTPUT_DIR / 'ade_distribution.png'
-        plt.savefig(ade_plot_path, dpi=150, bbox_inches='tight')
-        plt.close()
-        print(f"[inference] ADE distribution plot saved → {ade_plot_path}")
-
-        # Plot 3: per-position token accuracy
-        pos_acc = []
-        gt_arr   = np.array(gt_tokens_all).reshape(-1, TRAJ_LEN)
-        pred_arr = np.array(pred_tokens_all).reshape(-1, TRAJ_LEN)
-        for pos in range(TRAJ_LEN):
-            acc = (gt_arr[:, pos] == pred_arr[:, pos]).mean()
-            pos_acc.append(acc)
-
-        fig, ax = plt.subplots(figsize=(10, 4))
-        positions = list(range(TRAJ_LEN))
-        colors = ['#e74c3c'] * 12 + ['#3498db'] * 12
-        ax.bar(positions, [a * 100 for a in pos_acc], color=colors, edgecolor='black', alpha=0.8)
-        ax.axvline(11.5, color='black', linestyle='--', alpha=0.5)
-        ax.set_xlabel('Token Position')
-        ax.set_ylabel('Accuracy (%)')
-        ax.set_title('Per-Position Token Accuracy\n(Red=Acceleration tokens, Blue=Curvature tokens)')
-        ax.set_xticks(range(TRAJ_LEN))
-        ax.set_xticklabels([f'a{i+1}' if i < 12 else f'k{i-11}' for i in range(TRAJ_LEN)],
-                           rotation=45, fontsize=8)
-        ax.grid(True, alpha=0.3, axis='y')
-        plt.tight_layout()
-        token_plot_path = OUTPUT_DIR / 'token_accuracy.png'
-        plt.savefig(token_plot_path, dpi=150, bbox_inches='tight')
-        plt.close()
-        print(f"[inference] Token accuracy plot saved → {token_plot_path}")
-
-    except ImportError:
-        print("[inference] matplotlib not available — skipping plots")
-
-    print("\n[inference] DONE")
+    print(f"\n[inference] Results saved → {rp}")
+    print("[inference] DONE")
     return results
 
 
 if __name__ == '__main__':
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--n_samples', type=int, default=None,
                         help='Evaluate on first N test samples (default: all)')
+    parser.add_argument('--checkpoint', type=str, default=DEFAULT_CKPT)
+    parser.add_argument('--zero_vision', action='store_true',
+                        help='ablation: zero the 1536 visual tokens (ego-only ckpts)')
+    parser.add_argument('--zero_ego', action='store_true',
+                        help='ablation: zero the 4 ego tokens (vision-only ckpts)')
+    parser.add_argument('--out', type=str, default=None,
+                        help='results json filename (under results/); default inference_results.json')
     args = parser.parse_args()
-    evaluate(n_samples=args.n_samples)
+    evaluate(n_samples=args.n_samples, checkpoint=args.checkpoint,
+             zero_vision=args.zero_vision, zero_ego=args.zero_ego, out=args.out)
