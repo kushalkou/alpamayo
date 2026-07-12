@@ -94,3 +94,25 @@ so nothing is suspiciously good; "worse than null" is a legitimate, if damning, 
 
 **Artifacts:** `results/res_{a..e}.json`, logs `Alpamayo/.../scratchpad/eval_*.log`.
 Preserved zero-both ckpt: `models/checkpoints/_zeroboth_run_jul12/alpamayo_best_e1_val2.0392.pt`.
+
+---
+
+## P2 — AR val-ADE model selection (infra foundation)
+
+**What changed.** Selection + early-stopping now run on autoregressive median ADE@6s
+over a seed-fixed 400-sample val subset (KV-cache decode, sharded across DDP ranks),
+computed each epoch. Teacher-forced val loss is still logged but **cannot** drive
+selection. New: `code/ar_eval.py` (device-parametrized decode identical to inference.py
++ `compute_val_ade` + `fixed_val_indices`); `finetune.py` epoch-end rewritten;
+checkpoints now store both `val_loss` (record) and `val_ade6` (selection).
+
+**Sanity — full-live checkpoint (val set):**
+
+| set | ADE@1s | ADE@2s | ADE@3s | ADE@6s (mean/med) |
+|---|---|---|---|---|
+| 400-subset (seed 1234) | 1.035 | 1.867 | 2.901 | 6.946 / **4.525** |
+| full val (n=3572)      | 1.052 | 1.911 | 2.947 | 6.961 / **4.403** |
+
+**Δ median ADE@6s = 0.122m (2.8%)** — the 400-subset is a faithful proxy. It also
+matches the P1 *test* number for full-live (median 4.504m), confirming val/test/code
+consistency. Selection infra validated. Committed before P3.

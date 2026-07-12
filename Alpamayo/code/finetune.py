@@ -41,6 +41,8 @@ sys.path.insert(0, '/home/dgx1user/Alpamayo-Kushal/Alpamayo/code')
 from dataset import get_dataloaders, get_class_weights, NuScenesVLADataset, build_scene_split
 from model import AlpamayoVLA, load_model, TRAJ_VOCAB, TRAJ_LEN
 from vision_live import encode_normalized_images
+from ar_eval import compute_val_ade, fixed_val_indices
+from tokenizer import TrajectoryTokenizer
 import pickle
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -64,6 +66,11 @@ CFG = {
     'grad_clip':         1.0,
     'seed':              42,
     'patience':          7,
+
+    # Model selection: autoregressive val-ADE (teacher-forced val loss is DISQUALIFIED).
+    # After each epoch, AR-decode a seed-fixed val subset and select on median ADE@6s.
+    'val_ade_k':         400,         # # val samples AR-decoded each epoch for selection
+    'val_ade_seed':      1234,        # fixed => comparable subset across runs
 
     # LR — reduced from 2e-4 to 5e-5
     'lr':                5e-5,
@@ -109,7 +116,8 @@ def get_lr(step, total_steps, cfg):
 
 # ── Checkpoint ────────────────────────────────────────────────────────────────
 
-def save_checkpoint(model, optimizer, epoch, step, val_loss, cfg, tag='best'):
+def save_checkpoint(model, optimizer, epoch, step, val_loss, cfg, tag='best',
+                    sel_ade=None):
     if not is_main():
         return
     ckpt_dir = Path(cfg['checkpoint_dir'])
@@ -123,12 +131,15 @@ def save_checkpoint(model, optimizer, epoch, step, val_loss, cfg, tag='best'):
         or any(k.startswith(m) for m in ['ego_encoder', 'traj_embed', 'output_head'])
     }
     torch.save({
-        'epoch': epoch, 'step': step, 'val_loss': val_loss,
+        'epoch': epoch, 'step': step,
+        'val_loss': val_loss,        # teacher-forced (record only)
+        'val_ade6': sel_ade,         # AR median ADE@6s — the SELECTION metric
         'model_state': trainable_state,
         'optimizer_state': optimizer.state_dict(),
         'cfg': cfg,
     }, path)
-    print(f"[ckpt] Saved {tag} → {path}  (val_loss={val_loss:.4f})")
+    ade_str = f", val_ade6={sel_ade:.4f}" if sel_ade is not None else ""
+    print(f"[ckpt] Saved {tag} → {path}  (val_loss={val_loss:.4f}{ade_str})")
 
 
 def load_checkpoint(model, optimizer, cfg, tag='latest'):
@@ -269,8 +280,17 @@ def train(cfg, resume=False):
 
     start_epoch = 0
     eff_step    = 0
-    best_val    = float('inf')
+    best_val    = float('inf')      # best teacher-forced val loss (record only)
+    best_ade    = float('inf')      # best AR val median ADE@6s (SELECTION metric)
     no_improve  = 0
+
+    # Selection infra: seed-fixed val subset + tokenizer (shared across all ranks)
+    val_ade_idx  = fixed_val_indices(len(val_dataset), k=cfg['val_ade_k'],
+                                     seed=cfg['val_ade_seed'])
+    ar_tokenizer = TrajectoryTokenizer()
+    if is_main():
+        print(f"[select] Metric = AR median ADE@6s on {len(val_ade_idx)} fixed val samples "
+              f"(seed {cfg['val_ade_seed']}). Teacher-forced val loss logged for record only.")
 
     if resume:
         start_epoch, eff_step, best_val = load_checkpoint(model, optimizer, cfg)
@@ -340,23 +360,41 @@ def train(cfg, resume=False):
         if is_main():
             print(f"\n[epoch {epoch+1}] train_loss={avg_train:.4f} — validating...")
 
+        # Teacher-forced val loss — RECORD ONLY, must not drive selection.
         val_loss, tok_acc = validate(model, val_loader, criterion, device, visual,
                                      zero_vision=cfg['zero_vision'])
 
+        # Autoregressive val-ADE — THE selection metric. All ranks participate
+        # (internal shard + all_gather). Grad-checkpointing must be off for use_cache.
+        raw = model.module if isinstance(model, DDP) else model
+        raw.cosmos.model.language_model.gradient_checkpointing_disable()
+        ade_stats = compute_val_ade(
+            raw, val_dataset, val_trajs, val_ade_idx, device, visual,
+            tokenizer=ar_tokenizer, world_size=world_size, rank=local_rank,
+            zero_vision=cfg['zero_vision'], zero_ego=cfg['zero_ego'])
+        raw.cosmos.model.language_model.gradient_checkpointing_enable()
+        val_ade6 = ade_stats['ade'].get('6s', {}).get('median', float('inf'))
+        val_ade6_mean = ade_stats['ade'].get('6s', {}).get('mean', float('nan'))
+
         if is_main():
             gap = val_loss - avg_train
-            print(f"[epoch {epoch+1}] val_loss={val_loss:.4f}  tok_acc={100*tok_acc:.2f}%  "
-                  f"train_loss={avg_train:.4f}  gap={gap:.4f}  best={best_val:.4f}")
+            print(f"[epoch {epoch+1}] SELECT val_ADE@6s median={val_ade6:.4f} "
+                  f"(mean={val_ade6_mean:.4f}, n={ade_stats['n']})  best_ADE={best_ade:.4f}")
+            print(f"[epoch {epoch+1}] [record] TF val_loss={val_loss:.4f} "
+                  f"tok_acc={100*tok_acc:.2f}% train_loss={avg_train:.4f} gap={gap:.4f}")
 
-            if val_loss < best_val:
+            if val_ade6 < best_ade:
+                best_ade   = val_ade6
                 best_val   = val_loss
                 no_improve = 0
-                save_checkpoint(model, optimizer, epoch+1, eff_step, val_loss, cfg, 'best')
+                save_checkpoint(model, optimizer, epoch+1, eff_step, val_loss, cfg,
+                                'best', sel_ade=val_ade6)
             else:
                 no_improve += 1
-                print(f"[epoch {epoch+1}] No improvement ({no_improve}/{cfg['patience']})")
+                print(f"[epoch {epoch+1}] No ADE improvement ({no_improve}/{cfg['patience']})")
 
-            save_checkpoint(model, optimizer, epoch+1, eff_step, val_loss, cfg, 'latest')
+            save_checkpoint(model, optimizer, epoch+1, eff_step, val_loss, cfg,
+                            'latest', sel_ade=val_ade6)
 
         # Broadcast no_improve to all ranks for early stopping
         no_improve_tensor = torch.tensor(no_improve, device=device)
