@@ -32,6 +32,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
@@ -63,6 +64,12 @@ CFG = {
     'find_unused':       False,       # set True only if DDP hangs on unused params
     'zero_vision':       False,       # ablation: feed zeros for the 1536 visual tokens (ego-only)
     'zero_ego':          False,       # ablation: feed zeros for the 4 ego tokens (vision-only)
+    # P3: position-weighted loss. Concentrate gradient on the perception-dependent
+    # accel_1..11 slots (weight 1.0); down-weight the trivially-solvable curv slots
+    # and accel_0 (weight 0.2). Multiplied with sqrt inv-freq class weights, not replaced.
+    'pos_weighted':      False,
+    'pos_w_high':        1.0,         # accel_1..11
+    'pos_w_low':         0.2,         # accel_0 + curv_0..11
     'grad_clip':         1.0,
     'seed':              42,
     'patience':          7,
@@ -267,6 +274,29 @@ def train(cfg, resume=False):
     dist.broadcast(class_weights, src=0)
     criterion = nn.CrossEntropyLoss(weight=class_weights)
 
+    # P3 position weights [24]: accel_0=low, accel_1..11=high, curv_0..11=low.
+    pos_weights = torch.full((TRAJ_LEN,), cfg['pos_w_low'], device=device)
+    pos_weights[1:12] = cfg['pos_w_high']       # accel_1..accel_11
+    if is_main() and cfg['pos_weighted']:
+        print(f"[loss] POSITION-WEIGHTED: accel_1..11={cfg['pos_w_high']}, "
+              f"accel_0+curv={cfg['pos_w_low']} (x sqrt inv-freq class weights)")
+
+    def compute_loss(logits, traj_tokens):
+        """Weighted-mean CE. Extends CrossEntropyLoss(weight=class_weights) with
+        per-position weights when cfg['pos_weighted']; identical to plain criterion
+        otherwise."""
+        if not cfg['pos_weighted']:
+            return criterion(logits.reshape(-1, TRAJ_VOCAB).float(),
+                             traj_tokens.reshape(-1))
+        B = traj_tokens.shape[0]
+        tgt = traj_tokens.reshape(-1)                                   # [B*24]
+        ce  = F.cross_entropy(logits.reshape(-1, TRAJ_VOCAB).float(), tgt,
+                              weight=class_weights, reduction='none')   # cw[tgt]*CE
+        pw  = pos_weights.unsqueeze(0).expand(B, -1).reshape(-1)        # [B*24]
+        num = (ce * pw).sum()
+        den = (class_weights[tgt] * pw).sum().clamp_min(1e-6)
+        return num / den
+
     steps_per_epoch     = len(train_loader)
     effective_per_epoch = steps_per_epoch // cfg['grad_accum_steps']
     world_size          = dist.get_world_size()
@@ -320,7 +350,7 @@ def train(cfg, resume=False):
             traj_tokens   = batch['traj_tokens'].to(device)
 
             logits = model(visual_tokens, ego_state, traj_tokens)
-            loss   = criterion(logits.reshape(-1, TRAJ_VOCAB).float(), traj_tokens.reshape(-1))
+            loss   = compute_loss(logits, traj_tokens)
 
             # GradScaler: fp16 backbone forward, fp32 adapter grads, scaled loss
             scaler.scale(loss / cfg['grad_accum_steps']).backward()
@@ -430,6 +460,8 @@ if __name__ == '__main__':
     parser.add_argument('--find_unused', action='store_true', help='DDP find_unused_parameters (use if it hangs)')
     parser.add_argument('--zero_vision', action='store_true', help='ablation: zero the 1536 visual tokens (ego-only)')
     parser.add_argument('--zero_ego', action='store_true', help='ablation: zero the 4 ego tokens (vision-only)')
+    parser.add_argument('--pos_weighted', action='store_true',
+                        help='P3: weight accel_1..11 loss 1.0, curv+accel_0 0.2 (x class weights)')
     args = parser.parse_args()
 
     CFG['epochs']           = args.epochs
@@ -442,5 +474,6 @@ if __name__ == '__main__':
     CFG['find_unused']      = args.find_unused
     CFG['zero_vision']      = args.zero_vision
     CFG['zero_ego']         = args.zero_ego
+    CFG['pos_weighted']     = args.pos_weighted
 
     train(CFG, resume=args.resume)
