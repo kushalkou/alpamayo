@@ -70,6 +70,10 @@ CFG = {
     'pos_weighted':      False,
     'pos_w_high':        1.0,         # accel_1..11
     'pos_w_low':         0.2,         # accel_0 + curv_0..11
+    # P4: scheduled sampling. Feed model's own predicted token w.p. p, ramped 0->ss_max
+    # linearly over the run. Breaks the free copy/persistence shortcut.
+    'scheduled_sampling': False,
+    'ss_max':            0.25,
     'grad_clip':         1.0,
     'seed':              42,
     'patience':          7,
@@ -349,6 +353,10 @@ def train(cfg, resume=False):
             ego_state     = batch['ego_state'].to(device, dtype=torch.float32)
             traj_tokens   = batch['traj_tokens'].to(device)
 
+            if cfg['scheduled_sampling']:
+                ss_p = cfg['ss_max'] * min(1.0, eff_step / max(total_eff_steps, 1))
+                (model.module if isinstance(model, DDP) else model).scheduled_sampling_p = ss_p
+
             logits = model(visual_tokens, ego_state, traj_tokens)
             loss   = compute_loss(logits, traj_tokens)
 
@@ -373,9 +381,11 @@ def train(cfg, resume=False):
                 if is_main() and (eff_step % cfg['log_every'] == 0 or cfg['max_steps']):
                     peak_gb = torch.cuda.max_memory_allocated(device) / 1e9
                     avg = epoch_loss / (batch_idx + 1)
+                    ss_disp = (model.module if isinstance(model, DDP) else model).scheduled_sampling_p
+                    ss_str = f" | ss_p {ss_disp:.3f}" if cfg['scheduled_sampling'] else ""
                     print(f"  eff_step {eff_step:5d} | loss {loss.item():.4f} | "
                           f"avg {avg:.4f} | lr {lr:.2e} | scale {scaler.get_scale():.0f} | "
-                          f"{sec_step:.2f}s/step | peak {peak_gb:.1f}GB")
+                          f"{sec_step:.2f}s/step | peak {peak_gb:.1f}GB{ss_str}")
 
                 if cfg['max_steps'] and eff_step >= cfg['max_steps']:
                     if is_main():
@@ -462,6 +472,9 @@ if __name__ == '__main__':
     parser.add_argument('--zero_ego', action='store_true', help='ablation: zero the 4 ego tokens (vision-only)')
     parser.add_argument('--pos_weighted', action='store_true',
                         help='P3: weight accel_1..11 loss 1.0, curv+accel_0 0.2 (x class weights)')
+    parser.add_argument('--scheduled_sampling', action='store_true',
+                        help='P4: feed own predicted token w.p. p ramped 0->ss_max')
+    parser.add_argument('--ss_max', type=float, default=CFG['ss_max'])
     args = parser.parse_args()
 
     CFG['epochs']           = args.epochs
@@ -475,5 +488,7 @@ if __name__ == '__main__':
     CFG['zero_vision']      = args.zero_vision
     CFG['zero_ego']         = args.zero_ego
     CFG['pos_weighted']     = args.pos_weighted
+    CFG['scheduled_sampling'] = args.scheduled_sampling
+    CFG['ss_max']           = args.ss_max
 
     train(CFG, resume=args.resume)

@@ -118,6 +118,10 @@ class AlpamayoVLA(nn.Module):
         # Ablation: zero the 4 ego tokens post-encoder (vision-only mirror of
         # finetune.py --zero_vision). Default OFF.
         self.zero_ego = False
+        # P4 scheduled sampling: prob of feeding the model's OWN 1-step prediction
+        # instead of the GT token during training. 0.0 => pure teacher forcing.
+        # Set/ramped by finetune.py; must stay 0 in eval (val loss + AR val-ADE).
+        self.scheduled_sampling_p = 0.0
 
     def _build_context(self, visual_tokens, ego_state):
         vis = visual_tokens.to(dtype=torch.float16)
@@ -152,9 +156,29 @@ class AlpamayoVLA(nn.Module):
         context = self._build_context(visual_tokens, ego_state)
         ctx_len = context.shape[1]   # 1540
 
-        # traj_embed is fp32; cast embeddings to the LM (fp16) input dtype
-        gt_embeds = self.traj_embed(traj_tokens).to(context.dtype)
-        lm_input  = torch.cat([context, gt_embeds[:, :-1, :]], dim=1)  # [B, 1563, 3584]
+        p = getattr(self, 'scheduled_sampling_p', 0.0)
+        if self.training and p > 0.0:
+            # P4 scheduled sampling (efficient 2-pass). Pass 1 (no grad): teacher-forced
+            # forward to get the model's own 1-step-ahead predictions. Then, with prob p,
+            # replace each GT input token (positions 0..22) with the model's prediction of
+            # that token, and run pass 2 (with grad) on the mixed inputs. Targets stay GT.
+            with torch.no_grad():
+                gt_embeds1 = self.traj_embed(traj_tokens).to(context.dtype)
+                lm_in1  = torch.cat([context, gt_embeds1[:, :-1, :]], dim=1)
+                h1      = self.cosmos.model.language_model(
+                    inputs_embeds=lm_in1, use_cache=False).last_hidden_state
+                th1     = h1[:, ctx_len - 1 : ctx_len + TRAJ_LEN - 1, :]
+                pred1   = self.output_head(th1.float()).argmax(-1)   # [B,24]
+            inp_gt   = traj_tokens[:, :-1]            # [B,23] GT input tokens 0..22
+            inp_pred = pred1[:, :-1]                  # [B,23] model's preds of tokens 0..22
+            mask     = torch.rand(inp_gt.shape, device=inp_gt.device) < p
+            mixed    = torch.where(mask, inp_pred, inp_gt)
+            mixed_embeds = self.traj_embed(mixed).to(context.dtype)
+            lm_input = torch.cat([context, mixed_embeds], dim=1)     # [B, 1563, 3584]
+        else:
+            # traj_embed is fp32; cast embeddings to the LM (fp16) input dtype
+            gt_embeds = self.traj_embed(traj_tokens).to(context.dtype)
+            lm_input  = torch.cat([context, gt_embeds[:, :-1, :]], dim=1)  # [B, 1563, 3584]
 
         lm_out = self.cosmos.model.language_model(
             inputs_embeds=lm_input,
