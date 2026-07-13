@@ -331,3 +331,51 @@ prior (most 6-second futures ≈ hold speed and heading), not model skill.
 **~3.0m ADE@6s** — the free score from GT ego kinematics + "keep doing what you're doing."
 (The tokenizer floor 0.885m is the *upper* bound of achievable skill; the CV baseline
 ~3.0m is the *no-skill* line. A useful model lives between them.) `results/res_v2_cv_baselines.json`.
+
+---
+
+## V3 — Corrected evals (V1-fixed decode) + clean AR-selected training
+
+### V3a — P1 five-checkpoint table, RE-RUN with the fixed decode (replaces P1)
+
+Test n=3614, autoregressive, V1-fixed `v0`. **This supersedes the P1 table.**
+
+**Mean ADE / FDE (m):**
+
+| Checkpoint | ADE@1s | ADE@2s | ADE@3s | ADE@6s | FDE@6s | tok-acc |
+|---|---|---|---|---|---|---|
+| (a) old baseline        | 1.017 | 2.479 | 4.437 | 12.233 | 28.05 | 26.0% |
+| (b) full live-vision    | 0.825 | 1.627 | 2.636 | 6.610 | 14.79 | 43.8% |
+| (c) ego-only            | 0.268 | 0.737 | 1.411 | 4.488 | 11.21 | 49.9% |
+| (d) vision-only         | 0.272 | 0.752 | 1.435 | 4.486 | 11.07 | 37.5% |
+| (e) zero-both = **CV, learned** | 0.205 | 0.588 | 1.138 | 3.648 | 9.12 | 40.6% |
+| **naive CV baseline (no model)** | **0.150** | **0.477** | **0.943** | **3.062** | 7.67 | — |
+| naive const-turn-rate | 0.143 | 0.434 | 0.869 | 3.014 | 7.84 | — |
+| **tokenizer floor** | 0.139 | 0.294 | 0.496 | **1.348** | 3.18 | (100%) |
+
+**Median ADE@6s:** full 4.087 · ego-only 3.592 · vision-only 3.853 · zero-both 3.205 ·
+CV 2.409 · CTR 2.402 · floor 0.889.
+
+**Two conclusions, now on solid ground:**
+
+1. **The fix changed magnitudes, not the ranking.** Buggy→fixed ADE@6s mean: full
+   6.978→6.610, ego 4.919→4.488, vision 5.268→4.486, zero-both 4.545→3.648. The order
+   (zero-both < ego ≈ vision < full) is **unchanged** — so "more inputs → worse AR ADE,
+   full is worst" was **not** a decode artifact. It survives the corrected decode.
+
+2. **But the honest reference (V2) rewrites the interpretation: every learned checkpoint
+   is WORSE than a no-model constant-velocity baseline (3.06m mean / 2.41m median @6s).**
+   Even zero-both (the closest to CV, 3.65m/3.21m) slightly trails true CV because its
+   constant tokens aren't exactly straight (curv≈0.004). The full vision+ego model is
+   ~2× the CV baseline. **The model has negative skill vs CV; adding inputs makes it
+   worse.** This is a training/architecture failure deeper than "vision doesn't help":
+   the trajectory head never learned to beat "keep going straight."
+
+The vision-vs-ego delta @6s: full − ego-only = **+2.12m mean / +0.49m median** (vision
+still hurts). But both are moot until a model beats CV.
+
+### V3b — clean AR-val-ADE-selected training (full-live vs ego-only), 10 ep, patience 5
+
+_Running (launched after V3a; ~many hours). Both select on AR median ADE@6s (P2), the
+only valid metric, trained past epoch 1. This is the first apples-to-apples vision-vs-ego
+test free of the disqualified TF-val-loss selection. Results appended when complete._
