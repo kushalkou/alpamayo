@@ -289,3 +289,45 @@ decode (**V3**). The per-position CE analyses (teacher-forced, no rollout) are u
 had speed==0 — so `ego_state[3,0]` is wrong for *most* trajectories. **The model's own ego
 speed input is corrupted**, which may itself explain why ego/vision "don't help". Worth a
 follow-up: fix `compute_ego_state` to a forward/centered speed estimate and retrain.
+
+---
+
+## V2 — Characterizing "zero-both" honestly
+
+**(a) It is a constant output.** Greedy-decoding the zero-both checkpoint on 400 test
+samples yields **exactly 1 unique 24-token sequence** (as it must — with vision and ego
+zeroed, the LM context is identical for every sample):
+
+```
+tokens = [33]*12 + [35]*12
+accels = [-0.008]*12  m/s^2   (≈ 0)
+curvs  = [ 0.0043]*12 rad/m   (≈ 0)
+```
+
+i.e. **hold speed, go essentially straight**. It is a constant-velocity controller.
+
+**(b) The rollout is seeded from GROUND-TRUTH ego state even when ego is zeroed.**
+`inference.py` (post-V1-fix):
+```
+196:  v0   = float(traj['future_speeds'][0])   # true current speed  (GT)
+197:  yaw0 = float(ego_state[3, 1])            # current global yaw   (GT)
+209:  pred_positions, _ = unicycle_rollout(pred_accels, pred_curvs, v0, yaw0)
+```
+`--zero_vision` (line 202) and `--zero_ego` (model.py:151) zero only the model **input
+embeddings**; `traj['future_speeds']` and `ego_state` used for the rollout are untouched.
+
+**(c) Relabel.** "zero-both" is **not a null model** — it is a **CONSTANT-VELOCITY
+BASELINE SEEDED WITH GROUND-TRUTH EGO SPEED + HEADING**. Its low P1 score reflects a strong
+prior (most 6-second futures ≈ hold speed and heading), not model skill.
+
+**True naive baselines (no model at all), full test n=3614, V1-fixed frame:**
+
+| baseline | ADE@1s | ADE@2s | ADE@3s | ADE@6s | (median@6s) |
+|---|---|---|---|---|---|
+| Constant-velocity (hold speed, straight) | 0.150 | 0.477 | 0.943 | **3.062** | 2.409 |
+| Constant-turn-rate (hold speed + yaw-rate) | 0.143 | 0.434 | 0.869 | **3.014** | 2.402 |
+
+**This is the honest reference line.** Any model that claims to use perception must beat
+**~3.0m ADE@6s** — the free score from GT ego kinematics + "keep doing what you're doing."
+(The tokenizer floor 0.885m is the *upper* bound of achievable skill; the CV baseline
+~3.0m is the *no-skill* line. A useful model lives between them.) `results/res_v2_cv_baselines.json`.
