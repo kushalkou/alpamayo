@@ -475,6 +475,8 @@ if __name__ == '__main__':
     parser.add_argument('--scheduled_sampling', action='store_true',
                         help='P4: feed own predicted token w.p. p ramped 0->ss_max')
     parser.add_argument('--ss_max', type=float, default=CFG['ss_max'])
+    parser.add_argument('--patience', type=int, default=CFG['patience'],
+                        help='early-stopping patience on AR val-ADE')
     args = parser.parse_args()
 
     CFG['epochs']           = args.epochs
@@ -490,5 +492,6 @@ if __name__ == '__main__':
     CFG['pos_weighted']     = args.pos_weighted
     CFG['scheduled_sampling'] = args.scheduled_sampling
     CFG['ss_max']           = args.ss_max
+    CFG['patience']         = args.patience
 
     train(CFG, resume=args.resume)
