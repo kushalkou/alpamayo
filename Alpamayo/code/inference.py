@@ -188,8 +188,13 @@ def evaluate(n_samples=None, checkpoint=DEFAULT_CKPT, zero_vision=False, zero_eg
         cx, cy       = traj['current_pose']['translation'][0], traj['current_pose']['translation'][1]
         gt_local     = gt_positions - np.array([cx, cy])                    # global-axes, origin at ego
 
-        v0   = float(ego_state[3, 0])   # current speed
-        yaw0 = float(ego_state[3, 1])   # current (global) yaw
+        # Initial speed MUST be the true current speed. ego_state[3,0] is a BACKWARD
+        # difference over past poses — it is 0 when past_poses are missing and
+        # systematically under-estimates speed at trajectory starts, which made the
+        # rollout undershoot and inflated the floor from 0.885m to ~2.5m (V1 bug).
+        # future_speeds[0] is the validated reference used by test_roundtrip.py.
+        v0   = float(traj['future_speeds'][0])   # true current speed (V1 fix)
+        yaw0 = float(ego_state[3, 1])            # current (global) yaw
 
         try:
             visual_tokens = encode_live(visual, images)

@@ -51,7 +51,7 @@ def main():
         vt=encode_live_one(visual,item['images'],device)
         if a.zero_vision: vt=torch.zeros_like(vt)
         toks,accels,curvs=ar_decode(model,vt,item['ego_state'],tok,device)
-        ego=item['ego_state']; v0=float(ego[3,0]); yaw0=float(ego[3,1])
+        ego=item['ego_state']; v0=float(traj['future_speeds'][0]); yaw0=float(ego[3,1])  # V1 fix: true current speed
         pred,_=unicycle_rollout(accels,curvs,v0,yaw0)
         gt=np.array(traj['future_positions'])[:N_STEPS]
         cx,cy=traj['current_pose']['translation'][0],traj['current_pose']['translation'][1]

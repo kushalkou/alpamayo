@@ -112,7 +112,10 @@ def compute_val_ade(raw, val_dataset, val_trajs, indices, device, visual,
         _, accels, curvs = ar_decode(raw, vt, item['ego_state'], tokenizer, device)
 
         ego = item['ego_state']
-        v0, yaw0 = float(ego[3, 0]), float(ego[3, 1])
+        # V1 fix: seed rollout with the true current speed. ego[3,0] (backward-diff
+        # past speed) is 0 when past_poses missing and under-estimates speed, which
+        # inflated the roundtrip floor 0.885m -> 2.5m. future_speeds[0] matches test_roundtrip.
+        v0, yaw0 = float(traj['future_speeds'][0]), float(ego[3, 1])
         pred, _ = unicycle_rollout(accels, curvs, v0, yaw0)
         gt = np.array(traj['future_positions'])[:N_STEPS]
         cx, cy = traj['current_pose']['translation'][0], traj['current_pose']['translation'][1]
