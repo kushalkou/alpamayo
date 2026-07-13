@@ -25,10 +25,24 @@
    so no result is "too good"/buggy. The old baseline is far worse (12.5m @6s) — a
    genuinely weaker pre-migration checkpoint.
 
-_Recommendation forming: fix the metric (P2), then attack the trivially-solvable slots
-that starve perception gradients (P3 position-weighted loss, P4 scheduled sampling)._
+**As of P2 (infra):** AR val-ADE model selection is now wired into `finetune.py` and
+validated (400-sample subset tracks full-val within 2.8%). Teacher-forced val loss is
+logged for record only and no longer drives selection.
 
-_(P2/P3/P4 summaries appended below as they complete.)_
+**As of P3 (position-weighted loss):** the hypothesis-driven fix **failed, informatively.**
+Concentrating loss on accel_1..11 left those slots' CE unchanged (~2.39, ~31% acc) —
+they are **information-starved, not gradient-starved** — while down-weighting curvature
+collapsed the trajectory geometry (curv_0 CE 1.11→2.92), tripling ADE to 12.2m @6s.
+**Takeaway: the bottleneck is information/architecture, not loss weighting.** Reweighting
+slots cannot conjure perception signal that isn't being extracted in the first place.
+
+_What I'd recommend next (see bottom): stop reweighting the token loss; investigate
+whether the vision features actually reach the trajectory tokens (attention/adapter
+capacity, vision-token count, contrastive aux loss), and validate on a task where the
+answer is known to require perception. P4 (scheduled sampling) runs next as the last
+queued probe — expected to be informative but not a fix given P3._
+
+_(P4 summary + final recommendation appended below.)_
 
 ---
 
@@ -116,3 +130,53 @@ checkpoints now store both `val_loss` (record) and `val_ade6` (selection).
 **Δ median ADE@6s = 0.122m (2.8%)** — the 400-subset is a faithful proxy. It also
 matches the P1 *test* number for full-live (median 4.504m), confirming val/test/code
 consistency. Selection infra validated. Committed before P3.
+
+---
+
+## P3 — Position-weighted loss (accel_1..11 ×1.0, curv+accel_0 ×0.2)
+
+**Hypothesis:** the 13 trivially-solvable slots (curv-copy + accel_0 ego-persistence)
+dominate the loss and starve the 11 perception-dependent accel_1..11 slots of gradient.
+Reweight to concentrate gradient there → force perception use.
+
+**Recipe:** 8-GPU, aug ON, eff batch 24, 3 epochs, lr 5e-5, selected on AR val-ADE (P2).
+Pos-weights ×sqrt-inv-freq class weights (multiplied, not replaced). Best = epoch 3.
+
+**Result — decisively negative. Position-weighting makes ADE ~2.7× worse.**
+
+| model | ADE@6s mean | ADE@6s median | tok-acc |
+|---|---|---|---|
+| zero-both (null)        | 4.545 | 3.642 | 40.6% |
+| full live-vision        | 6.978 | 4.504 | 43.8% |
+| **P3 pos-weighted**     | **12.226** | **9.334** | 26.2% |
+
+Val-ADE@6s median per epoch (selection metric): 8.63 → 8.52 → **8.47** (best). It never
+approached the 4.4m baseline. AR ADE full test @1/2/3/6s mean = 1.50 / 3.05 / 4.99 /
+12.23m; median = 0.83 / 1.86 / 3.30 / 9.33m. (All above the 2.504m floor — not a bug,
+genuinely worse.)
+
+**Per-position CE tells us WHY (val, teacher-forced):**
+
+| slot group | P3 plain CE | full-live | zero-both |
+|---|---|---|---|
+| accel_0            | 0.12 | 0.11 | 0.46 |
+| accel_1..11 (mean) | ~2.39 | ~2.24 | ~2.17 |
+| curv_0             | **2.92** | 1.44 | 1.11 |
+| curv_1..11 (mean)  | ~0.48 | ~0.41 | ~0.37 |
+
+Two findings:
+1. **The accel_1..11 slots did NOT improve** (~2.39 CE, ~31% acc — same as before, even
+   slightly worse). Pouring gradient onto them changed nothing. So those slots are not
+   *gradient*-starved — they are **information-starved**: the signal to predict accel_1..11
+   is not being extracted from vision/ego (or is not present). This is the same wall P1
+   hit, now confirmed from the loss side.
+2. **Curvature prediction collapsed** (curv_0 CE 1.11→2.92). Down-weighting the curv
+   slots removed the model's one reliable behavior (smooth curvature copy), and since
+   curvature controls heading/geometry, ADE nearly tripled.
+
+**Does it narrow the full-vs-zero-both gap? No — the opposite.** Perception is still not
+used (accel_1..11 unchanged); ego-only would not get worse than full because the model
+never started using vision. The intervention traded away the load-bearing curv-copy for
+no accel gain. **Conclusion: the bottleneck is information/architecture, not loss
+weighting.** Preserved: `models/checkpoints/_posweighted_run_jul12/`,
+`results/res_p3_posweighted.json`.
