@@ -63,7 +63,13 @@ now fixed.**
   0/15 mismatches, 6.7× faster). Per-checkpoint zeroing flags verified honored:
   ego-only→`--zero_vision`, vision-only→`--zero_ego`, zero-both→both.
 
-### Table — ADE / FDE (meters), autoregressive, test n=3614
+> ⚠️ **SUPERSEDED — this P1 table was computed with a BUGGY rollout (V1).** The initial
+> speed was seeded from `ego_state[3,0]` (a backward difference that is 0 when past_poses
+> are missing), so every rollout undershot. Absolute ADE magnitudes here are inflated ~2×
+> and the ranking is not trustworthy. See **V1** below for the fix and **V3** for the
+> corrected table. Kept for the record only.
+
+### Table — ADE / FDE (meters), autoregressive, test n=3614  [BUGGY — see V1/V3]
 
 | Checkpoint | sel. (TF val) | ADE@1s | ADE@2s | ADE@3s | ADE@6s | FDE@6s | tok-acc | seq-acc |
 |---|---|---|---|---|---|---|---|---|
@@ -237,3 +243,49 @@ mistakes (accumulated drift), which is exactly what improves AR ADE while leavin
 flat. The accel_1..11 wall — the perception-dependent slots — is untouched by all three
 interventions. Preserved: `models/checkpoints/_schedsamp_run_jul13/`,
 `results/res_p4_schedsamp.json`, `results/perpos_ce_p4.log`.
+
+---
+
+## V1 — Roundtrip floor reconciliation (BLOCKING) — **BUG FOUND & FIXED**
+
+The validated tokenizer floor is **ADE 0.885m / FDE 2.137m** (`test_roundtrip.py`). P1's
+recomputed floor was 2.504m / 5.108m — 2.8× too high. A floor cannot change, so a decode
+path was wrong. It was.
+
+**(a) `test_roundtrip.py` as-is:** ADE mean **0.885** / median 0.729 / FDE mean **2.137**. ✓
+
+**(b) Same 100 trajectories through inference.py's rollout path (GT tokens injected):**
+ADE mean **1.807** / median 1.314 / FDE mean 3.687. ✗ — 2× worse. (Tokens identical:
+dataset tokens == `tokenizer.tokenize`, verified.)
+
+**(c) Step-by-step diff, trajectory 0 — the divergence:**
+
+| | test_roundtrip | inference.py (buggy) |
+|---|---|---|
+| v0 (initial speed) | **4.1895** (`future_speeds[0]`) | **0.0000** (`ego_state[3,0]`) |
+| yaw0 | 1.4361 | 1.4361 (same ✓) |
+| frame | absolute global | origin + translated GT (equivalent ✓) |
+
+The rollout started at **rest** (v0=0) and never caught up: by t=11 the buggy path is at
+y=6.3m while GT is at y=22.6m → **24m error** on a trajectory the floor rolls out to 2.1m.
+
+**Root cause.** `ego_state[3,0]` is a **backward difference** over `past_poses`
+(`compute_ego_state`): it is exactly 0 when `past_poses` are missing (4/100 here) and
+systematically **under-estimates** the true initial speed otherwise. `yaw0` and the frame
+were already correct — the sole bug is the speed seed.
+
+**Fix.** Seed `v0 = future_speeds[0]` (the reference `test_roundtrip.py` uses) in
+`inference.py`, `ar_eval.py`, `eval_test_ar.py`. **Verification:** inference.py's own
+`unicycle_rollout` on GT tokens now reproduces **ADE 0.8845m / FDE 2.1371m — MATCH.**
+Gate cleared. (Commit `1d116d3`.)
+
+**Why this matters for P1.** The bug's error scales with how far the trajectory travels
+(speed undershoot), and a model predicting larger accelerations partially self-compensates
+by ramping speed back up — so the bug does **not** hit all models equally. Every P1/P3/P4
+**test-set ADE magnitude is invalid** and the P1 ranking must be recomputed with the fixed
+decode (**V3**). The per-position CE analyses (teacher-forced, no rollout) are unaffected.
+
+**Bonus finding (feeds V3).** Fixing v0 halved the floor even though only 4% of trajectories
+had speed==0 — so `ego_state[3,0]` is wrong for *most* trajectories. **The model's own ego
+speed input is corrupted**, which may itself explain why ego/vision "don't help". Worth a
+follow-up: fix `compute_ego_state` to a forward/centered speed estimate and retrain.
