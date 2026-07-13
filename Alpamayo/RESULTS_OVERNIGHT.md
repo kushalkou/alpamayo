@@ -5,44 +5,52 @@
 
 ---
 
-## EXECUTIVE SUMMARY (updated as items land)
+## EXECUTIVE SUMMARY — for the advisor (5-minute read)
 
-**As of P1 (leak-free AR eval of all 5 checkpoints, full test set, n=3614):**
+**What ran (all 4 queue items complete, committed & pushed).** P1: leak-free autoregressive
+(AR) ADE eval of all 5 checkpoints on the full test set. P2: replaced the (disqualified)
+teacher-forced val loss with AR val-ADE as the selection metric in `finetune.py`, validated.
+P3: position-weighted-loss experiment (3 ep). P4: scheduled-sampling experiment (3 ep).
 
-1. **Teacher-forced val loss is confirmed dead as a metric.** The zero-input null
-   ("zero-both") does not merely *tie* the input-fed models on the only valid metric —
-   it **beats every one of them** on autoregressive ADE at every horizon.
-2. **Does vision help? No — it hurts.** Full (vision+ego) AR ADE@6s = **6.978m** vs
-   ego-only = **4.919m**: adding vision makes the model **2.06m worse** @6s (mean;
-   −0.70m median). Vision-only (5.268m) is also worse than ego-only.
-3. **Does anything beat zero-both? No.** The true null (no vision, no ego) is the best
-   model at every horizon: ADE@6s **4.545m mean / 3.642m median**. It beats ego-only by
-   0.37m, vision-only by 0.72m, and full by 2.43m @6s (mean).
-4. **Interpretation:** every model is essentially regressing to the trajectory prior;
-   the input-fed models overfit input-correlations that do not generalize, so inputs act
-   as *net noise*. Perception is not being used. This is the disease P2/P3 target.
-5. All models sit above the (recomputed) roundtrip discretization floor of 2.504m @6s,
-   so no result is "too good"/buggy. The old baseline is far worse (12.5m @6s) — a
-   genuinely weaker pre-migration checkpoint.
+**Does vision help? No.** On the only trustworthy metric (AR ADE, no GT-token leak), the
+full vision+ego model (6.98m @6s mean) is *worse* than ego-only (4.92m) and worse than a
+model given **no inputs at all** ("zero-both" null, 4.55m mean / 3.64m median — the best of
+all checkpoints). Teacher-forced val loss hid this completely: a zero-input model matches it.
 
-**As of P2 (infra):** AR val-ADE model selection is now wired into `finetune.py` and
-validated (400-sample subset tracks full-val within 2.8%). Teacher-forced val loss is
-logged for record only and no longer drives selection.
+**Did position-weighting change anything? Yes — it made things worse, informatively.** The
+perception-dependent accel_1..11 slots did not improve (CE ~2.39, unchanged), proving they
+are **information-starved, not gradient-starved**; meanwhile down-weighting curvature wrecked
+geometry (ADE 12.2m). You cannot reweight your way to signal that isn't being extracted.
 
-**As of P3 (position-weighted loss):** the hypothesis-driven fix **failed, informatively.**
-Concentrating loss on accel_1..11 left those slots' CE unchanged (~2.39, ~31% acc) —
-they are **information-starved, not gradient-starved** — while down-weighting curvature
-collapsed the trajectory geometry (curv_0 CE 1.11→2.92), tripling ADE to 12.2m @6s.
-**Takeaway: the bottleneck is information/architecture, not loss weighting.** Reweighting
-slots cannot conjure perception signal that isn't being extracted in the first place.
+**Did anything help? Yes — scheduled sampling, partially.** It beat the teacher-forced full
+model by 1.36m mean / 0.55m median @6s (best vision+ego model) by curing exposure bias — but
+its 1-step CE is identical to full-live's, so it improved *rollout robustness*, not
+perception, and still lost to the zero-input null. Adopt it (low p≈0.08) as a free win.
 
-_What I'd recommend next (see bottom): stop reweighting the token loss; investigate
-whether the vision features actually reach the trajectory tokens (attention/adapter
-capacity, vision-token count, contrastive aux loss), and validate on a task where the
-answer is known to require perception. P4 (scheduled sampling) runs next as the last
-queued probe — expected to be informative but not a fix given P3._
+**Bottom line for the advisor:** across three independent training interventions, the model
+never uses the camera. On 6-second nuScenes trajectories the ego's own kinematic state (and
+the trajectory prior) already determine the future; the vision tokens are not reaching /
+informing the trajectory tokens, so they act as net noise. **The problem is architectural
+(does perception connect to the plan?), not a loss or a metric problem — and the metric is
+now fixed.**
 
-_(P4 summary + final recommendation appended below.)_
+**Recommend next (in priority order):**
+1. **Prove the vision→trajectory pathway is broken before training more.** Attention-rollout
+   from trajectory tokens back to the 1536 vision tokens on the current model; if they attend
+   ~uniformly/negligibly, the adapter/LoRA capacity or token routing is the culprit.
+2. **Increase the perception pathway's capacity/priority:** LoRA on the cross-attention to
+   vision (not just q/v/o), and/or a small trainable vision→LM adapter; consider unfreezing
+   the last 1–2 vision blocks.
+3. **Add an auxiliary loss that provably needs the camera** (e.g. predict a lead-agent's
+   relative position / lane occupancy) so perception gets a gradient it *can* satisfy.
+4. **Stress-test on perception-critical subsets** (intersections, turns, dense agents) — the
+   flat result may partly reflect that straight-ahead nuScenes 6s futures are near-deterministic
+   from ego state. If vision doesn't help even there, it's the data, not the model.
+5. Keep **AR val-ADE (P2)** as the only selection metric; fold in **scheduled sampling p≈0.08**
+   by default. Never rank by teacher-forced val loss again.
+
+---
+### Appendix — per-item detail below (P1 table, P2 sanity, P3, P4).
 
 ---
 
@@ -180,3 +188,52 @@ never started using vision. The intervention traded away the load-bearing curv-c
 no accel gain. **Conclusion: the bottleneck is information/architecture, not loss
 weighting.** Preserved: `models/checkpoints/_posweighted_run_jul12/`,
 `results/res_p3_posweighted.json`.
+
+---
+
+## P4 — Scheduled sampling (feed own prediction w.p. p, ramped 0→0.25)
+
+**Hypothesis:** the free curv-copy / accel-persistence shortcut survives because teacher
+forcing always hands the model the true previous token. Replace it, with prob p, by the
+model's own prediction → remove the crutch, force reliance on inputs. Efficient 2-pass
+impl (pass 1 no-grad gets 1-step preds; pass 2 grad on mixed inputs). 3 epochs, aug ON,
+eff batch 24, selected on AR val-ADE (P2). Best = **epoch 1** (p peaked ~0.083).
+
+**Result — the first intervention that HELPS (vs teacher forcing), but does not beat the null.**
+
+Val-ADE@6s median per epoch: **4.079** (p~0.08) → 4.309 (p~0.17) → 4.259 (p~0.25).
+Gentle scheduling wins; heavier p regresses (own-error exposure destabilizes). Best 4.079
+beats the teacher-forced full-live baseline on the identical 400-subset (4.525).
+
+Full-test AR (n=3614):
+
+| model | ADE@6s mean | ADE@6s median | tok-acc |
+|---|---|---|---|
+| zero-both (null)        | 4.545 | 3.642 | 40.6% |
+| ego-only                | 4.919 | 3.807 | 49.9% |
+| **P4 scheduled sampling** | **5.618** | **3.959** | 46.0% |
+| vision-only             | 5.268 | 4.205 | 37.5% |
+| full live-vision (TF)   | 6.978 | 4.504 | 43.8% |
+| P3 pos-weighted         | 12.226 | 9.334 | 26.2% |
+
+P4 vs full teacher-forced (same inputs, only training differs): **−1.360m mean / −0.545m
+median @6s** — a real, clean win from cutting exposure bias, and the best-scoring of all
+vision+ego models. **But P4 vs zero-both null: +1.073m mean / +0.317m median @6s worse.**
+Scheduled sampling narrows the gap to the null but does not cross it.
+
+**Per-position CE (val, TF) — why the gain is robustness, not perception:**
+
+| slot group | P4 plain CE | full-live | P3 pos-w |
+|---|---|---|---|
+| accel_0            | 0.11 | 0.11 | 0.12 |
+| accel_1..11 (mean) | ~2.23 | ~2.24 | ~2.39 |
+| curv_0             | 1.40 | 1.44 | 2.92 |
+| curv_1..11 (mean)  | ~0.41 | ~0.41 | ~0.40 |
+
+P4's teacher-forced CE is **indistinguishable from full-live's** — accel_1..11 still stuck
+at ~2.23 (~33% acc), curv preserved (unlike P3). So scheduled sampling did **not** teach
+the model to extract perception; it made the *autoregressive rollout* robust to its own
+mistakes (accumulated drift), which is exactly what improves AR ADE while leaving 1-step CE
+flat. The accel_1..11 wall — the perception-dependent slots — is untouched by all three
+interventions. Preserved: `models/checkpoints/_schedsamp_run_jul13/`,
+`results/res_p4_schedsamp.json`, `results/perpos_ce_p4.log`.
