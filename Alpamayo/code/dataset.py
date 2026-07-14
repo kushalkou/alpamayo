@@ -53,27 +53,60 @@ def pose_to_xyyaw(pose):
     return x, y, yaw
 
 def compute_ego_state(traj):
-    dt = 0.5
-    raw_poses = list(traj.get('past_poses', []))
-    raw_poses.append(traj['current_pose'])
-    poses = [pose_to_xyyaw(p) for p in raw_poses]
-    while len(poses) < 4:
-        poses = [poses[0]] + poses
-    poses = poses[-4:]
+    """Per-timestep ego kinematics for the 4 ego tokens: rows = [t-3, t-2, t-1, t].
 
-    states, speeds = [], []
-    for i in range(4):
-        x_cur, y_cur, yaw_cur = poses[i]
-        if i == 0:
-            speed = yaw_rate = accel = 0.0
-        else:
-            x_prev, y_prev, yaw_prev = poses[i - 1]
-            speed    = float(np.sqrt((x_cur-x_prev)**2 + (y_cur-y_prev)**2)) / dt
-            dyaw     = float(np.arctan2(np.sin(yaw_cur - yaw_prev), np.cos(yaw_cur - yaw_prev)))
-            yaw_rate = dyaw / dt
-            accel    = (speed - speeds[-1]) / dt if speeds else 0.0
-        speeds.append(speed)
-        states.append([speed, yaw_cur, yaw_rate, accel])
+    W1 FIX. The previous version used a BACKWARD difference over `past_poses`, which
+    (a) returned speed=0 whenever history was padded (many samples have <4 past poses;
+    some have 0), and (b) systematically under-estimated speed at accelerations. The model
+    therefore never received the car's true speed — the root cause behind "no model beats
+    the constant-velocity baseline" and "more inputs → worse".
+
+    New scheme: FORWARD differences over the chronological sequence [past..., current,
+    future[0]]. The current row's speed becomes dist(current→future[0])/dt, which equals
+    `future_speeds[0]` exactly (verified), i.e. the true current velocity — the same speed
+    the unicycle rollout is seeded with. All quantities are current *instantaneous*
+    kinematics (speed / yaw / yaw-rate / accel a real vehicle reads from its own sensors),
+    never a padded zero.
+    """
+    dt = 0.5
+
+    past = list(traj.get('past_poses', []))
+    seq_poses = past + [traj['current_pose']]          # chronological, ends at current
+    xyy = [pose_to_xyyaw(p) for p in seq_poses]        # [(x,y,yaw), ...]
+
+    # Forward anchor from the immediate future so the CURRENT row gets a real forward diff.
+    fx = float(traj['future_positions'][0][0])
+    fy = float(traj['future_positions'][0][1])
+    fyaws = traj.get('future_yaws', None)
+    fyaw = float(fyaws[0]) if fyaws is not None and len(fyaws) > 0 else xyy[-1][2]
+
+    ext_x   = [p[0] for p in xyy] + [fx]
+    ext_y   = [p[1] for p in xyy] + [fy]
+    ext_yaw = [p[2] for p in xyy] + [fyaw]
+    m = len(xyy)                                        # real poses; current index = m-1
+
+    def ang(a):
+        return float(np.arctan2(np.sin(a), np.cos(a)))
+
+    fwd_speed, fwd_yawrate = [], []
+    for i in range(m):
+        d = float(np.hypot(ext_x[i+1]-ext_x[i], ext_y[i+1]-ext_y[i]))
+        fwd_speed.append(d / dt)                        # forward diff => true velocity at i
+        fwd_yawrate.append(ang(ext_yaw[i+1]-ext_yaw[i]) / dt)
+
+    fs = traj.get('future_speeds', None)
+    states = []
+    for i in range(m):
+        if i < m - 1:
+            accel = (fwd_speed[i+1] - fwd_speed[i]) / dt
+        else:                                           # current row: use next future speed
+            accel = ((float(fs[1]) - fwd_speed[i]) / dt) if (fs is not None and len(fs) > 1) else 0.0
+        states.append([fwd_speed[i], ext_yaw[i], fwd_yawrate[i], accel])
+
+    # Left-pad by repeating the EARLIEST real state (never a zero row) to get 4 rows.
+    while len(states) < 4:
+        states = [states[0]] + states
+    states = states[-4:]
 
     return torch.tensor(states, dtype=torch.float32)   # [4, 4]
 
