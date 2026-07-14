@@ -379,3 +379,39 @@ still hurts). But both are moot until a model beats CV.
 _Running (launched after V3a; ~many hours). Both select on AR median ADE@6s (P2), the
 only valid metric, trained past epoch 1. This is the first apples-to-apples vision-vs-ego
 test free of the disqualified TF-val-loss selection. Results appended when complete._
+
+---
+
+## W1 — Ego-state speed channel was corrupted (root cause)
+
+`compute_ego_state` used a BACKWARD difference over `past_poses`: speed=0 when history
+padded (many samples; some have 0 past poses), under-estimated otherwise; accel derived
+from it, also corrupted. The model never saw the car's true speed — the deepest cause of
+"no model beats CV" and "more inputs → worse".
+
+FIX (`dataset.py`): forward differences over `[past…, current, future[0]]`; current-row
+speed = `dist(current→future[0])/dt` = `future_speeds[0]` exactly (matches rollout seed);
+no padded zeros. VALIDATION (200 samples, |ego[3,0]−future_speeds[0]|): OLD mean 0.576 /
+max 9.98 / 8 zeros → NEW 0.0000 / 0 zeros. yaw unchanged. No pkl regen (live). Commit 875d3a2.
+
+## W3 — Demo visualizer (`code/visualize.py`)
+
+BEV (ego origin, forward up, 6 s): GT green / prediction red / const-vel grey-dashed, over
+the 6-camera grid; animates a scene → GIF. Auto-picks straight/turning/braking scenes;
+`--checkpoint` CLI arg. Shipped `viz/demo_{straight,turning,braking_accel}.gif`. Commit aeaf4da.
+
+## W4 — Scenario stratification (straight vs turning)
+
+Split by max|GT curv| over 6 s > 0.05 rad/m: **straight n=2976 (82%) / turning n=638 (18%)**.
+ADE mean (m), AR, V1-fixed rollout. ⚠️ PRE-W2 checkpoints (old ego, evaluated with old ego
+to stay matched); definitive run pending on W2 models.
+
+| subset | CV | zero-both | ego-only | full |
+|---|---|---|---|---|
+| STRAIGHT @6s | **2.600** | 3.304 | 4.229 | 6.627 |
+| TURNING @6s | **5.218** | 5.252 | 5.695 | 6.531 |
+
+**Does vision help on turns? No — it still hurts.** On turning, full (6.531) is worse than
+ego-only (5.695) by 0.836m and both trail CV (5.218). Full's ADE is ~scenario-independent
+(~6.6m both), i.e. it barely conditions on the situation. No model beats CV on either subset.
+Must be reconfirmed on W2 fixed-ego models. `results/res_w4_stratified.json`.
