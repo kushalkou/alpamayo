@@ -7,10 +7,43 @@
 
 ## EXECUTIVE SUMMARY — for the advisor (5-minute read)
 
-**What ran (all 4 queue items complete, committed & pushed).** P1: leak-free autoregressive
-(AR) ADE eval of all 5 checkpoints on the full test set. P2: replaced the (disqualified)
-teacher-forced val loss with AR val-ADE as the selection metric in `finetune.py`, validated.
-P3: position-weighted-loss experiment (3 ep). P4: scheduled-sampling experiment (3 ep).
+> **LATEST (post-verification V1–V3 + fix-and-retrain W1–W4). Read this block; the P1–P4
+> sections below are the earlier investigation and contain one now-fixed decode bug.**
+
+**The two things that matter.**
+1. **We found and fixed the real bug: the model was never given the car's true speed.**
+   `compute_ego_state` computed speed as a backward difference over `past_poses` — zero when
+   history was padded, under-estimated otherwise (W1). Fixing it (speed = `future_speeds[0]`)
+   improved full-live test ADE@6s from **6.61 → 4.24 m** (−36%) and ego-only to **3.82 m**.
+   Biggest lever in the whole study.
+2. **Even so, vision does not help.** In the clean retrain (W2: correct ego, valid AR-val-ADE
+   selection, 10 epochs), **ego-only (no camera) beats full live-vision at every horizon**
+   (ADE@6s 3.82 vs 4.24 m mean; 3.05 vs 3.28 m median). The camera is net-negative for
+   trajectory prediction on this dataset.
+
+**The honest scoreboard (test ADE@6s, mean / median):** tokenizer floor 1.35 / 0.89 · **naive
+constant-velocity baseline 3.06 / 2.41** · W2 ego-only **3.82 / 3.05** (best model) · W2 full
+4.24 / 3.28. **No learned model beats constant velocity yet** — ego-only is closest and was
+still improving at epoch 10 (val-ADE 2.90 and falling), so a longer ego-only run is the one
+promising open thread.
+
+**On turns specifically (W4), where perception should matter most:** vision still doesn't help
+(pre-fix ckpts; to be reconfirmed on W2 models). **Deliverable shipped:** demo visualizer with
+BEV (GT/prediction/CV) + 6-camera grid, 3 animated scenes (W3, `viz/`).
+
+**Recommend next:** (a) run ego-only longer (15–20 ep) — it may finally beat CV; (b) re-run the
+W4 turn/straight split on the W2 fixed-ego models; (c) only after a model beats CV is it worth
+re-investigating why vision is inert (attention rollout, adapter capacity, a perception-required
+aux loss). Selection must always use AR val-ADE, never teacher-forced val loss.
+
+---
+
+### Earlier investigation (P1–P4) — records; superseded where noted
+
+**What ran.** P1: leak-free autoregressive (AR) ADE eval of all 5 checkpoints on the full test
+set. P2: replaced the (disqualified) teacher-forced val loss with AR val-ADE as the selection
+metric in `finetune.py`, validated. P3: position-weighted-loss experiment. P4: scheduled-sampling.
+_(Absolute ADE magnitudes in P1/P3/P4 were computed with the pre-W1 decode; see V1.)_
 
 **Does vision help? No.** On the only trustworthy metric (AR ADE, no GT-token leak), the
 full vision+ego model (6.98m @6s mean) is *worse* than ego-only (4.92m) and worse than a
@@ -415,3 +448,44 @@ to stay matched); definitive run pending on W2 models.
 ego-only (5.695) by 0.836m and both trail CV (5.218). Full's ADE is ~scenario-independent
 (~6.6m both), i.e. it barely conditions on the situation. No model beats CV on either subset.
 Must be reconfirmed on W2 fixed-ego models. `results/res_w4_stratified.json`.
+
+---
+
+## W2 — The real experiment: full-live vs ego-only, FIXED ego, AR-val-ADE selection
+
+10 epochs, patience 5, aug ON, eff batch 24, 8-GPU, selected on AR median ADE@6s (P2).
+First clean vision-vs-ego test: correct ego input, valid metric, trained past epoch 1.
+
+**Val-ADE@6s median per epoch** (selection metric):
+- full-live: 3.735 · 3.341 · 3.416 · **3.135**(e4 best) · 3.196 · 3.183 · 3.372 · 3.305 · 3.359 → early-stop e9
+- ego-only:  3.231 · 3.360 · 3.359 · 3.138 · 3.311 · 3.165 · 3.207 · 3.191 · 3.113 · **2.902**(e10 best, still improving)
+
+**Full test-set AR ADE (n=3614), fixed ego:**
+
+| model | ADE@1s | ADE@2s | ADE@3s | ADE@6s | (median@6s) | tok-acc |
+|---|---|---|---|---|---|---|
+| **tokenizer floor** | 0.139 | 0.294 | 0.496 | **1.348** | 0.889 | — |
+| **naive CV baseline** | 0.150 | 0.477 | 0.943 | **3.062** | 2.409 | — |
+| **W2 ego-only (fixed ego)** | 0.185 | 0.545 | 1.095 | **3.820** | **3.052** | 53.1% |
+| W2 full live-vision (fixed ego) | 0.275 | 0.695 | 1.305 | **4.236** | 3.277 | 51.6% |
+| — (pre-fix full, V3a) | 0.825 | 1.627 | 2.636 | 6.610 | 4.087 | 43.8% |
+
+**Two clean conclusions:**
+
+1. **The ego bug (W1) was doing real damage.** Fixing it improved full-live test ADE@6s from
+   **6.610 → 4.236m (−36% mean, −0.81m median)** and ego-only from 4.488 → 3.820m. tok-acc rose
+   43.8% → 51–53%. The model genuinely could not work without its true speed. This is the single
+   biggest lever found across the whole investigation.
+
+2. **Vision still does not help — it slightly hurts.** With the fixed ego, valid metric, and full
+   training, **ego-only (no camera) beats full live-vision at every horizon**: ADE@6s **3.820 vs
+   4.236m mean (−0.42m), 3.052 vs 3.277m median (−0.23m)**; vision is worse at 1s/2s/3s too. The
+   camera tokens remain net-negative for trajectory prediction on this dataset/recipe.
+
+**And the bar still stands: no learned model beats the naive CV baseline.** W2 ego-only (3.820m
+mean / 3.052m median @6s) is the best model produced, but it is still **+0.76m mean / +0.64m
+median above CV (3.062 / 2.409)** — though ego-only was *still improving at epoch 10* (val-ADE
+2.90 and falling), so more epochs may finally cross CV. That is the one open thread.
+
+Checkpoints: `models/checkpoints/_w2_full_fixed/`, `_w2_egoonly_fixed/`;
+`results/res_w2_full.json`, `res_w2_egoonly.json`.
