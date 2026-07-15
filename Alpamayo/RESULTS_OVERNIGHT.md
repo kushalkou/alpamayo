@@ -27,14 +27,22 @@ constant-velocity baseline 3.06 / 2.41** · W2 ego-only **3.82 / 3.05** (best mo
 still improving at epoch 10 (val-ADE 2.90 and falling), so a longer ego-only run is the one
 promising open thread.
 
-**On turns specifically (W4), where perception should matter most:** vision still doesn't help
-(pre-fix ckpts; to be reconfirmed on W2 models). **Deliverable shipped:** demo visualizer with
-BEV (GT/prediction/CV) + 6-camera grid, 3 animated scenes (W3, `viz/`).
+**But it's subtler than "vision is useless" (X1–X2).** X1 (attention rollout): the trajectory
+tokens **do attend heavily to vision** (~65% of attention mass) — so vision *reaches* the plan;
+it isn't a routing/capacity failure. X2 (turn/straight split on the fixed-ego W2 models): **on
+the turning subset (18%), full-vision beats ego-only at every horizon** (ADE@6s 5.58 vs 5.87m) —
+**vision carries real, turn-specific signal once ego is correct.** It's just swamped by the 82%
+straight-line majority (where the camera adds noise), so vision loses on the overall average.
 
-**Recommend next:** (a) run ego-only longer (15–20 ep) — it may finally beat CV; (b) re-run the
-W4 turn/straight split on the W2 fixed-ego models; (c) only after a model beats CV is it worth
-re-investigating why vision is inert (attention rollout, adapter capacity, a perception-required
-aux loss). Selection must always use AR val-ADE, never teacher-forced val loss.
+**Deliverable shipped:** demo visualizer with BEV (GT/prediction/CV) + 6-camera grid, 3 animated
+scenes, regenerated with the W2 model (W3, `viz/`).
+
+**Recommend next:** (a) **run ego-only longer (15–20 ep)** — still improving at e10 (2.90 and
+falling); most likely path to beat CV. (b) **Amplify the turn signal** rather than adding adapter
+width (X1 shows vision is already read): balance/curvature-weight training so the 18% turning
+cases aren't drowned by straights, and consider **unfreezing the vision encoder** (frozen features,
+not attention access, are the likely ceiling). (c) X3 (LoRA-capacity probe) is **not indicated** —
+its trigger was "vision mass ≈ 0", but it's 0.65. Selection must always use AR val-ADE.
 
 ---
 
@@ -511,3 +519,47 @@ the (frozen) vision features don't add trajectory-relevant information beyond eg
 dataset. **This means X3 (more adapter capacity) is NOT indicated** — the planner's trigger
 was "vision mass ≈ 0", and it is 0.65, not 0. Adding capacity to a pathway that is already
 heavily used but uninformative would not help. `code/x1_attention.py`.
+
+---
+
+## X2 — Straight/turning stratification on the W2 FIXED-EGO models (the real table)
+
+Split by max|GT curv| over 6 s > 0.05 rad/m: straight n=2976 (82%) / turning n=638 (18%).
+W2 checkpoints, correct ego, V1-fixed rollout. ADE mean (m).
+
+| subset | model | ADE@1s | ADE@2s | ADE@3s | ADE@6s |
+|---|---|---|---|---|---|
+| **ALL** | CV | 0.150 | 0.476 | 0.943 | **3.062** |
+| | ego-only | 0.185 | 0.545 | 1.095 | 3.820 |
+| | full | 0.275 | 0.695 | 1.305 | 4.236 |
+| **STRAIGHT** | CV | 0.134 | 0.418 | 0.816 | **2.600** |
+| (n=2976) | **ego-only** | 0.172 | 0.498 | 0.985 | **3.379** |
+| | full | 0.282 | 0.689 | 1.261 | 3.949 |
+| **TURNING** | CV | 0.229 | 0.751 | 1.538 | **5.218** |
+| (n=638) | **full** | 0.239 | 0.724 | 1.510 | **5.579** |
+| | ego-only | 0.244 | 0.764 | 1.610 | 5.873 |
+
+**The nuanced answer to "does vision help on turns?" — YES, once ego is correct.** On the
+turning subset, **full-vision beats ego-only at every horizon** (ADE@6s 5.579 vs 5.873, −0.29m;
+also better at 1/2/3s). This is the first place vision provides a genuine benefit — exactly
+where perception should matter. But:
+- On STRAIGHT (82% of samples) vision **hurts** (full 3.949 vs ego-only 3.379), which dominates
+  the overall average → full worse overall. The straight-line future is near-deterministic from
+  ego; the camera only adds noise there.
+- **No model beats CV on either subset** (turning: full 5.579 > CV 5.218; straight: ego 3.379 >
+  CV 2.600). Vision helps *relative to ego-only on turns*, but not enough to beat constant velocity.
+
+This overturns the pre-fix W4 read (where vision hurt even on turns): with the corrected ego,
+**vision carries real, turn-specific signal** — it is small and currently swamped by the
+straight-line majority. `results/res_x2_w2_stratified.json`.
+
+### X3 decision
+
+**Not triggered.** The gate was "only if X1 shows near-zero vision attention." X1 shows vision
+attention mass = **0.65** (heavily attended), so the bottleneck is not routing/adapter-capacity —
+adding LoRA capacity to an already-heavily-used pathway is not the indicated fix. **However**,
+X2's turn-specific benefit means vision is not inert; if the goal is to *amplify* the turn signal,
+the higher-value levers are (a) a **curvature/turn-weighted or turning-subset-balanced** training
+signal so the 18% turning cases aren't drowned by straights, and (b) **unfreezing the vision
+encoder** (the frozen features, not adapter width, are the likely ceiling — attention already
+reaches them fine). Deferring X3 as written; recommend the above instead. Awaiting direction.
