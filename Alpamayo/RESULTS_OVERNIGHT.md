@@ -489,3 +489,25 @@ median above CV (3.062 / 2.409)** — though ego-only was *still improving at ep
 
 Checkpoints: `models/checkpoints/_w2_full_fixed/`, `_w2_egoonly_fixed/`;
 `results/res_w2_full.json`, `res_w2_egoonly.json`.
+
+---
+
+## X1 — Attention rollout: do the trajectory tokens attend to vision? (W2 full-live)
+
+For the 24 trajectory-prediction query positions, average (causal, row-normalized) attention
+mass on each key group, 28-layer Qwen2.5-VL LM, 16 val samples (eager attention):
+
+**Pooled over layers: vision = 0.649, ego = 0.125, prior-traj = 0.226.**
+Per-layer vision mass climbs from ~0.2 (layers 0–3) to **0.76–0.93 in the middle/late layers
+(8–22)**. (Layer 27 not captured — minor artifact; excluded.)
+
+**Vision is NOT ignored — it receives ~65% of the trajectory tokens' attention mass.** So the
+failure of vision to help is **not** a routing/attention-access problem: the plan tokens read
+the camera heavily. Per-key, ego is ~74× denser (0.125 mass over 4 tokens vs 0.649 over 1536),
+so ego is the *concentrated* signal — but vision is far from zero.
+
+**Implication:** vision reaches the plan and is attended to; it simply is not *useful* —
+the (frozen) vision features don't add trajectory-relevant information beyond ego on this
+dataset. **This means X3 (more adapter capacity) is NOT indicated** — the planner's trigger
+was "vision mass ≈ 0", and it is 0.65, not 0. Adding capacity to a pathway that is already
+heavily used but uninformative would not help. `code/x1_attention.py`.
