@@ -74,6 +74,11 @@ CFG = {
     # linearly over the run. Breaks the free copy/persistence shortcut.
     'scheduled_sampling': False,
     'ss_max':            0.25,
+    # Y1: oversample turning cases (max|GT curv|>turn_thresh) to ~turn_target_frac of
+    # the drawn samples, so the ~18% turning cases aren't swamped by straights.
+    'turn_weighted':     False,
+    'turn_thresh':       0.05,
+    'turn_target_frac':  0.40,
     'grad_clip':         1.0,
     'seed':              42,
     'patience':          7,
@@ -113,6 +118,37 @@ def cleanup_ddp():
 
 def is_main():
     return int(os.environ.get('LOCAL_RANK', 0)) == 0
+
+# ── Turn-weighted sampling (Y1) ────────────────────────────────────────────────
+
+class DistributedWeightedSampler(torch.utils.data.Sampler):
+    """Per-rank weighted sampling WITH replacement (for oversampling turning cases).
+    Each rank draws len(weights)//world_size indices per epoch from the given weights,
+    with a rank+epoch-specific generator so ranks see different data."""
+    def __init__(self, weights, num_replicas, rank, seed=42):
+        self.weights = torch.as_tensor(weights, dtype=torch.double)
+        self.num_replicas = num_replicas; self.rank = rank; self.seed = seed; self.epoch = 0
+        self.num_samples = len(self.weights) // num_replicas
+    def set_epoch(self, e): self.epoch = e
+    def __iter__(self):
+        g = torch.Generator(); g.manual_seed(self.seed + self.epoch*1000 + self.rank)
+        idx = torch.multinomial(self.weights, self.num_samples, replacement=True, generator=g)
+        return iter(idx.tolist())
+    def __len__(self): return self.num_samples
+
+
+def build_turn_weights(train_trajs, thresh, target_frac):
+    """Binary sample weights that oversample turning (max|GT curv|>thresh) cases to
+    ~target_frac of the drawn samples. Returns (weights, frac_before, w_turn)."""
+    import numpy as _np
+    is_turn = _np.array([
+        float(_np.abs(_np.array(t.get('future_curvatures', [0]))).max()) > thresh
+        for t in train_trajs])
+    f = float(is_turn.mean())
+    # weight so expected turning fraction == target_frac
+    w_turn = (target_frac/(1-target_frac)) * ((1-f)/max(f, 1e-6)) if f > 0 else 1.0
+    weights = _np.where(is_turn, w_turn, 1.0).astype('float64')
+    return weights, f, w_turn
 
 # ── LR schedule ───────────────────────────────────────────────────────────────
 
@@ -253,9 +289,18 @@ def train(cfg, resume=False):
     train_dataset = NuScenesVLADataset(train_trajs, split='train', augment=cfg['augment'])
     val_dataset   = NuScenesVLADataset(val_trajs,   split='val',   augment=False)
 
-    # DistributedSampler ensures each GPU gets different data
-    train_sampler = DistributedSampler(train_dataset, shuffle=True,
-                                       seed=cfg['seed'])
+    # DistributedSampler ensures each GPU gets different data. Y1: optionally replace
+    # with a weighted sampler that oversamples turning cases.
+    if cfg['turn_weighted']:
+        weights, frac_before, w_turn = build_turn_weights(
+            train_trajs, cfg['turn_thresh'], cfg['turn_target_frac'])
+        train_sampler = DistributedWeightedSampler(weights, dist.get_world_size(),
+                                                   local_rank, seed=cfg['seed'])
+        if is_main():
+            print(f"[turn] turn-weighted sampling: turning frac {frac_before:.3f} -> "
+                  f"~{cfg['turn_target_frac']:.2f} (w_turn={w_turn:.2f}, thresh={cfg['turn_thresh']})")
+    else:
+        train_sampler = DistributedSampler(train_dataset, shuffle=True, seed=cfg['seed'])
     val_sampler   = DistributedSampler(val_dataset,   shuffle=False)
 
     train_loader = torch.utils.data.DataLoader(
@@ -477,6 +522,9 @@ if __name__ == '__main__':
     parser.add_argument('--ss_max', type=float, default=CFG['ss_max'])
     parser.add_argument('--patience', type=int, default=CFG['patience'],
                         help='early-stopping patience on AR val-ADE')
+    parser.add_argument('--turn_weighted', action='store_true',
+                        help='Y1: oversample turning cases to ~turn_target_frac of drawn samples')
+    parser.add_argument('--turn_target_frac', type=float, default=CFG['turn_target_frac'])
     args = parser.parse_args()
 
     CFG['epochs']           = args.epochs
@@ -493,5 +541,7 @@ if __name__ == '__main__':
     CFG['scheduled_sampling'] = args.scheduled_sampling
     CFG['ss_max']           = args.ss_max
     CFG['patience']         = args.patience
+    CFG['turn_weighted']    = args.turn_weighted
+    CFG['turn_target_frac'] = args.turn_target_frac
 
     train(CFG, resume=args.resume)
