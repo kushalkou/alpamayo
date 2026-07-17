@@ -563,3 +563,41 @@ the higher-value levers are (a) a **curvature/turn-weighted or turning-subset-ba
 signal so the 18% turning cases aren't drowned by straights, and (b) **unfreezing the vision
 encoder** (the frozen features, not adapter width, are the likely ceiling — attention already
 reaches them fine). Deferring X3 as written; recommend the above instead. Awaiting direction.
+
+---
+
+## Y1 — Turn-weighted training: THE PAYOFF (vision finally helps overall)
+
+Oversampled turning cases (max|GT curv|>0.05) from **16.2% → ~40%** of drawn samples
+(binary weight w_turn=3.44, `DistributedWeightedSampler`). Fixed ego, AR-val-ADE selection,
+10ep/patience5, else W2 recipe. Retrained full-live AND ego-only.
+
+**Headline — full-test ADE@6s (mean, m), turn-weighted vs the W2 (non-weighted) baseline:**
+
+| subset | CV | W2 full | W2 ego | **Y1 full** | **Y1 ego** |
+|---|---|---|---|---|---|
+| STRAIGHT (n=2976) | 2.600 | 3.949 | 3.379 | **3.566** | 3.610 |
+| TURNING (n=638) | 5.218 | 5.579 | 5.873 | **5.594** | 5.699 |
+| **OVERALL (n=3614)** | 3.062 | 4.236 | 3.820 | **3.924** | 3.978 |
+
+Per-horizon (Y1, overall mean): full 0.219/0.601/1.172/**3.924** @1/2/3/6s;
+ego-only 0.210/0.601/1.184/**3.978**. (Y1 ego best == latest == epoch 10; Y1 full best =
+epoch 8; full_latest epoch 10 is worse at 4.103, so selection was fine.)
+
+**Turn-weighting flips the vision-vs-ego result — vision now helps.**
+- In W2, full-vision LOST to ego-only overall (4.236 vs 3.820).
+- In Y1, **full-vision BEATS ego-only overall (3.924 vs 3.978) and on BOTH subsets**
+  (straight 3.566 vs 3.610; turning 5.594 vs 5.699).
+
+**Mechanism (clean and interpretable):** turn-weighting **improved the vision model**
+(full overall 4.236→3.924) while **degrading the ego-only model** (3.820→3.978). Oversampling
+turns gives the full model camera signal it can exploit; for ego-only there is no camera to
+leverage, so the extra hard turning cases only pull its overall fit down. This is exactly the
+hypothesis: once turns are properly represented, **vision pays off**.
+
+**Caveats (honest):** margins are small (~0.05m overall, ~0.1m on turns) and **no learned
+model beats the CV baseline yet** (overall 3.062; best learned 3.92). The turn *gap* did not
+widen vs W2 (W2 turn gap 0.29m → Y1 0.11m) — the win came mostly from full improving on
+STRAIGHT and ego degrading overall, not from a bigger turn margin. So the result is
+"**vision is now net-positive**", not "vision is now clearly good". Checkpoints:
+`models/checkpoints/_y1_full_turnw/`, `_y1_egoonly_turnw/`; `results/res_y1_turnw_stratified.json`.
