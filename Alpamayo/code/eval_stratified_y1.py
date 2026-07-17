@@ -18,8 +18,10 @@ import inference as INF
 
 CK='/home/dgx1user/Alpamayo-Kushal/Alpamayo/models/checkpoints'
 MODELS=[
-    ('full',     f'{CK}/_y1_full_turnw/alpamayo_best.pt',    False, False),
-    ('ego_only', f'{CK}/_y1_egoonly_turnw/alpamayo_best.pt', True,  False),
+    ('full',          f'{CK}/_y1_full_turnw/alpamayo_best.pt',      False, False),
+    ('ego_only',      f'{CK}/_y1_egoonly_turnw/alpamayo_best.pt',   True,  False),
+    ('full_latest',   f'{CK}/_y1_full_turnw/alpamayo_latest.pt',    False, False),
+    ('ego_only_latest',f'{CK}/_y1_egoonly_turnw/alpamayo_latest.pt',True,  False),
 ]
 CURV=0.05
 SHARD='/tmp/claude-1000/y1_shards'
