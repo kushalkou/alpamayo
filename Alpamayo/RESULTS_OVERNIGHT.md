@@ -605,3 +605,13 @@ widen vs W2 (W2 turn gap 0.29m → Y1 0.11m) — the win came mostly from full i
 STRAIGHT and ego degrading overall, not from a bigger turn margin. So the result is
 "**vision is now net-positive**", not "vision is now clearly good". Checkpoints:
 `models/checkpoints/_y1_full_turnw/`, `_y1_egoonly_turnw/`; `results/res_y1_turnw_stratified.json`.
+
+## Y2 — Turning-scene demo: full-vision vs ego-only, side by side
+
+`code/visualize_y2.py` → `viz/demo_turning_full_vs_ego.gif`. Two BEV panels (LEFT = Y1
+full-vision prediction, RIGHT = Y1 ego-only prediction), each overlaying ground truth
+(green), the model prediction (red), and the constant-velocity baseline (grey dashed);
+6-camera grid below; per-frame title shows each model's ADE@6s and the vision advantage.
+Scene auto-selected from the Y1 per-sample ADEs as a genuine "vision helps on turns" case
+(full-vision mean ADE@6s 3.09m, beating ego-only by +4.07m over its turning frames — not an
+ego-only blow-up). Advisor-facing demo of where the camera earns its keep.
