@@ -525,6 +525,8 @@ if __name__ == '__main__':
     parser.add_argument('--turn_weighted', action='store_true',
                         help='Y1: oversample turning cases to ~turn_target_frac of drawn samples')
     parser.add_argument('--turn_target_frac', type=float, default=CFG['turn_target_frac'])
+    parser.add_argument('--seed', type=int, default=CFG['seed'],
+                        help='Z1: training + sampler seed (val-ADE subset stays fixed at val_ade_seed)')
     args = parser.parse_args()
 
     CFG['epochs']           = args.epochs
@@ -543,5 +545,6 @@ if __name__ == '__main__':
     CFG['patience']         = args.patience
     CFG['turn_weighted']    = args.turn_weighted
     CFG['turn_target_frac'] = args.turn_target_frac
+    CFG['seed']             = args.seed
 
     train(CFG, resume=args.resume)
