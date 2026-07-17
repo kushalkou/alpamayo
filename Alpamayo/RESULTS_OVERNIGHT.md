@@ -10,16 +10,20 @@
 > **LATEST (post-verification V1–V3 + fix-and-retrain W1–W4). Read this block; the P1–P4
 > sections below are the earlier investigation and contain one now-fixed decode bug.**
 
-**The two things that matter.**
+**The three things that matter.**
 1. **We found and fixed the real bug: the model was never given the car's true speed.**
    `compute_ego_state` computed speed as a backward difference over `past_poses` — zero when
    history was padded, under-estimated otherwise (W1). Fixing it (speed = `future_speeds[0]`)
-   improved full-live test ADE@6s from **6.61 → 4.24 m** (−36%) and ego-only to **3.82 m**.
-   Biggest lever in the whole study.
-2. **Even so, vision does not help.** In the clean retrain (W2: correct ego, valid AR-val-ADE
-   selection, 10 epochs), **ego-only (no camera) beats full live-vision at every horizon**
-   (ADE@6s 3.82 vs 4.24 m mean; 3.05 vs 3.28 m median). The camera is net-negative for
-   trajectory prediction on this dataset.
+   improved full-live test ADE@6s from **6.61 → 4.24 m** (−36%). Biggest lever in the study.
+2. **With the ego fixed but a normal data mix, vision still didn't help** (W2): ego-only
+   (no camera) beat full live-vision overall (ADE@6s 3.82 vs 4.24 m). BUT the split (X1/X2)
+   showed vision *is* attended (0.65 mass) and *does* help on the 18% turning subset — it was
+   just swamped by the 82% straight-line majority where the camera adds noise.
+3. **Turn-weighting flips it — vision now helps (Y1).** Oversampling turns to 40% of each
+   batch, **full-vision beats ego-only overall (3.924 vs 3.978 m @6s) and on both subsets.**
+   It improved the vision model (4.24→3.92) while degrading ego-only (3.82→3.98): the extra
+   turns give the full model camera signal to exploit; ego-only has none. **Vision is now
+   net-positive** — though margins are small and no learned model beats the CV baseline yet.
 
 **The honest scoreboard (test ADE@6s, mean / median):** tokenizer floor 1.35 / 0.89 · **naive
 constant-velocity baseline 3.06 / 2.41** · W2 ego-only **3.82 / 3.05** (best model) · W2 full
