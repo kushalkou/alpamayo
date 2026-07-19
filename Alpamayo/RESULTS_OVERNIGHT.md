@@ -19,11 +19,13 @@
    (no camera) beat full live-vision overall (ADE@6s 3.82 vs 4.24 m). BUT the split (X1/X2)
    showed vision *is* attended (0.65 mass) and *does* help on the 18% turning subset — it was
    just swamped by the 82% straight-line majority where the camera adds noise.
-3. **Turn-weighting flips it — vision now helps (Y1).** Oversampling turns to 40% of each
-   batch, **full-vision beats ego-only overall (3.924 vs 3.978 m @6s) and on both subsets.**
-   It improved the vision model (4.24→3.92) while degrading ego-only (3.82→3.98): the extra
-   turns give the full model camera signal to exploit; ego-only has none. **Vision is now
-   net-positive** — though margins are small and no learned model beats the CV baseline yet.
+3. **Turn-weighting helps vision, but only on turns — confirmed across 3 seeds (Y1 + Z1).**
+   Oversampling turns to 40% of each batch, full-vision beats ego-only on the **turning subset
+   in 3/3 seeds** (turn ADE@6s: full 5.59 ± 0.006 vs ego 5.85 ± 0.195). But **OVERALL the two
+   are a statistical tie** — full 4.040 ± 0.085 vs ego 4.047 ± 0.103, and the sign flips across
+   seeds (full wins 2/3). The initial Y1 "vision wins overall by 0.05 m" was within seed noise.
+   **Honest claim: vision and ego-only tie overall; vision's benefit is confined to turns.**
+   Neither beats the CV baseline (3.06 m) overall.
 
 **The honest scoreboard (test ADE@6s, mean / median):** tokenizer floor 1.35 / 0.89 · **naive
 constant-velocity baseline 3.06 / 2.41** · W2 ego-only **3.82 / 3.05** (best model) · W2 full
@@ -615,3 +617,34 @@ full-vision prediction, RIGHT = Y1 ego-only prediction), each overlaying ground 
 Scene auto-selected from the Y1 per-sample ADEs as a genuine "vision helps on turns" case
 (full-vision mean ADE@6s 3.09m, beating ego-only by +4.07m over its turning frames — not an
 ego-only blow-up). Advisor-facing demo of where the camera earns its keep.
+
+---
+
+## Z1 — Seed robustness of the "vision helps overall" claim (3 seeds each)
+
+Retrained turn-weighted full-vision and ego-only with 3 seeds (42=Y1, 123, 2024), same
+recipe, fixed ego, AR-val-ADE selection. Test ADE@6s (mean):
+
+| seed | full OVERALL | ego OVERALL | full−ego (OVR) | full TURN | ego TURN | full−ego (TURN) |
+|---|---|---|---|---|---|---|
+| 42   | 3.924 | 3.978 | **−0.055** | 5.594 | 5.699 | −0.105 |
+| 123  | 4.072 | 4.192 | **−0.120** | 5.583 | 6.128 | −0.545 |
+| 2024 | 4.126 | 3.969 | **+0.156** | 5.598 | 5.732 | −0.134 |
+| **mean±sd** | **4.040 ± 0.085** | **4.047 ± 0.103** | — | **5.592 ± 0.006** | **5.853 ± 0.195** | — |
+
+**Verdict — the headline was not robust; the corrected honest claims are:**
+
+1. **OVERALL: full-vision and ego-only are a statistical tie.** Means are 4.040 vs 4.047 (a
+   0.007 m difference) with per-seed spread ±0.085–0.10 m — larger than the gap. The sign of
+   full−ego **flips across seeds** (−0.055, −0.120, **+0.156**): full wins in **2/3** seeds and
+   loses in one. **"Vision helps overall" is within seed noise — do not claim it.**
+
+2. **TURNING: vision's benefit is real and robust.** Full-vision beats ego-only on the turning
+   subset in **3/3 seeds** (Δ = −0.105, −0.545, −0.134 m; always negative). Full's turning ADE
+   is strikingly stable (**5.592 ± 0.006 m**) while ego-only's is worse and seed-variable
+   (5.853 ± 0.195). So **vision's contribution is confined to the turning subset**, where it
+   consistently helps.
+
+**Bottom line:** the correct statement is *"full-vision and ego-only are statistically tied
+overall; vision's benefit is confined to the turning subset (consistent across 3 seeds)."*
+Neither beats the CV baseline (3.06 m) overall. `results/res_z1_seeds.json`.
