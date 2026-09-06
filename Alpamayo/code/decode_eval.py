@@ -100,8 +100,10 @@ JOBS = {
                     variants=[V('argmax_corrected', 'argmax'),
                               V('V1s_expect', 'expect', stop_aware=True)]),
     # GATE 2 — winning variant, full test set, both models (variant filled in at launch)
-    'gate2':  dict(split='test', models=['y1_full', 'y1_ego'],
-                   variants=[V('argmax', 'argmax')]),
+    'gate2':  dict(split='test', models=['y1_full', 'y1_ego', 'zeroboth_jul12'],
+                   variants=[V('argmax_corrected', 'argmax'),
+                             V('V1s_expect', 'expect', stop_aware=True),
+                             V('V2s_topk5', 'expect_topk', topk=5, stop_aware=True)]),
     # GATE 3 — ancestral sampling, K=10 rollouts, two temperatures, full test set
     'gate3':  dict(split='test', models=['y1_full', 'y1_ego'],
                    variants=[V('sample_T1.0', 'sample', temperature=1.0, K=10),
@@ -118,6 +120,19 @@ def errs(pred, gt):
         e = np.linalg.norm(pred[:s] - gt[:s], axis=1)
         ade[lab] = float(e.mean()); fde[lab] = float(e[-1])
     return {'ade': ade, 'fde': fde}
+
+def past_maxcurv(t):
+    """2.4(i) detector input: max |curvature| over the ego HISTORY rows.
+
+    compute_ego_state returns [speed, yaw, yaw_rate, accel] x 4 (rows t-3..t), so
+    kappa = yaw_rate / speed. Uses ONLY past/current information -- no future leak.
+    NOTE: 850/23949 samples (3.5%, scene starts) have no past_poses at all; there the
+    4 rows are the current state repeated, so the detector degenerates to the
+    instantaneous curvature. n_hist is recorded so coverage can be reported.
+    """
+    ego = compute_ego_state(t).numpy()
+    sp = np.maximum(np.abs(ego[:, 0]), 1e-3)
+    return float(np.max(np.abs(ego[:, 2] / sp))), int(len(t.get('past_poses', [])))
 
 def maxcurv(t):
     c = np.abs(np.array(t.get('future_curvatures', [0])))
@@ -174,13 +189,15 @@ def main():
     my = idx_all[lr::ws]
 
     # CV reference + curvature (cheap, model-free)
-    cv, curv, spd = {}, {}, {}
+    cv, curv, spd, pcurv, nhist = {}, {}, {}, {}, {}
     for i in my:
         t = trajs[i]; ego = compute_ego_state(t)
         v0, yaw0 = float(t['future_speeds'][0]), float(ego[3, 1])
         cv[i] = errs(cv_pred(v0, yaw0), gt_local(t)); curv[i] = maxcurv(t); spd[i] = v0
+        pcurv[i], nhist[i] = past_maxcurv(t)
 
     stats_variant = job.get('stats_variant')
+    predcurv = {}
     per = {}            # per[model][variant][idx] = list of K {'ade','fde'}
     slot_stats = {}     # slot_stats[model] = [24 x {entropy,top1,dead_mass,stop_mass} sums], count
     t0 = time.time()
@@ -189,6 +206,7 @@ def main():
         ck = torch.load(path, map_location='cpu')
         model.load_state_dict(ck['model_state'], strict=False); model.zero_ego = ze
         per[mname] = {v['name']: {} for v in job['variants']}
+        pk = predcurv.setdefault(mname, {v['name']: {} for v in job['variants']})
         SKEYS = ('entropy', 'top1', 'dead_mass', 'stop_mass', 'argmax_is_stop', 'bimodal',
                  'resid_bw')
         sacc = [{k: 0. for k in SKEYS} for _ in range(24)]
@@ -221,6 +239,8 @@ def main():
                         stop_bin32=v.get('stop_bin32', False), coarsen=v.get('coarsen', 1))
                     pred, _ = unicycle_rollout(acc, cur, v0, yaw0)
                     runs.append(errs(pred, gl))
+                    if r == 0:
+                        pk[v['name']][i] = float(np.max(np.abs(cur)))   # detector (ii)
                     if want_stats:
                         for s_i in range(24):
                             for k_ in sacc[s_i]: sacc[s_i][k_] += st[s_i][k_]
@@ -234,7 +254,8 @@ def main():
         if sn:
             slot_stats[mname] = {'n': sn, 'sums': sacc, 'resid': resid}
 
-    payload = {'per': per, 'cv': cv, 'curv': curv, 'v0': spd, 'slot_stats': slot_stats}
+    payload = {'per': per, 'cv': cv, 'curv': curv, 'v0': spd, 'past_curv': pcurv,
+               'n_hist': nhist, 'predcurv': predcurv, 'slot_stats': slot_stats}
     tmp = os.path.join(shard_dir, f's_{lr}.pkl.tmp')
     with open(tmp, 'wb') as f: pickle.dump(payload, f)
     os.replace(tmp, os.path.join(shard_dir, f's_{lr}.pkl'))
@@ -245,11 +266,15 @@ def main():
         time.sleep(5)
     G = [pickle.load(open(os.path.join(shard_dir, f's_{r}.pkl'), 'rb')) for r in range(ws)]
     PER = {m: {v['name']: {} for v in job['variants']} for m in job['models']}
-    CV, CURV, V0, SS = {}, {}, {}, {}
+    CV, CURV, V0, PC, NH, SS = {}, {}, {}, {}, {}, {}
+    PK = {m: {v['name']: {} for v in job['variants']} for m in job['models']}
     for g in G:
         for m in g['per']:
             for vn in g['per'][m]: PER[m][vn].update(g['per'][m][vn])
+        for m in g.get('predcurv', {}):
+            for vn in g['predcurv'][m]: PK[m][vn].update(g['predcurv'][m][vn])
         CV.update(g['cv']); CURV.update(g['curv']); V0.update(g['v0'])
+        PC.update(g.get('past_curv', {})); NH.update(g.get('n_hist', {}))
         for m, s in g['slot_stats'].items():
             if m not in SS: SS[m] = {'n': 0, 'sums': [{k: 0. for k in s['sums'][0]} for _ in range(24)],
                                      'resid': [[] for _ in range(24)]}
@@ -262,6 +287,9 @@ def main():
            'variants': job['variants'], 'models': job['models'],
            'curv': {str(i): CURV[i] for i in CURV},
            'v0': {str(i): V0[i] for i in V0},
+           'past_curv': {str(i): PC[i] for i in PC},
+           'n_hist': {str(i): NH[i] for i in NH},
+           'predcurv': {m: {vn: {str(i): PK[m][vn][i] for i in PK[m][vn]} for vn in PK[m]} for m in PK},
            'cv': {str(i): CV[i] for i in CV},
            'per': {m: {vn: {str(i): PER[m][vn][i] for i in PER[m][vn]} for vn in PER[m]} for m in PER},
            'slot_stats': {m: {'n': SS[m]['n'],
