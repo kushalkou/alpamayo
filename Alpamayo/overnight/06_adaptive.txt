@@ -1,0 +1,52 @@
+[3.3] val n=3572  test n=3614
+
+[y1_full / V1s]
+  VAL fits: global alpha*=0.30 | (A) alpha0=0.35 lambda=4 | (B) alpha0=0.35 gamma=0.125
+  alpha_t profile (B): 0.35 0.35 0.34 0.34 0.33 0.33 0.32 0.31 0.31 0.29 0.28 0.26
+  TEST ADE@6s          mean   median      p95
+    CV                    3.062    2.409    8.382
+    global alpha*         2.910    2.280    8.017
+    (A) curv-adaptive     2.905    2.273    7.965
+    (B) per-horizon       2.908    2.281    8.012
+    (A) - global        -0.0053  [-0.0104,-0.0001]  p=0.0436
+    (B) - global        -0.0022  [-0.0030,-0.0013]  p=0.0000
+    (A) - CV            -0.1576  [-0.1875,-0.1289]  p=0.0000
+    (B) - CV            -0.1545  [-0.1831,-0.1263]  p=0.0000
+    global - CV         -0.1523  [-0.1814,-0.1230]  p=0.0000
+    [straight   n=2441] CV  3.101 | global  2.958 | (A)  2.951 | (B)  2.955
+    [turning    n= 551] CV  5.516 | global  5.159 | (A)  5.150 | (B)  5.159
+    [stationary n= 622] CV  0.736 | global  0.729 | (A)  0.731 | (B)  0.728
+
+[y1_ego / V1s]
+  VAL fits: global alpha*=0.25 | (A) alpha0=0.35 lambda=8 | (B) alpha0=0.30 gamma=0.125
+  alpha_t profile (B): 0.30 0.30 0.29 0.29 0.29 0.28 0.28 0.27 0.26 0.25 0.24 0.22
+  TEST ADE@6s          mean   median      p95
+    CV                    3.062    2.409    8.382
+    global alpha*         2.894    2.252    7.889
+    (A) curv-adaptive     2.893    2.239    7.900
+    (B) per-horizon       2.892    2.253    7.883
+    (A) - global        -0.0012  [-0.0098,+0.0075]  p=0.7792
+    (B) - global        -0.0025  [-0.0031,-0.0019]  p=0.0000
+    (A) - CV            -0.1691  [-0.1968,-0.1415]  p=0.0000
+    (B) - CV            -0.1704  [-0.1967,-0.1442]  p=0.0000
+    global - CV         -0.1679  [-0.1937,-0.1417]  p=0.0000
+    [straight   n=2441] CV  3.101 | global  2.935 | (A)  2.933 | (B)  2.933
+    [turning    n= 551] CV  5.516 | global  5.186 | (A)  5.167 | (B)  5.183
+    [stationary n= 622] CV  0.736 | global  0.703 | (A)  0.720 | (B)  0.702
+
+[zeroboth_jul12 / V1s]
+  VAL fits: global alpha*=0.10 | (A) alpha0=0.10 lambda=32 | (B) alpha0=0.10 gamma=0.125
+  alpha_t profile (B): 0.10 0.10 0.10 0.10 0.10 0.09 0.09 0.09 0.09 0.08 0.08 0.07
+  TEST ADE@6s          mean   median      p95
+    CV                    3.062    2.409    8.382
+    global alpha*         3.048    2.378    8.334
+    (A) curv-adaptive     3.050    2.384    8.353
+    (B) per-horizon       3.050    2.384    8.351
+    (A) - global        +0.0020  [+0.0012,+0.0027]  p=0.0000
+    (B) - global        +0.0017  [+0.0010,+0.0025]  p=0.0000
+    (A) - CV            -0.0122  [-0.0156,-0.0088]  p=0.0000
+    (B) - CV            -0.0125  [-0.0158,-0.0090]  p=0.0000
+    global - CV         -0.0142  [-0.0182,-0.0101]  p=0.0000
+    [straight   n=2441] CV  3.101 | global  3.087 | (A)  3.089 | (B)  3.089
+    [turning    n= 551] CV  5.516 | global  5.482 | (A)  5.488 | (B)  5.488
+    [stationary n= 622] CV  0.736 | global  0.737 | (A)  0.737 | (B)  0.737
