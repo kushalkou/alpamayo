@@ -117,9 +117,16 @@ def decode_trajectory(model, visual_tokens, ego_state, tokenizer):
     accels, curvatures = [], []
     for a_tok, k_tok in zip(accel_tokens, curv_tokens):
         # accel/curv tokens must be in 0..63; STOP(128) -> bin center (32)
-        a_tok = 32 if a_tok == 128 else min(max(int(a_tok), 0), 63)
-        k_tok = 32 if k_tok == 128 else min(max(int(k_tok), 0), 63)
-        a, k = tokenizer.detokenize_step(a_tok, k_tok)
+        # GATE 2.0: STOP decodes to (0.0, 0.0) via the tokenizer, NOT to bin 32.
+        # Bin 32 is not zero (accel -0.336 m/s2, curv -0.064 rad/m), so the old
+        # mapping gave stationary vehicles a spurious brake + left-drift.
+        # NOTE: results predating Gate 2 (incl. the 3.924 Y1 figure) used bin 32.
+        if a_tok == 128 or k_tok == 128:
+            a, k = 0.0, 0.0
+        else:
+            a_tok = min(max(int(a_tok), 0), 63)
+            k_tok = min(max(int(k_tok), 0), 63)
+            a, k = tokenizer.detokenize_step(a_tok, k_tok)
         accels.append(a)
         curvatures.append(k)
 
@@ -151,7 +158,8 @@ def slot_centers(tokenizer, step):
     return tokenizer.accel_centers if step < TRAJ_LEN // 2 else tokenizer.curv_centers
 
 
-def half_spec(mode='argmax', stop_aware=False, topk=5, temperature=1.0):
+def half_spec(mode='argmax', stop_aware=False, topk=5, temperature=1.0,
+              stop_bin32=False, coarsen=1):
     """Decode rule for ONE half of the token stream (accel slots 0-11 / curv slots 12-23).
 
     Mixed decoding exists because the halves are in opposite regimes: the accel
@@ -160,7 +168,8 @@ def half_spec(mode='argmax', stop_aware=False, topk=5, temperature=1.0):
     BIMODAL (left-turn mode vs right-turn mode), where the mean lands between the
     modes — "straight ahead" — which is the worst available answer.
     """
-    return {'mode': mode, 'stop_aware': stop_aware, 'topk': topk, 'temperature': temperature}
+    return {'mode': mode, 'stop_aware': stop_aware, 'topk': topk,
+            'temperature': temperature, 'stop_bin32': stop_bin32, 'coarsen': coarsen}
 
 
 def _step_value(logits, tokenizer, step, spec, generator):
@@ -187,10 +196,48 @@ def _step_value(logits, tokenizer, step, spec, generator):
 
     mode, stop_aware = spec['mode'], spec['stop_aware']
     topk, temperature = spec['topk'], spec['temperature']
+    stop_bin32 = spec.get('stop_bin32', False)
+    coarsen = int(spec.get('coarsen', 1))
+
+    bw = float(centers[1] - centers[0])          # bin width, this half
+
+    # ── corrected argmax value ────────────────────────────────────────────────
+    # GATE 2.0 FIX: STOP now decodes to 0.0, matching the tokenizer's own
+    # detokenize_step(STOP) == (0.0, 0.0). The legacy path mapped STOP -> bin 32,
+    # which is NOT zero (accel -0.336 m/s2, curv -0.064 rad/m) and so handed
+    # stationary vehicles a small spurious deceleration and left-drift.
+    # stop_bin32=True reproduces the legacy behaviour for the fairness delta.
+    if argmax_tok == STOP_ID:
+        argmax_val = float(centers[32].item()) if stop_bin32 else 0.0
+    else:
+        argmax_val = float(centers[min(max(argmax_tok, 0), N_ACT - 1)].item())
+
+    # STOP-aware expectation, always computed (mechanism diagnostic 2.1a)
+    _vlog  = torch.cat([act, logits[STOP_ID:STOP_ID + 1]])
+    _vcent = torch.cat([centers, torch.zeros(1, device=logits.device)])
+    _q = torch.softmax(_vlog, dim=-1)
+    _exp_val = float((_q * _vcent).sum().item())
+    stats['resid_bw'] = abs(_exp_val - argmax_val) / bw      # |E - argmax| in bin widths
+
+    # ── coarsened decode (mechanism diagnostic 2.1b) ──────────────────────────
+    # Decode-time only: merge `coarsen` adjacent bins, summing their probability
+    # and using the merged-bin center. The tokenizer is NOT touched and nothing is
+    # retrained. Under the interpolation hypothesis the argmax-vs-expectation gap
+    # should scale with bin width.
+    if coarsen > 1:
+        g = N_ACT // coarsen
+        pg = _q[:N_ACT].reshape(g, coarsen).sum(-1)                  # merged masses
+        cg = centers.reshape(g, coarsen).mean(-1)                    # merged centers
+        pg = torch.cat([pg, _q[N_ACT:N_ACT + 1]])                    # + STOP
+        cg = torch.cat([cg, torch.zeros(1, device=logits.device)])
+        if mode == 'argmax':
+            value = float(cg[int(pg.argmax())].item())
+        else:
+            value = float((pg * cg).sum().item())
+        return value, argmax_tok, stats
 
     if mode == 'argmax':
-        t = 32 if argmax_tok == STOP_ID else min(max(argmax_tok, 0), N_ACT - 1)
-        return float(centers[t].item()), argmax_tok, stats
+        return argmax_val, argmax_tok, stats
 
     if mode == 'sample':
         ps = torch.softmax(act / temperature, dim=-1)
@@ -248,7 +295,8 @@ def prefill_context(raw, visual_tokens, ego_state, device=DEVICE, dtype=DTYPE):
 def decode_trajectory_ex(raw, visual_tokens, ego_state, tokenizer, device=DEVICE,
                          dtype=DTYPE, decode_mode='argmax', topk=5, temperature=1.0,
                          collect_stats=False, generator=None, pre=None,
-                         stop_aware=False, a_spec=None, k_spec=None):
+                         stop_aware=False, a_spec=None, k_spec=None,
+                         stop_bin32=False, coarsen=1):
     """KV-cached AR decode of 24 slots.
 
     a_spec / k_spec: per-half decode rules (see half_spec) enabling MIXED decoding,
@@ -260,9 +308,9 @@ def decode_trajectory_ex(raw, visual_tokens, ego_state, tokenizer, device=DEVICE
     decode_mode='argmax' this is output-identical to decode_trajectory().
     """
     if a_spec is None:
-        a_spec = half_spec(decode_mode, stop_aware, topk, temperature)
+        a_spec = half_spec(decode_mode, stop_aware, topk, temperature, stop_bin32, coarsen)
     if k_spec is None:
-        k_spec = half_spec(decode_mode, stop_aware, topk, temperature)
+        k_spec = half_spec(decode_mode, stop_aware, topk, temperature, stop_bin32, coarsen)
     for sp in (a_spec, k_spec):
         if sp['mode'] not in DECODE_MODES:
             raise ValueError(f"decode mode must be one of {DECODE_MODES}")

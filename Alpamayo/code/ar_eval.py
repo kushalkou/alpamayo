@@ -66,9 +66,16 @@ def ar_decode(raw, visual_tokens, ego_state, tokenizer, device, dtype=torch.floa
     a_toks, k_toks = toks[:12], toks[12:]
     accels, curvs = [], []
     for a_tok, k_tok in zip(a_toks, k_toks):
-        a_tok = 32 if a_tok == 128 else min(max(int(a_tok), 0), 63)
-        k_tok = 32 if k_tok == 128 else min(max(int(k_tok), 0), 63)
-        a, k = tokenizer.detokenize_step(a_tok, k_tok)
+        # GATE 2.0: STOP decodes to (0.0, 0.0) via the tokenizer, NOT to bin 32.
+        # Bin 32 is not zero (accel -0.336 m/s2, curv -0.064 rad/m), so the old
+        # mapping gave stationary vehicles a spurious brake + left-drift.
+        # NOTE: results predating Gate 2 (incl. the 3.924 Y1 figure) used bin 32.
+        if a_tok == 128 or k_tok == 128:
+            a, k = 0.0, 0.0
+        else:
+            a_tok = min(max(int(a_tok), 0), 63)
+            k_tok = min(max(int(k_tok), 0), 63)
+            a, k = tokenizer.detokenize_step(a_tok, k_tok)
         accels.append(a); curvs.append(k)
     return toks, np.array(accels), np.array(curvs)
 

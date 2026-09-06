@@ -36,19 +36,25 @@ SHARD_ROOT = '/tmp/claude-1000/decode_shards'
 CURV_THRESH = 0.05
 
 # name -> (checkpoint, zero_vision)
+# name -> (checkpoint, zero_vision, zero_ego)
 MODELS = {
-    'y1_full': (f'{CK}/_y1_full_turnw/alpamayo_best.pt',    False),
-    'y1_ego':  (f'{CK}/_y1_egoonly_turnw/alpamayo_best.pt', True),
+    'y1_full': (f'{CK}/_y1_full_turnw/alpamayo_best.pt',    False, False),
+    'y1_ego':  (f'{CK}/_y1_egoonly_turnw/alpamayo_best.pt', True,  False),
+    # 2.1c zero-input transfer: BOTH modalities zeroed -> the model has no
+    # information, so any decode gain must come from the decode rule alone.
+    'y1_full_zeroboth': (f'{CK}/_y1_full_turnw/alpamayo_best.pt', True, True),
+    'zeroboth_jul12':   (f'{CK}/_zeroboth_run_jul12/alpamayo_best_e1_val2.0392.pt', True, True),
 }
 
 def V(name, mode, **kw):
     d = {'name': name, 'decode_mode': mode, 'topk': 5, 'temperature': 1.0, 'K': 1,
-         'stop_aware': False, 'a': None, 'k': None}
+         'stop_aware': False, 'a': None, 'k': None, 'stop_bin32': False, 'coarsen': 1}
     d.update(kw); return d
 
-def H(mode='argmax', stop_aware=False, topk=5, temperature=1.0):
-    """per-half decode rule (accel half / curvature half) for the mixed variants"""
-    return {'mode': mode, 'stop_aware': stop_aware, 'topk': topk, 'temperature': temperature}
+def H(mode='argmax', stop_aware=False, topk=5, temperature=1.0, stop_bin32=False, coarsen=1):
+    """per-half decode rule (accel half / curvature half)"""
+    return {'mode': mode, 'stop_aware': stop_aware, 'topk': topk, 'temperature': temperature,
+            'stop_bin32': stop_bin32, 'coarsen': coarsen}
 
 JOBS = {
     # GATE 0 — reproduce argmax on the full test set, best turn-weighted full-vision ckpt
@@ -73,6 +79,26 @@ JOBS = {
                      V('V5_aArg_kExp', 'argmax',
                        a=H('argmax'), k=H('expect', stop_aware=True)),
                    ]),
+    # GATE 2.0/2.1 — STOP-fix fairness delta + mechanism tests (val subset)
+    'gate21': dict(split='val', n_val=400, models=['y1_full'], stats_variant='argmax_corrected',
+                   variants=[
+                     V('argmax_legacy_bin32', 'argmax', stop_bin32=True),
+                     V('argmax_corrected',    'argmax'),
+                     V('V1s_expect',          'expect', stop_aware=True),
+                     V('V2s_topk5',           'expect_topk', topk=5, stop_aware=True),
+                     # 2.1b coarsening dose-response (decode-time bin merging)
+                     V('argmax_c2', 'argmax', a=H('argmax', coarsen=2), k=H('argmax', coarsen=2)),
+                     V('expect_c2', 'expect', a=H('expect', stop_aware=True, coarsen=2),
+                                              k=H('expect', stop_aware=True, coarsen=2)),
+                     V('argmax_c4', 'argmax', a=H('argmax', coarsen=4), k=H('argmax', coarsen=4)),
+                     V('expect_c4', 'expect', a=H('expect', stop_aware=True, coarsen=4),
+                                              k=H('expect', stop_aware=True, coarsen=4)),
+                   ]),
+    # 2.1c — zero-input / ego-only transfer of the decode fix
+    'gate21c': dict(split='val', n_val=400,
+                    models=['y1_full_zeroboth', 'zeroboth_jul12', 'y1_ego'],
+                    variants=[V('argmax_corrected', 'argmax'),
+                              V('V1s_expect', 'expect', stop_aware=True)]),
     # GATE 2 — winning variant, full test set, both models (variant filled in at launch)
     'gate2':  dict(split='test', models=['y1_full', 'y1_ego'],
                    variants=[V('argmax', 'argmax')]),
@@ -159,12 +185,14 @@ def main():
     slot_stats = {}     # slot_stats[model] = [24 x {entropy,top1,dead_mass,stop_mass} sums], count
     t0 = time.time()
     for mname in job['models']:
-        path, zv = MODELS[mname]
+        path, zv, ze = MODELS[mname]
         ck = torch.load(path, map_location='cpu')
-        model.load_state_dict(ck['model_state'], strict=False); model.zero_ego = False
+        model.load_state_dict(ck['model_state'], strict=False); model.zero_ego = ze
         per[mname] = {v['name']: {} for v in job['variants']}
-        SKEYS = ('entropy', 'top1', 'dead_mass', 'stop_mass', 'argmax_is_stop', 'bimodal')
+        SKEYS = ('entropy', 'top1', 'dead_mass', 'stop_mass', 'argmax_is_stop', 'bimodal',
+                 'resid_bw')
         sacc = [{k: 0. for k in SKEYS} for _ in range(24)]
+        resid = [[] for _ in range(24)]      # full residual distribution (2.1a)
         sn = 0
         for c, i in enumerate(my):
             t = trajs[i]; item = ds[i]
@@ -189,12 +217,14 @@ def main():
                         decode_mode=v['decode_mode'], topk=v['topk'],
                         temperature=v['temperature'], collect_stats=want_stats,
                         generator=gen, pre=pre, stop_aware=v.get('stop_aware', False),
-                        a_spec=v.get('a'), k_spec=v.get('k'))
+                        a_spec=v.get('a'), k_spec=v.get('k'),
+                        stop_bin32=v.get('stop_bin32', False), coarsen=v.get('coarsen', 1))
                     pred, _ = unicycle_rollout(acc, cur, v0, yaw0)
                     runs.append(errs(pred, gl))
                     if want_stats:
                         for s_i in range(24):
                             for k_ in sacc[s_i]: sacc[s_i][k_] += st[s_i][k_]
+                            resid[s_i].append(st[s_i]['resid_bw'])
                         sn += 1
                 per[mname][v['name']][i] = runs
             del pre
@@ -202,7 +232,7 @@ def main():
                 el = time.time() - t0
                 print(f"  [{mname}] {c}/{len(my)}  {el:.0f}s", flush=True)
         if sn:
-            slot_stats[mname] = {'n': sn, 'sums': sacc}
+            slot_stats[mname] = {'n': sn, 'sums': sacc, 'resid': resid}
 
     payload = {'per': per, 'cv': cv, 'curv': curv, 'v0': spd, 'slot_stats': slot_stats}
     tmp = os.path.join(shard_dir, f's_{lr}.pkl.tmp')
@@ -221,10 +251,12 @@ def main():
             for vn in g['per'][m]: PER[m][vn].update(g['per'][m][vn])
         CV.update(g['cv']); CURV.update(g['curv']); V0.update(g['v0'])
         for m, s in g['slot_stats'].items():
-            if m not in SS: SS[m] = {'n': 0, 'sums': [{k: 0. for k in s['sums'][0]} for _ in range(24)]}
+            if m not in SS: SS[m] = {'n': 0, 'sums': [{k: 0. for k in s['sums'][0]} for _ in range(24)],
+                                     'resid': [[] for _ in range(24)]}
             SS[m]['n'] += s['n']
             for i in range(24):
                 for k in s['sums'][i]: SS[m]['sums'][i][k] += s['sums'][i][k]
+                SS[m]['resid'][i].extend(s.get('resid', [[]]*24)[i])
 
     res = {'job': args.job, 'split': job['split'], 'n': len(CURV),
            'variants': job['variants'], 'models': job['models'],
@@ -234,7 +266,8 @@ def main():
            'per': {m: {vn: {str(i): PER[m][vn][i] for i in PER[m][vn]} for vn in PER[m]} for m in PER},
            'slot_stats': {m: {'n': SS[m]['n'],
                               'mean': [{k: SS[m]['sums'][i][k] / SS[m]['n'] for k in SS[m]['sums'][i]}
-                                       for i in range(24)]} for m in SS}}
+                                       for i in range(24)],
+                              'resid': SS[m]['resid']} for m in SS}}
     json.dump(res, open(out_path, 'w'))
     print(f"[decode_eval] saved -> {out_path}", flush=True)
     report(res)
@@ -295,6 +328,17 @@ def report(res):
         st_a = [d['argmax_is_stop'] for d in S[:12]]; st_k = [d['argmax_is_stop'] for d in S[12:]]
         print(f"[DIAG 3] argmax selects STOP(128): accel slots mean {np.mean(st_a):.4f}, "
               f"curv slots mean {np.mean(st_k):.4f}, max any slot {max(max(st_a), max(st_k)):.4f}")
+        R = st.get('resid')
+        if R:
+            print(f"\n[DIAG 2.1a] |E[value] - argmax_center| in BIN WIDTHS")
+            print(f"{'half':8} {'n':>7} {'mean':>7} {'median':>7} {'p90':>7} {'p99':>7} "
+                  f"{'frac>0.5':>9} {'frac>1.0':>9}")
+            for lab, rng_ in [('accel', range(0, 12)), ('curv', range(12, 24))]:
+                v = np.array([x for i in rng_ for x in R[i]])
+                if not len(v): continue
+                print(f"{lab:8} {len(v):7d} {v.mean():7.3f} {np.median(v):7.3f} "
+                      f"{np.percentile(v,90):7.3f} {np.percentile(v,99):7.3f} "
+                      f"{(v>0.5).mean():9.4f} {(v>1.0).mean():9.4f}")
         ea = [d['entropy'] for d in S[:12]]; ek = [d['entropy'] for d in S[12:]]
         t1a = [d['top1'] for d in S[:12]]; t1k = [d['top1'] for d in S[12:]]
         print(f"[DIAG 4] entropy: accel mean {np.mean(ea):.3f} (slots 1-11 "
