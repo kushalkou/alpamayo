@@ -57,21 +57,30 @@ def main():
         Ttest[key] = {i: traj(Dt, mt, key, i, 'expect') for i in it}
 
     # ---- (a) val alpha curve ------------------------------------------------
-    fig, ax = plt.subplots(figsize=(8, 5), dpi=150)
+    fig, ax = plt.subplots(figsize=(8.6, 5.2), dpi=150)
+    cvv = float(np.mean([ade(CVv[i], Gv[i]) for i in iv]))
+    ax.axhline(cvv, color=INK2, ls=(0, (5, 4)), lw=1.4, zorder=2)
     for key, lab, col in MODELS:
-        ax.plot(ALPHAS, curves[key], color=col, lw=2, zorder=3)
         a_s = astars[key]; lo, hi = cis[key]
         ax.axvspan(lo, hi, color=col, alpha=0.10, lw=0, zorder=1)
+        ax.plot(ALPHAS, curves[key], color=col, lw=2, zorder=3)
         j = int(np.argmin(np.abs(ALPHAS - a_s)))
         ax.plot([a_s], [curves[key][j]], 'o', ms=9, color=col,
                 markeredgecolor=SURF, markeredgewidth=2, zorder=4)
-        ax.annotate(f"{lab}\nalpha*={a_s:.2f} [{lo:.2f},{hi:.2f}]",
-                    (a_s, curves[key][j]), textcoords='offset points',
-                    xytext=(8, 10), color=INK, fontsize=9.5, zorder=5)
-    cvv = float(np.mean([ade(CVv[i], Gv[i]) for i in iv]))
-    ax.axhline(cvv, color=INK2, ls=(0, (5, 4)), lw=1.4, zorder=2)
-    ax.annotate(f"CV baseline ({cvv:.3f})", (0.02, cvv), textcoords='offset points',
-                xytext=(0, 6), color=INK2, fontsize=9.5)
+        # direct label at the RIGHT end, where the curves are well separated
+        ax.annotate(lab, (ALPHAS[-1], curves[key][-1]), textcoords='offset points',
+                    xytext=(6, -3), color=col, fontsize=10.5, zorder=5, va='center')
+    ax.annotate('CV baseline', (0.0, cvv), textcoords='offset points',
+                xytext=(2, 6), color=INK2, fontsize=10)
+    # alpha* summary block, lower right, no collisions with the curves
+    lines = [f"alpha*  (95% CI)"] + [
+        f"{lab:<16} {astars[k]:.2f}  [{cis[k][0]:.2f}, {cis[k][1]:.2f}]"
+        for k, lab, _ in MODELS]
+    ax.text(0.015, 0.975, "\n".join(lines), transform=ax.transAxes, fontsize=9.5,
+            family='monospace', color=INK, va='top', ha='left',
+            bbox=dict(boxstyle='round,pad=0.5', facecolor=SURF, edgecolor=GRID))
+    ax.set_xlim(-0.02, 1.30)
+    ax.set_xticks(np.arange(0, 1.01, 0.2))
     ax.set_xlabel('alpha   (0 = pure CV,  1 = pure model)')
     ax.set_ylabel('VAL ADE@6s (m)')
     ax.set_title('Shrinkage curve: blending the model toward constant velocity\n'
@@ -90,11 +99,15 @@ def main():
             S2, '-')]
     fig, ax = plt.subplots(figsize=(8, 5), dpi=150)
     xmax = max(np.percentile(v, 99) for _, v, _, _ in ser)
-    for lab, v, col, ls in ser:
+    # stagger the direct labels so they never collide (relief rule: never colour alone)
+    anchors = [(0.22, (8, -14)), (0.88, (8, -2)), (0.55, (10, -14))]
+    for (lab, v, col, ls), (q, off) in zip(ser, anchors):
         xs = np.sort(v); ys = np.arange(1, len(xs)+1) / len(xs)
         ax.plot(xs, ys, color=col, lw=2, ls=ls, zorder=3)
-        ax.annotate(lab, (np.percentile(v, 62), 0.62), color=col, fontsize=10,
-                    textcoords='offset points', xytext=(6, -12), zorder=5)
+        ax.annotate(lab, (np.percentile(v, 100*q), q), color=col, fontsize=10.5,
+                    textcoords='offset points', xytext=off, zorder=5,
+                    bbox=dict(boxstyle='round,pad=0.25', facecolor=SURF,
+                              edgecolor='none', alpha=0.85))
     ax.axhline(0.5, color=GRID, lw=1, zorder=1)
     ax.set_xlim(0, xmax); ax.set_ylim(0, 1)
     ax.set_xlabel('per-sample ADE@6s (m)   -- lower is better')
@@ -117,12 +130,12 @@ def main():
         ax.plot([lo, hi], [y, y], color=INK, lw=2, zorder=4)
         ax.plot([lo, lo], [y-0.09, y+0.09], color=INK, lw=2, zorder=4)
         ax.plot([hi, hi], [y-0.09, y+0.09], color=INK, lw=2, zorder=4)
-    ax.text(0.345, 1, '  -0.333 m,  p < 1e-4', va='center', color=INK, fontsize=11)
-    ax.text(0.145, 0, '  -0.045 m,  p = 0.35  (not significant)', va='center',
+    ax.text(0.392, 1, '-0.333 m,  p < 1e-4', va='center', color=INK, fontsize=11)
+    ax.text(0.158, 0, '-0.045 m,  p = 0.35  (not significant)', va='center',
             color=INK, fontsize=11)
     ax.axvline(0, color=INK2, lw=1.2, zorder=2)
     ax.set_yticks(ypos); ax.set_yticklabels(labels, fontsize=10.5)
-    ax.set_xlim(-0.1, 0.62)
+    ax.set_xlim(-0.1, 0.78)
     ax.set_xlabel('ADE@6s improvement (m), full test set n=3,614   [95% CI]')
     ax.set_title('The estimator is worth more than the cameras', loc='left')
     ax.grid(axis='x', color=GRID, lw=0.8); ax.set_axisbelow(True)
