@@ -15,12 +15,20 @@ LABS = ['1s', '2s', '3s', '6s']
 rng = np.random.RandomState(0)
 
 
-def paired(a, b, n=20000):
-    """mean(a-b) with a paired bootstrap CI. Negative => a better (lower ADE)."""
-    d = a - b
-    bs = np.array([d[rng.randint(0, len(d), len(d))].mean() for _ in range(n)])
-    lo, hi = np.percentile(bs, [2.5, 97.5])
-    p = min(1.0, 2 * min((bs <= 0).mean(), (bs >= 0).mean()))
+def paired(a, b, n=20000, chunk=2000):
+    """mean(a-b) with a paired bootstrap CI. Negative => a better (lower ADE).
+
+    Vectorised + chunked: a Python loop over n resamples of a 3,614-sample vector
+    is ~72M ops per comparison and there are 40 comparisons.
+    """
+    d = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
+    m = len(d)
+    means = np.empty(n)
+    for s0 in range(0, n, chunk):
+        k = min(chunk, n - s0)
+        means[s0:s0+k] = d[rng.randint(0, m, (k, m))].mean(1)
+    lo, hi = np.percentile(means, [2.5, 97.5])
+    p = min(1.0, 2 * min((means <= 0).mean(), (means >= 0).mean()))
     return d.mean(), lo, hi, p
 
 

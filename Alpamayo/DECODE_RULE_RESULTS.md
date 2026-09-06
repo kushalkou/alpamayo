@@ -156,3 +156,139 @@ like-for-like comparison.
 
 The headroom is computed with GROUND-TRUTH token assignments, so it is a ceiling
 the model cannot actually reach, not a target.
+
+
+---
+
+## GATE 2.2 / 2.3 / 2.4 — full test set (n=3,614)
+
+All decodes use CORRECTED argmax (STOP -> 0.0). Y1's published 3.924 and the
+Gate 0 reproduction used the legacy STOP -> bin-32 mapping (delta -0.003).
+
+### 2.2 ADE@6s (mean), all strata
+
+| model / decode | ALL | STRAIGHT | TURNING | STATIONARY |
+|---|---|---|---|---|
+| **CV baseline** | **3.062** | **2.600** | 5.218 | 0.736 |
+| y1_full / argmax | 3.921 | 3.565 | 5.579 | 0.786 |
+| y1_full / V1s | 3.588 | 3.245 | 5.189 | 0.868 |
+| y1_ego / argmax | 3.979 | 3.612 | 5.691 | 0.712 |
+| y1_ego / V1s | 3.633 | 3.299 | 5.190 | 0.765 |
+| **zeroboth / argmax** | 3.648 | 3.304 | 5.252 | 0.737 |
+| **zeroboth / V1s** | **3.266** | **2.864** | **5.146** | 0.751 |
+
+n: ALL 3614, STRAIGHT 2976, TURNING 638, STATIONARY 622.
+
+### Paired bootstrap, ADE@6s (negative = first term better)
+
+| stratum | comparison | delta | 95% CI | p |
+|---|---|---|---|---|
+| ALL | y1_full: V1s - argmax | **-0.333** | [-0.371,-0.295] | <1e-4 |
+| ALL | y1_ego: V1s - argmax | **-0.346** | [-0.382,-0.309] | <1e-4 |
+| ALL | zeroboth: V1s - argmax | **-0.382** | [-0.422,-0.342] | <1e-4 |
+| ALL | y1_full: V1s - CV | +0.526 | [+0.434,+0.617] | <1e-4 |
+| ALL | **zeroboth - y1_full [V1s]** | **-0.322** | [-0.406,-0.240] | <1e-4 |
+| ALL | **y1_full - y1_ego [V1s]** | -0.045 | [-0.137,+0.048] | **0.35 (n.s.)** |
+| TURNING | y1_full: V1s - CV | -0.028 | [-0.269,+0.217] | 0.83 (n.s.) |
+| TURNING | y1_ego: V1s - CV | -0.027 | [-0.285,+0.240] | 0.85 (n.s.) |
+| TURNING | zeroboth: V1s - CV | -0.072 | [-0.146,+0.001] | 0.054 (n.s.) |
+| STATIONARY | y1_full: V1s - argmax | **+0.082** | [+0.057,+0.107] | <1e-4 |
+
+**Two headline answers.**
+1. **V1s does NOT beat CV anywhere.** The closest is zeroboth on turning
+   (-0.072, p=0.054) — still not significant at n=638.
+2. **The decode fix is worth more than the cameras.** V1s-vs-argmax is
+   -0.33 to -0.38m (p<1e-4) in every model; full-vision-vs-ego-only is
+   -0.045m (p=0.35, NOT significant). y1_ego/V1s (3.633) beats
+   y1_full/argmax (3.921) — a better decode on the camera-free model beats the
+   camera model on the old decode.
+
+**The zero-input model wins.** `zeroboth_jul12` beats BOTH trained models at
+every stratum (ALL 3.266 vs 3.588/3.633; p<1e-4 vs y1_full). It is the closest
+thing to CV among the learned models, which is why it is best.
+
+**Y1's "vision helps overall" does not replicate.** With the corrected decode on
+the full test set the full-vs-ego gap is -0.045m [-0.137,+0.048] p=0.35 under
+V1s and -0.058 p=0.32 under argmax. Consistent with the Z1 seed-robustness
+finding that the effect is within seed noise.
+
+**V1s HURTS on stationary samples** (+0.082m, p<1e-4; median 0.001 -> 0.183).
+Expectation smears the STOP mass that argmax commits to cleanly. A hybrid
+(argmax when p(STOP) is high, expectation otherwise) is the obvious fix and is
+NOT yet implemented.
+
+### 2.3 Distribution
+
+**(a) Win rate vs CV** — on TURNING the models win the MAJORITY of samples while
+tying on the mean:
+
+| stratum | model/decode | win rate | Wilson 95% | mean gap |
+|---|---|---|---|---|
+| TURNING | y1_full/V1s | **0.552** | [0.513,0.590] | -0.028 |
+| TURNING | y1_ego/V1s | **0.577** | [0.538,0.615] | -0.027 |
+| TURNING | y1_full/argmax | 0.459 | [0.421,0.498] | +0.362 |
+| ALL | y1_full/V1s | 0.374 | [0.359,0.390] | +0.526 |
+| ALL | zeroboth/V1s | 0.484 | [0.467,0.500] | +0.204 |
+| STATIONARY | zeroboth/argmax | 0.724 | [0.687,0.757] | +0.001 |
+
+On turning, V1s beats CV on 55-58% of samples (CI excludes 50%) yet only ties on
+the mean. **It loses through the tail, not through uniform inferiority.**
+
+**(b) Tail** — TURNING ADE@6s quantiles:
+
+| series | p50 | p75 | p90 | p95 | p99 | mean |
+|---|---|---|---|---|---|---|
+| CV | 4.953 | 7.157 | 9.541 | 10.579 | 13.323 | 5.218 |
+| y1_full/V1s | **4.349** | 7.128 | 10.390 | 12.877 | **19.374** | 5.189 |
+| y1_ego/V1s | **4.070** | 6.872 | 10.358 | 14.069 | **20.030** | 5.190 |
+
+Better at the median, far worse at p95/p99. The mean gap is entirely a tail
+phenomenon: the models occasionally commit to a badly wrong turn.
+
+**(c) Oracle switch** — ceiling on any CV/model selector:
+
+| stratum | model | CV | model | oracle min | gain vs CV |
+|---|---|---|---|---|---|
+| ALL | y1_full/V1s | 3.062 | 3.588 | **2.350** | **0.712** |
+| TURNING | y1_full/V1s | 5.218 | 5.189 | **4.055** | **1.162** |
+| ALL | zeroboth/V1s | 3.062 | 3.266 | 2.652 | 0.410 |
+
+A perfect selector would reach 2.350m vs CV's 3.062 (-23%), and 4.055 vs 5.218
+on turning (-22%). **CV and the model fail on DIFFERENT samples**, so a switch is
+worth building in principle — the problem is building the selector (see 2.4).
+
+### 2.4 Deployable turn detection — NO
+
+The TURNING stratum uses max|GT FUTURE curvature|, an oracle label. Two
+inference-time detectors were built and evaluated.
+
+| detector | precision | recall | F1 | n_pos | CV on subset |
+|---|---|---|---|---|---|
+| (i) PAST curvature >0.05 | 0.365 | 0.511 | 0.426 | 892 | 2.839 |
+| (ii) PREDICTED curv >0.05 [y1_full] | 0.464 | 0.365 | 0.409 | 502 | 4.601 |
+| (ii) PREDICTED curv >0.05 [y1_ego] | 0.439 | 0.403 | 0.420 | 585 | 4.593 |
+| (ii) PREDICTED curv >0.05 [zeroboth] | — | — | — | **0** | — |
+
+V1s vs CV **on the detected subset**:
+
+| detector | model | model ADE | CV | delta | 95% CI | p | win rate |
+|---|---|---|---|---|---|---|---|
+| (i) past | y1_full/V1s | 3.087 | 2.839 | +0.248 | [+0.076,+0.421] | 0.005 | 0.298 |
+| (ii) pred | y1_full/V1s | **6.255** | 4.601 | **+1.654** | [+1.250,+2.070] | <1e-4 | 0.377 |
+| (ii) pred | y1_ego/V1s | **6.059** | 4.593 | **+1.466** | [+1.102,+1.824] | <1e-4 | 0.368 |
+
+**NOT DEPLOYABLE. The turn advantage is an analysis artifact.**
+- Detector (i) selects EASIER-than-average samples (subset CV 2.839 < overall
+  3.062), and the model loses to CV on them (+0.248, p=0.005).
+- Detector (ii) selects genuinely harder samples (subset CV 4.601 > 3.062), and
+  the model loses CATASTROPHICALLY there (+1.654m, p<1e-4, win rate 0.377).
+  **Each model is at its WORST precisely on the samples where it predicts a
+  turn.** The self-detector is anti-selective.
+- Cross-model is milder (y1_ego's detector on y1_full: +0.156, p=0.27 n.s.),
+  confirming the effect is each model'''s own over-commitment, not scene difficulty.
+- **zeroboth predicts ZERO turns** on all 3,614 samples, confirming directly
+  that it has collapsed to a constant-velocity-like predictor.
+
+So the oracle-switch headroom in 2.3(c) is real but currently unreachable: the
+only turn signals available at inference time select exactly the samples where
+the model should NOT be trusted.
