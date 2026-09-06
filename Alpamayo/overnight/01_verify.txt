@@ -1,0 +1,41 @@
+[dataset] Loading nuScenes to build scene-based split...
+[dataset] Scene split: 595 train / 127 val / 128 test scenes
+[dataset] Sample split: 16763 train / 3572 val / 3614 test trajectories
+Tokenizer initialized:
+  Acceleration bins: 64 bins from -11.0 to 10.0 m/s²
+  Curvature bins:    64 bins from -0.8 to 0.65 rad/m
+  Special tokens:    STOP=128
+  Total vocab size:  129
+[dataset] test: 3614 samples  (augment=False)
+Tokenizer initialized:
+  Acceleration bins: 64 bins from -11.0 to 10.0 m/s²
+  Curvature bins:    64 bins from -0.8 to 0.65 rad/m
+  Special tokens:    STOP=128
+  Total vocab size:  129
+[model] Loading Cosmos-Reason from /home/dgx1user/Alpamayo-Kushal/Alpamayo/models/cosmos_reason ...
+Loading weights:   0%|          | 0/729 [00:00<?, ?it/s]Loading weights:   0%|          | 1/729 [00:00<02:23,  5.07it/s]Loading weights:   0%|          | 2/729 [00:00<02:12,  5.51it/s]Loading weights:   2%|▏         | 17/729 [00:00<00:14, 48.30it/s]Loading weights:   4%|▍         | 28/729 [00:00<00:11, 58.99it/s]Loading weights:   6%|▌         | 41/729 [00:00<00:09, 74.53it/s]Loading weights:   7%|▋         | 52/729 [00:00<00:08, 81.83it/s]Loading weights:   9%|▉         | 64/729 [00:01<00:08, 75.44it/s]Loading weights:  10%|█         | 76/729 [00:01<00:08, 77.01it/s]Loading weights:  12%|█▏        | 88/729 [00:01<00:08, 72.43it/s]Loading weights:  14%|█▍        | 101/729 [00:01<00:08, 76.85it/s]Loading weights:  15%|█▌        | 112/729 [00:01<00:08, 76.85it/s]Loading weights:  17%|█▋        | 125/729 [00:01<00:07, 79.30it/s]Loading weights:  19%|█▊        | 136/729 [00:01<00:07, 76.69it/s]Loading weights:  20%|██        | 148/729 [00:02<00:07, 77.51it/s]Loading weights:  22%|██▏       | 160/729 [00:02<00:06, 82.78it/s]Loading weights:  24%|██▎       | 172/729 [00:02<00:06, 81.66it/s]Loading weights:  25%|██▌       | 184/729 [00:02<00:06, 80.30it/s]Loading weights:  27%|██▋       | 196/729 [00:02<00:06, 77.27it/s]Loading weights:  29%|██▊       | 208/729 [00:02<00:06, 85.45it/s]Loading weights:  30%|███       | 220/729 [00:02<00:05, 88.19it/s]Loading weights:  32%|███▏      | 232/729 [00:03<00:05, 85.14it/s]Loading weights:  33%|███▎      | 244/729 [00:03<00:06, 78.70it/s]Loading weights:  35%|███▌      | 256/729 [00:03<00:05, 84.07it/s]Loading weights:  37%|███▋      | 268/729 [00:03<00:06, 73.42it/s]Loading weights:  38%|███▊      | 280/729 [00:03<00:06, 74.73it/s]Loading weights:  40%|████      | 292/729 [00:03<00:05, 76.16it/s]Loading weights:  42%|████▏     | 304/729 [00:04<00:05, 77.99it/s]Loading weights:  43%|████▎     | 316/729 [00:04<00:04, 83.00it/s]Loading weights:  45%|████▍     | 328/729 [00:04<00:04, 83.20it/s]Loading weights:  57%|█████▋    | 419/729 [00:04<00:01, 272.28it/s]Loading weights:  72%|███████▏  | 528/729 [00:04<00:00, 473.69it/s]Loading weights:  87%|████████▋ | 635/729 [00:04<00:00, 626.65it/s]Loading weights: 100%|█████████▉| 726/729 [00:04<00:00, 672.07it/s]Loading weights: 100%|██████████| 729/729 [00:04<00:00, 153.05it/s]
+[model] Loaded fp16 (default attention)
+[model] Freezing all weights...
+[model] Gradient checkpointing enabled on LM
+[model] LoRA on 84 projections (q,v,o) rank=16 alpha=32 dropout=0.1
+[model] Total: 8,302,337,024 | Trainable: 10,170,368 (0.12%)
+[verify] re-decoding 100 test samples the SLOW way (one GPU pass per variant)
+
+  [y1_full] 0/100
+  [y1_full] 25/100
+  [y1_full] 50/100
+  [y1_full] 75/100
+  [y1_full] max|ADE_slow - ADE_offline|: argmax 0.000e+00  V1s 0.000e+00   max|value diff|: argmax 0.000e+00  V1s 0.000e+00
+  [y1_ego] 0/100
+  [y1_ego] 25/100
+  [y1_ego] 50/100
+  [y1_ego] 75/100
+  [y1_ego] max|ADE_slow - ADE_offline|: argmax 0.000e+00  V1s 0.000e+00   max|value diff|: argmax 0.000e+00  V1s 0.000e+00
+  [zeroboth_jul12] 0/100
+  [zeroboth_jul12] 25/100
+  [zeroboth_jul12] 50/100
+  [zeroboth_jul12] 75/100
+  [zeroboth_jul12] max|ADE_slow - ADE_offline|: argmax 0.000e+00  V1s 0.000e+00   max|value diff|: argmax 0.000e+00  V1s 0.000e+00
+
+[verify] WORST max|ADE_slow - ADE_offline| over all models/variants = 0.000e+00
+[verify] PASS (threshold 1e-6)
