@@ -292,3 +292,120 @@ V1s vs CV **on the detected subset**:
 So the oracle-switch headroom in 2.3(c) is real but currently unreachable: the
 only turn signals available at inference time select exactly the samples where
 the model should NOT be trusted.
+
+
+---
+
+# GATE 3 — SHRINKAGE (overnight run, 2026-09-06)
+
+Full detail and raw outputs: `OVERNIGHT_REPORT.md`, `Alpamayo/overnight/`.
+
+## Verification (blocking gate)
+
+The offline sweeps rely on one AR pass serving both decodes, since argmax and the
+STOP-aware expectation both condition on the argmax token. Re-decoding 100 test
+samples the slow way (one independent GPU pass per variant) reproduces the offline
+trajectories with max|ADE_slow - ADE_offline| = **0.000e+00** across all three
+checkpoints and both variants -- bitwise identical, not merely inside 1e-6.
+`ADE(alpha=0)` equals `ADE(CV)` to 0.00e+00 over 200 test samples.
+
+## 3.1 Stationary hybrid — V1s now strictly dominates argmax
+
+Per slot: `p(STOP) > tau ? argmax : expectation`, tau fit on VAL (0.5 for y1_full).
+Test ADE@6s: hybrid 3.570 vs V1s 3.588 vs argmax 3.921; on STATIONARY 0.767 vs
+0.868 vs 0.786, with the median back to 0.001 from V1s's 0.183. The hybrid beats
+argmax in every stratum (ALL -0.350 p<1e-4, STATIONARY -0.019 p=0.018, NON-STAT
+-0.419 p<1e-4) and costs nothing off-stationary (p=0.26). The +0.082 m stationary
+regression noted at Gate 2.2 is resolved.
+
+## 3.2 Global shrinkage — the first thing in this project to beat CV
+
+`traj = alpha*model + (1-alpha)*CV` in position space, alpha fit on VAL (n=3,572),
+evaluated on TEST (n=3,614). **This is a model+CV ENSEMBLE, not the model beating CV.**
+
+| checkpoint | alpha* | 95% CI | TEST ADE@6s | vs CV | p |
+|---|---|---|---|---|---|
+| y1_ego / V1s | 0.25 | [0.25, 0.30] | **2.894** | **-0.168** [-0.194,-0.142] | <1e-4 |
+| y1_full / V1s | 0.30 | [0.25, 0.35] | 2.910 | -0.152 [-0.181,-0.123] | <1e-4 |
+| zeroboth / V1s | 0.10 | [0.05, 0.15] | 3.048 | -0.014 [-0.018,-0.010] | <1e-4 |
+| CV baseline | - | - | 3.062 | - | - |
+
+All three alpha* CIs exclude 0: **the model carries information CV does not have.**
+Largest effect on TURNING: 4.868 vs CV 5.218 (-0.349 [-0.435,-0.263]), win rate
+0.666 [0.629,0.702]. The gain is concentrated in the tail -- p95 on turning falls
+12.877 -> 10.641 -- which is precisely the failure mode Gate 2.3 identified.
+
+## 3.2b Per-stratum alpha — does not help
+
+VAL alpha* per stratum (y1_full): straight 0.25, turning 0.60, stationary 0.65.
+Applied to test: global 2.910, oracle-label 2.902 (-0.0075 vs global, p=0.36 n.s.),
+detector-(i) 2.925 (+0.0149, p=0.059, i.e. worse). Even the ORACLE label gives no
+significant gain, so per-stratum tuning overfits the val split. **Global alpha is the
+headline.**
+
+## 3.3 Adaptive shrinkage — negligible
+
+Curvature-adaptive `alpha_0*exp(-lambda*max|pred curv|)`: -0.0053 m vs global
+(p=0.044). Per-horizon `alpha_0*(1-t/T)^gamma`: -0.0022 m (p<1e-4). Both significant,
+both practically irrelevant against the 0.152 m global effect. Neither recommended.
+
+## 3.4 Does shrinkage subsume the decode fix? — 89% yes
+
+2x2 (y1_full, alpha* fit per decode on VAL): argmax/a=1 3.921, argmax/a* 2.946,
+V1s/a=1 3.588, V1s/a* 2.910. The decode fix is worth 0.333 m alone and 0.036 m once
+both are blended (p<1e-4, so not literally subsumed at n=3,614). **Shrinkage absorbs
+89% of the decode gain**; they are two implementations of the same variance reduction
+and should be presented as one mechanism.
+
+---
+
+# CORRECTIONS TO PRIOR CLAIMS
+
+Recorded so these do not propagate into the paper or Wednesday's slides.
+
+1. **Y1's "vision helps overall" does not replicate.** With the corrected decode on
+   the full test set, full-vision minus ego-only is **-0.045 m, 95% CI
+   [-0.137,+0.048], p=0.35** under V1s (-0.058, p=0.32 under argmax). The published
+   Y1 claim rested on a 0.054 m difference. Consistent with Z1's seed-robustness
+   finding that the effect is within seed noise. **Vision is not measurably helping
+   on this dataset and recipe.**
+
+2. **The published 3.924 used the legacy bin-32 STOP mapping.** Argmax decoded STOP
+   to bin 32 (accel -0.336 m/s2, curv -0.064 rad/m) rather than the tokenizer's own
+   `detokenize_step(STOP) = (0.0, 0.0)`. Corrected, the same checkpoint scores
+   **3.921**. The fix is worth +0.0071 m [-0.0002,+0.0154], p=0.057 -- real but
+   marginal. All Gate 2 and Gate 3 numbers use the corrected mapping; anything
+   published before that does not.
+
+3. **The 0.885 m "immovable floor" is a 100-sample figure, not a test-set figure.**
+   It is the mean over the first 100 trajectories of the whole dataset. On the full
+   3,614-sample test set the hard-token floor is **1.348 m mean / 0.889 m median**.
+   The medians agree; the means differ because of a test-set tail the 100-sample
+   check never saw. The oracle sub-bin (soft) floor is 0.266 m, so total
+   interpolation headroom is 1.082 m. Quote 1.348 -> 0.266 for like-for-like.
+
+4. **The best learned model has no inputs.** `zeroboth_jul12`, trained with vision
+   AND ego zeroed, scores **3.266 m** under V1s -- better than full-vision (3.588)
+   and ego-only (3.633), p<1e-4 against both. It wins by being closest to CV: across
+   all 3,614 test samples it emits a single constant control sequence
+   (max|pred curv| = 0.00638 and max|pred accel| = 0.3694 for every sample, mean =
+   median = p95 = max). It is not a model that rarely turns; it ignores its input
+   entirely.
+
+5. **Gate 2.3(c)'s oracle-switch headroom is inflated.** I reported min(model, CV)
+   reaching 2.350 vs CV 3.062 overall and 4.055 vs 5.218 on turning, and read it as
+   "CV and the model fail on different samples." The zeroboth null shows the operator
+   itself manufactures much of that: zeroboth correlates with CV at pearson
+   **r = 0.955** on turning with a mean difference of 0.072 m, yet min(zeroboth, CV)
+   still "gains" **0.424 m**. A model emitting one constant plan cannot hold
+   complementary scene information, so that gain is the min() operator harvesting
+   sample-level noise. The headroom figures for the trained models are overstated by
+   a comparable amount and should not be cited as achievable switching gain without
+   this null alongside them.
+
+6. **The turn advantage remains non-deployable** (Gate 2.4, unchanged). Both
+   inference-time detectors fail: past-curvature selects easier-than-average samples
+   (subset CV 2.839 < 3.062) and loses to CV there; the model's own predicted
+   curvature selects genuinely harder samples and loses catastrophically (+1.654 m,
+   p<1e-4). 3.2b confirms this from the other direction -- routing alpha by the
+   past-curvature detector is worse than a single global alpha.
