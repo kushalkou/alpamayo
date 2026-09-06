@@ -1,0 +1,217 @@
+val n=3572  test n=3614  models=['y1_full', 'y1_ego', 'zeroboth_jul12']
+
+================================================================================================
+GATE 3.1 — STATIONARY HYBRID:  p(STOP) > tau -> argmax, else expectation
+tau selected on VAL, applied to TEST.  CV: val/test reported per split.
+================================================================================================
+
+VAL sweep (n_stat=635, n_nonstat=2937) ADE@6s mean
+variant                      ALL   STATIONARY   NON-STAT
+
+[y1_full]
+CV                         3.093        0.960      3.554
+argmax                     3.988        0.809      4.675
+V1s_expect                 3.628        0.871      4.224
+hybrid_tau0.3              3.612        0.784      4.224
+hybrid_tau0.5              3.612        0.782      4.223
+hybrid_tau0.7              3.613        0.787      4.223
+hybrid_tau0.9              3.619        0.826      4.223
+  -> VAL-selected tau = 0.5
+
+[y1_ego]
+CV                         3.093        0.960      3.554
+argmax                     4.150        0.818      4.871
+V1s_expect                 3.790        0.828      4.431
+hybrid_tau0.3              3.783        0.786      4.431
+hybrid_tau0.5              3.782        0.781      4.431
+hybrid_tau0.7              3.782        0.780      4.431
+hybrid_tau0.9              3.783        0.786      4.431
+  -> VAL-selected tau = 0.7
+
+[zeroboth_jul12]
+CV                         3.093        0.960      3.554
+argmax                     3.718        0.962      4.314
+V1s_expect                 3.400        0.991      3.920
+hybrid_tau0.3              3.400        0.991      3.920
+hybrid_tau0.5              3.400        0.991      3.920
+hybrid_tau0.7              3.400        0.991      3.920
+hybrid_tau0.9              3.400        0.991      3.920
+  -> VAL-selected tau = 0.3
+
+TEST at the VAL-selected tau — ADE@6s mean (median)
+model / variant                             ALL       STATIONARY         NON-STAT
+CV baseline                       3.062 (2.409)    0.736 (0.001)    3.546 (2.936)
+y1_full/argmax                    3.921 (3.241)    0.786 (0.001)    4.572 (3.675)
+y1_full/V1s_expect                3.588 (2.974)    0.868 (0.183)    4.154 (3.363)
+y1_full/hybrid_tau0.5             3.570 (2.979)    0.767 (0.001)    4.153 (3.363)
+y1_ego/argmax                     3.979 (3.170)    0.712 (0.001)    4.658 (3.677)
+y1_ego/V1s_expect                 3.633 (2.968)    0.765 (0.131)    4.229 (3.414)
+y1_ego/hybrid_tau0.7              3.620 (2.969)    0.690 (0.001)    4.229 (3.414)
+zeroboth_jul12/argmax             3.648 (3.205)    0.737 (0.000)    4.253 (3.653)
+zeroboth_jul12/V1s_expect         3.266 (2.569)    0.751 (0.000)    3.789 (2.977)
+zeroboth_jul12/hybrid_tau0.3      3.266 (2.569)    0.751 (0.000)    3.789 (2.977)
+
+Paired bootstrap on TEST (negative => first better), ADE@6s
+model              comparison                          delta             95% CI        p     subset
+y1_full            hybrid - argmax                    -0.350  [-0.389,-0.313]   0.0000        ALL
+y1_full            hybrid - V1s                       -0.018  [-0.021,-0.014]   0.0000        ALL
+y1_full            hybrid - argmax                    -0.019  [-0.034,-0.003]   0.0180    STATION
+y1_full            hybrid - V1s                       -0.101  [-0.118,-0.084]   0.0000    STATION
+y1_full            hybrid - argmax                    -0.419  [-0.465,-0.373]   0.0000    NONSTAT
+y1_full            hybrid - V1s                       -0.000  [-0.001,+0.000]   0.2636    NONSTAT
+y1_ego             hybrid - argmax                    -0.359  [-0.395,-0.323]   0.0000        ALL
+y1_ego             hybrid - V1s                       -0.013  [-0.016,-0.011]   0.0000        ALL
+y1_ego             hybrid - argmax                    -0.023  [-0.040,-0.007]   0.0038    STATION
+y1_ego             hybrid - V1s                       -0.075  [-0.088,-0.062]   0.0000    STATION
+y1_ego             hybrid - argmax                    -0.429  [-0.473,-0.386]   0.0000    NONSTAT
+y1_ego             hybrid - V1s                       -0.000  [-0.001,+0.000]   0.3410    NONSTAT
+zeroboth_jul12     hybrid - argmax                    -0.382  [-0.422,-0.341]   0.0000        ALL
+zeroboth_jul12     hybrid - V1s                       +0.000  [+0.000,+0.000]   1.0000        ALL
+zeroboth_jul12     hybrid - argmax                    +0.015  [+0.002,+0.028]   0.0246    STATION
+zeroboth_jul12     hybrid - V1s                       +0.000  [+0.000,+0.000]   1.0000    STATION
+zeroboth_jul12     hybrid - argmax                    -0.464  [-0.512,-0.416]   0.0000    NONSTAT
+zeroboth_jul12     hybrid - V1s                       +0.000  [+0.000,+0.000]   1.0000    NONSTAT
+
+================================================================================================
+GATE 3.2 — GLOBAL TRAJECTORY SHRINKAGE (model+CV ENSEMBLE, not model beating CV)
+  traj = alpha*model + (1-alpha)*CV, per timestep, in position space
+  alpha FIT ON VAL (n=3572), EVALUATED ON TEST (n=3614)
+================================================================================================
+
+[y1_full / V1s]  VAL alpha curve (ADE@6s):
+  0.00:3.093  0.10:3.000  0.20:2.948  0.30:2.930  0.40:2.944  0.50:2.989  0.60:3.063  0.70:3.165  0.80:3.294  0.90:3.449  1.00:3.628
+  alpha* = 0.30   bootstrap 95% CI [0.25, 0.35]   (alpha=0 -> 3.093 == CV, alpha=1 -> 3.628)
+  TEST at alpha*=0.30:
+  stratum           n       CV   alpha=1    blend    medCV  med a=1  medblend   p95 a=1   p95 bl
+  ALL            3614    3.062     3.588    2.910    2.409    2.974     2.280     9.595    8.017
+  STRAIGHT       2976    2.600     3.245    2.490    2.006    2.790     1.952     8.456    6.865
+  TURNING         638    5.218     5.189    4.868    4.953    4.349     4.330    12.877   10.641
+  STATIONARY      622    0.736     0.868    0.729    0.001    0.183     0.066     4.592    4.358
+  paired bootstrap, TEST:
+    ALL          blend-CV  -0.152 [-0.181,-0.123] p=0.0000 | blend-a1  -0.678 [-0.745,-0.611] p=0.0000 | win 0.513 [0.497,0.529]
+    STRAIGHT     blend-CV  -0.110 [-0.139,-0.081] p=0.0000 | blend-a1  -0.755 [-0.826,-0.682] p=0.0000 | win 0.480 [0.462,0.498]
+    TURNING      blend-CV  -0.349 [-0.435,-0.263] p=0.0000 | blend-a1  -0.321 [-0.497,-0.147] p=0.0004 | win 0.666 [0.629,0.702]
+    STATIONARY   blend-CV  -0.007 [-0.037,+0.022] p=0.6588 | blend-a1  -0.139 [-0.204,-0.074] p=0.0000 | win 0.227 [0.196,0.261]
+
+[y1_full / argmax]  VAL alpha curve (ADE@6s):
+  0.00:3.093  0.10:3.006  0.20:2.969  0.30:2.976  0.40:3.021  0.50:3.103  0.60:3.218  0.70:3.368  0.80:3.548  0.90:3.755  1.00:3.988
+  alpha* = 0.25   bootstrap 95% CI [0.20, 0.25]   (alpha=0 -> 3.093 == CV, alpha=1 -> 3.988)
+  TEST at alpha*=0.25:
+  stratum           n       CV   alpha=1    blend    medCV  med a=1  medblend   p95 a=1   p95 bl
+  ALL            3614    3.062     3.921    2.946    2.409    3.241     2.318    10.530    8.046
+  STRAIGHT       2976    2.600     3.565    2.521    2.006    3.030     1.960     9.400    6.988
+  TURNING         638    5.218     5.579    4.928    4.953    4.508     4.420    14.428   10.698
+  STATIONARY      622    0.736     0.786    0.708    0.001    0.001     0.001     4.704    4.501
+  paired bootstrap, TEST:
+    ALL          blend-CV  -0.117 [-0.145,-0.089] p=0.0000 | blend-a1  -0.975 [-1.057,-0.894] p=0.0000 | win 0.478 [0.462,0.494]
+    STRAIGHT     blend-CV  -0.079 [-0.109,-0.051] p=0.0000 | blend-a1  -1.045 [-1.132,-0.957] p=0.0000 | win 0.451 [0.433,0.469]
+    TURNING      blend-CV  -0.290 [-0.371,-0.209] p=0.0000 | blend-a1  -0.651 [-0.863,-0.442] p=0.0000 | win 0.605 [0.567,0.642]
+    STATIONARY   blend-CV  -0.028 [-0.053,-0.003] p=0.0256 | blend-a1  -0.078 [-0.151,-0.005] p=0.0346 | win 0.106 [0.084,0.133]
+
+[y1_ego / V1s]  VAL alpha curve (ADE@6s):
+  0.00:3.093  0.10:3.005  0.20:2.962  0.30:2.958  0.40:2.988  0.50:3.051  0.60:3.145  0.70:3.266  0.80:3.415  0.90:3.590  1.00:3.790
+  alpha* = 0.25   bootstrap 95% CI [0.25, 0.30]   (alpha=0 -> 3.093 == CV, alpha=1 -> 3.790)
+  TEST at alpha*=0.25:
+  stratum           n       CV   alpha=1    blend    medCV  med a=1  medblend   p95 a=1   p95 bl
+  ALL            3614    3.062     3.633    2.894    2.409    2.968     2.252     9.719    7.889
+  STRAIGHT       2976    2.600     3.299    2.467    2.006    2.807     1.943     8.859    6.727
+  TURNING         638    5.218     5.190    4.886    4.953    4.070     4.409    14.069   11.043
+  STATIONARY      622    0.736     0.765    0.703    0.001    0.131     0.050     4.113    4.263
+  paired bootstrap, TEST:
+    ALL          blend-CV  -0.168 [-0.194,-0.142] p=0.0000 | blend-a1  -0.739 [-0.813,-0.665] p=0.0000 | win 0.535 [0.518,0.551]
+    STRAIGHT     blend-CV  -0.133 [-0.160,-0.106] p=0.0000 | blend-a1  -0.832 [-0.911,-0.754] p=0.0000 | win 0.495 [0.477,0.513]
+    TURNING      blend-CV  -0.332 [-0.406,-0.257] p=0.0000 | blend-a1  -0.305 [-0.506,-0.104] p=0.0026 | win 0.719 [0.683,0.753]
+    STATIONARY   blend-CV  -0.033 [-0.059,-0.008] p=0.0068 | blend-a1  -0.062 [-0.121,-0.004] p=0.0364 | win 0.238 [0.206,0.273]
+
+[y1_ego / argmax]  VAL alpha curve (ADE@6s):
+  0.00:3.093  0.10:3.012  0.20:2.987  0.30:3.008  0.40:3.071  0.50:3.171  0.60:3.306  0.70:3.472  0.80:3.670  0.90:3.896  1.00:4.150
+  alpha* = 0.20   bootstrap 95% CI [0.15, 0.25]   (alpha=0 -> 3.093 == CV, alpha=1 -> 4.150)
+  TEST at alpha*=0.20:
+  stratum           n       CV   alpha=1    blend    medCV  med a=1  medblend   p95 a=1   p95 bl
+  ALL            3614    3.062     3.979    2.943    2.409    3.170     2.283    11.077    7.999
+  STRAIGHT       2976    2.600     3.612    2.512    2.006    2.999     1.977    10.109    6.936
+  TURNING         638    5.218     5.691    4.951    4.953    4.633     4.474    15.817   11.121
+  STATIONARY      622    0.736     0.712    0.695    0.001    0.001     0.001     4.503    4.318
+  paired bootstrap, TEST:
+    ALL          blend-CV  -0.119 [-0.143,-0.096] p=0.0000 | blend-a1  -1.036 [-1.127,-0.946] p=0.0000 | win 0.493 [0.477,0.509]
+    STRAIGHT     blend-CV  -0.088 [-0.112,-0.064] p=0.0000 | blend-a1  -1.100 [-1.195,-1.008] p=0.0000 | win 0.462 [0.444,0.480]
+    TURNING      blend-CV  -0.266 [-0.336,-0.197] p=0.0000 | blend-a1  -0.739 [-0.991,-0.503] p=0.0000 | win 0.638 [0.600,0.674]
+    STATIONARY   blend-CV  -0.041 [-0.062,-0.021] p=0.0000 | blend-a1  -0.017 [-0.079,+0.041] p=0.5782 | win 0.080 [0.062,0.104]
+
+[zeroboth_jul12 / V1s]  VAL alpha curve (ADE@6s):
+  0.00:3.093  0.10:3.090  0.20:3.097  0.30:3.111  0.40:3.133  0.50:3.162  0.60:3.197  0.70:3.239  0.80:3.287  0.90:3.341  1.00:3.400
+  alpha* = 0.10   bootstrap 95% CI [0.05, 0.15]   (alpha=0 -> 3.093 == CV, alpha=1 -> 3.400)
+  TEST at alpha*=0.10:
+  stratum           n       CV   alpha=1    blend    medCV  med a=1  medblend   p95 a=1   p95 bl
+  ALL            3614    3.062     3.266    3.048    2.409    2.569     2.378     8.597    8.334
+  STRAIGHT       2976    2.600     2.864    2.589    2.006    2.339     1.985     7.675    7.230
+  TURNING         638    5.218     5.146    5.190    4.953    4.769     4.904    10.833   10.598
+  STATIONARY      622    0.736     0.751    0.737    0.001    0.000     0.001     5.120    4.736
+  paired bootstrap, TEST:
+    ALL          blend-CV  -0.014 [-0.018,-0.010] p=0.0000 | blend-a1  -0.218 [-0.255,-0.182] p=0.0000 | win 0.596 [0.580,0.612]
+    STRAIGHT     blend-CV  -0.011 [-0.016,-0.007] p=0.0000 | blend-a1  -0.275 [-0.315,-0.234] p=0.0000 | win 0.605 [0.587,0.623]
+    TURNING      blend-CV  -0.027 [-0.035,-0.020] p=0.0000 | blend-a1  +0.045 [-0.021,+0.110] p=0.1820 | win 0.553 [0.515,0.591]
+    STATIONARY   blend-CV  +0.001 [-0.001,+0.002] p=0.2064 | blend-a1  -0.015 [-0.028,-0.002] p=0.0278 | win 0.746 [0.710,0.779]
+
+[zeroboth_jul12 / argmax]  VAL alpha curve (ADE@6s):
+  0.00:3.093  0.10:3.119  0.20:3.159  0.30:3.208  0.40:3.265  0.50:3.330  0.60:3.400  0.70:3.474  0.80:3.552  0.90:3.633  1.00:3.718
+  alpha* = 0.00   bootstrap 95% CI [0.00, 0.00]   (alpha=0 -> 3.093 == CV, alpha=1 -> 3.718)
+  TEST at alpha*=0.00:
+  stratum           n       CV   alpha=1    blend    medCV  med a=1  medblend   p95 a=1   p95 bl
+  ALL            3614    3.062     3.648    3.062    2.409    3.205     2.409     9.125    8.382
+  STRAIGHT       2976    2.600     3.304    2.600    2.006    2.998     2.006     8.262    7.257
+  TURNING         638    5.218     5.252    5.218    4.953    4.984     4.953    10.687   10.579
+  STATIONARY      622    0.736     0.737    0.736    0.001    0.000     0.001     4.752    4.694
+  paired bootstrap, TEST:
+    ALL          blend-CV  +0.000 [+0.000,+0.000] p=1.0000 | blend-a1  -0.586 [-0.624,-0.548] p=0.0000 | win 0.000 [0.000,0.001]
+    STRAIGHT     blend-CV  +0.000 [+0.000,+0.000] p=1.0000 | blend-a1  -0.704 [-0.750,-0.661] p=0.0000 | win 0.000 [0.000,0.001]
+    TURNING      blend-CV  +0.000 [+0.000,+0.000] p=1.0000 | blend-a1  -0.034 [-0.067,-0.002] p=0.0400 | win 0.000 [0.000,0.006]
+    STATIONARY   blend-CV  +0.000 [+0.000,+0.000] p=1.0000 | blend-a1  -0.001 [-0.002,+0.001] p=0.4156 | win 0.000 [0.000,0.006]
+
+================================================================================================
+GATE 3.2b — PER-STRATUM ALPHA (fit on VAL per stratum, applied to TEST)
+  (a) single global alpha*
+  (b) per-stratum alpha* under the ORACLE stratum label  [UPPER BOUND, not a system]
+  (c) per-stratum alpha* under DETECTOR (i) past-curvature  [DEPLOYABLE]
+================================================================================================
+
+[y1_full / V1s] global alpha* = 0.30
+  VAL alpha*[straight  ] = 0.25  95% CI [0.20,0.25]  (n_val=2454)
+  VAL alpha*[turning   ] = 0.60  95% CI [0.50,0.65]  (n_val=483)
+  VAL alpha*[stationary] = 0.65  95% CI [0.55,0.75]  (n_val=635)
+  TEST ADE@6s (mean / median / p95), n=3614:
+    CV baseline                       3.062    2.409    8.382
+    (a) global                        2.910    2.280    8.017
+    (b) per-stratum ORACLE            2.902    2.267    8.110
+    (c) per-stratum DETECTOR(i)       2.925    2.299    7.991
+    (b) per-stratum ORACLE - global: -0.0075 [-0.0236,+0.0086] p=0.3556
+    (c) per-stratum DETECTOR(i) - global: +0.0149 [-0.0005,+0.0298] p=0.0594
+    (c) - CV: -0.1374 [-0.1723,-0.1018] p=0.0000
+
+[y1_ego / V1s] global alpha* = 0.25
+  VAL alpha*[straight  ] = 0.20  95% CI [0.15,0.25]  (n_val=2454)
+  VAL alpha*[turning   ] = 0.60  95% CI [0.50,0.70]  (n_val=483)
+  VAL alpha*[stationary] = 0.75  95% CI [0.65,0.85]  (n_val=635)
+  TEST ADE@6s (mean / median / p95), n=3614:
+    CV baseline                       3.062    2.409    8.382
+    (a) global                        2.894    2.252    7.889
+    (b) per-stratum ORACLE            2.885    2.197    7.825
+    (c) per-stratum DETECTOR(i)       2.909    2.240    7.897
+    (b) per-stratum ORACLE - global: -0.0096 [-0.0290,+0.0100] p=0.3400
+    (c) per-stratum DETECTOR(i) - global: +0.0145 [-0.0027,+0.0324] p=0.1032
+    (c) - CV: -0.1534 [-0.1869,-0.1190] p=0.0000
+
+[zeroboth_jul12 / V1s] global alpha* = 0.10
+  VAL alpha*[straight  ] = 0.05  95% CI [0.00,0.10]  (n_val=2454)
+  VAL alpha*[turning   ] = 0.75  95% CI [0.55,0.90]  (n_val=483)
+  VAL alpha*[stationary] = 0.00  95% CI [0.00,0.00]  (n_val=635)
+  TEST ADE@6s (mean / median / p95), n=3614:
+    CV baseline                       3.062    2.409    8.382
+    (a) global                        3.048    2.378    8.334
+    (b) per-stratum ORACLE            3.037    2.357    8.380
+    (c) per-stratum DETECTOR(i)       3.081    2.424    8.462
+    (b) per-stratum ORACLE - global: -0.0112 [-0.0199,-0.0024] p=0.0122
+    (c) per-stratum DETECTOR(i) - global: +0.0326 [+0.0256,+0.0396] p=0.0000
+    (c) - CV: +0.0185 [+0.0105,+0.0266] p=0.0000
+
+[SANITY] max |ADE(alpha=0) - ADE(CV)| over 200 test samples = 0.00e+00 (must be ~0)
