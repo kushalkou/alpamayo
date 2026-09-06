@@ -1,0 +1,43 @@
+[3.4] val n=3572  test n=3614
+
+[y1_full]  2x2  {argmax, V1s} x {alpha=1, alpha*}   (alpha* fit on VAL per decode)
+  VAL alpha*: argmax 0.25   V1s 0.30
+  TEST ADE@6s mean (median / p95), n=3614    CV = 3.062 (2.409 / 8.382)
+    cell                       mean   median      p95
+    argmax / alpha=1          3.921    3.241   10.530
+    argmax / alpha*           2.946    2.318    8.046
+    V1s / alpha=1             3.588    2.974    9.595
+    V1s / alpha*              2.910    2.280    8.017
+    blended-argmax - blended-V1s: +0.0357 [+0.0256,+0.0460] p=0.0000   -> NOT subsumed
+    unblended V1s - argmax:       -0.3327 [-0.3703,-0.2950] p=0.0000
+    [straight   n=2441] CV  3.101 | arg/a=1  4.260 | arg/a*  3.003 | V1s/a=1  3.844 | V1s/a*  2.958
+    [turning    n= 551] CV  5.516 | arg/a=1  5.958 | arg/a*  5.219 | V1s/a=1  5.526 | V1s/a*  5.159
+    [stationary n= 622] CV  0.736 | arg/a=1  0.786 | arg/a*  0.708 | V1s/a=1  0.868 | V1s/a*  0.729
+
+[y1_ego]  2x2  {argmax, V1s} x {alpha=1, alpha*}   (alpha* fit on VAL per decode)
+  VAL alpha*: argmax 0.20   V1s 0.25
+  TEST ADE@6s mean (median / p95), n=3614    CV = 3.062 (2.409 / 8.382)
+    cell                       mean   median      p95
+    argmax / alpha=1          3.979    3.170   11.077
+    argmax / alpha*           2.943    2.283    7.999
+    V1s / alpha=1             3.633    2.968    9.719
+    V1s / alpha*              2.894    2.252    7.889
+    blended-argmax - blended-V1s: +0.0485 [+0.0401,+0.0571] p=0.0000   -> NOT subsumed
+    unblended V1s - argmax:       -0.3459 [-0.3821,-0.3100] p=0.0000
+    [straight   n=2441] CV  3.101 | arg/a=1  4.327 | arg/a*  2.995 | V1s/a=1  3.924 | V1s/a*  2.935
+    [turning    n= 551] CV  5.516 | arg/a=1  6.123 | arg/a*  5.249 | V1s/a=1  5.582 | V1s/a*  5.186
+    [stationary n= 622] CV  0.736 | arg/a=1  0.712 | arg/a*  0.695 | V1s/a=1  0.765 | V1s/a*  0.703
+
+[zeroboth_jul12]  2x2  {argmax, V1s} x {alpha=1, alpha*}   (alpha* fit on VAL per decode)
+  VAL alpha*: argmax 0.00   V1s 0.10
+  TEST ADE@6s mean (median / p95), n=3614    CV = 3.062 (2.409 / 8.382)
+    cell                       mean   median      p95
+    argmax / alpha=1          3.648    3.205    9.125
+    argmax / alpha*           3.062    2.409    8.382
+    V1s / alpha=1             3.266    2.569    8.597
+    V1s / alpha*              3.048    2.378    8.334
+    blended-argmax - blended-V1s: +0.0142 [+0.0100,+0.0183] p=0.0000   -> NOT subsumed
+    unblended V1s - argmax:       -0.3817 [-0.4224,-0.3409] p=0.0000
+    [straight   n=2441] CV  3.101 | arg/a=1  3.960 | arg/a*  3.101 | V1s/a=1  3.424 | V1s/a*  3.087
+    [turning    n= 551] CV  5.516 | arg/a=1  5.553 | arg/a*  5.516 | V1s/a=1  5.408 | V1s/a*  5.482
+    [stationary n= 622] CV  0.736 | arg/a=1  0.737 | arg/a*  0.736 | V1s/a=1  0.751 | V1s/a*  0.737
