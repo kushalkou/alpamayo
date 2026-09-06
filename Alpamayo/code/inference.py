@@ -141,8 +141,9 @@ def decode_trajectory(model, visual_tokens, ego_state, tokenizer):
 # sampling). Only the CONTINUOUS value handed to the unicycle changes.
 
 DECODE_MODES = ('argmax', 'expect', 'expect_topk', 'expect_temp', 'sample')
-N_ACT = 64          # active bin ids per slot
+N_ACT = 64          # active bin ids per slot (0..63)
 STOP_ID = 128
+BIMODAL_GAP = 3     # |top1_bin - top2_bin| > this => non-adjacent modes
 
 
 def slot_centers(tokenizer, step):
@@ -150,86 +151,87 @@ def slot_centers(tokenizer, step):
     return tokenizer.accel_centers if step < TRAJ_LEN // 2 else tokenizer.curv_centers
 
 
-def _step_value(logits, tokenizer, step, decode_mode, topk, temperature, generator,
-                stop_aware=False):
-    """logits [129] fp32 -> (continuous value, token to feed back, stats dict).
+def half_spec(mode='argmax', stop_aware=False, topk=5, temperature=1.0):
+    """Decode rule for ONE half of the token stream (accel slots 0-11 / curv slots 12-23).
 
-    stats: entropy (nats) and top-1 mass of the 64-way slot distribution, plus the
-    softmax mass the full 129-way head puts on the dead ids 64..127 (diagnostic).
+    Mixed decoding exists because the halves are in opposite regimes: the accel
+    slots are diffuse (CE 2.24 vs a 2.33 unigram floor) so the conditional MEAN is
+    the right estimator, while the curvature slots are confident and potentially
+    BIMODAL (left-turn mode vs right-turn mode), where the mean lands between the
+    modes — "straight ahead" — which is the worst available answer.
     """
+    return {'mode': mode, 'stop_aware': stop_aware, 'topk': topk, 'temperature': temperature}
+
+
+def _step_value(logits, tokenizer, step, spec, generator):
+    """logits [129] fp32 -> (continuous value, token to feed back, stats dict)."""
     centers = torch.as_tensor(slot_centers(tokenizer, step),
                               dtype=torch.float32, device=logits.device)
-    argmax_tok = int(logits.argmax(-1).item())            # full 129-way argmax (unchanged path)
+    argmax_tok = int(logits.argmax(-1).item())        # full 129-way argmax (unchanged)
 
-    act = logits[:N_ACT]                                   # ids 0..63
-    p = torch.softmax(act, dim=-1)                         # renormalised over the 64 active bins
-
+    act = logits[:N_ACT]                              # ids 0..63
+    p = torch.softmax(act, dim=-1)                    # renormalised over active bins
     full_p = torch.softmax(logits, dim=-1)
+
+    # ── diagnostics ───────────────────────────────────────────────────────────
+    top2 = torch.topk(p, 2)
     stats = {
-        'entropy':  float(-(p * (p + 1e-12).log()).sum().item()),
-        'top1':     float(p.max().item()),
-        'dead_mass': float(full_p[N_ACT:STOP_ID].sum().item()),
+        'entropy':   float(-(p * (p + 1e-12).log()).sum().item()),
+        'top1':      float(p.max().item()),
+        'dead_mass': float(full_p[N_ACT:STOP_ID].sum().item()),   # ids 64..127 (never targets)
         'stop_mass': float(full_p[STOP_ID].item()),
-        'p': p.detach().cpu().numpy(),          # 64-way slot distribution (diagnostics)
+        'argmax_is_stop': float(argmax_tok == STOP_ID),
+        'bimodal':   float(abs(int(top2.indices[0]) - int(top2.indices[1])) > BIMODAL_GAP),
+        'p': p.detach().cpu().numpy(),
     }
 
-    if stop_aware:
-        # STOP-AWARE expectation. Dropping id 128 and renormalising over 0..63 (the
-        # literal V1/V2/V3 rule) is WRONG for a stopped vehicle: the model puts its
-        # mass on STOP, so the residual over 0..63 is arbitrary leftover noise and
-        # the decoded mean drives a parked car away. Here the support is
-        # {0..63} U {128}; STOP contributes the tokenizer's own detokenize_step(STOP)
-        # value of 0.0 for both accel and curvature. Dead ids 64..127 stay excluded.
-        vlog = torch.cat([act, logits[STOP_ID:STOP_ID + 1]])          # [65]
-        vcent = torch.cat([centers, torch.zeros(1, device=logits.device)])
-        if decode_mode == 'expect':
-            q = torch.softmax(vlog, dim=-1)
-            value = float((q * vcent).sum().item())
-        elif decode_mode == 'expect_topk':
-            q = torch.softmax(vlog, dim=-1)
-            tv, ti = torch.topk(q, min(topk, vlog.numel()))
-            tv = tv / tv.sum()
-            value = float((tv * vcent[ti]).sum().item())
-        elif decode_mode == 'expect_temp':
-            q = torch.softmax(vlog / temperature, dim=-1)
-            value = float((q * vcent).sum().item())
-        else:
-            raise ValueError(f'stop_aware not defined for decode_mode {decode_mode}')
-        return value, argmax_tok, stats
+    mode, stop_aware = spec['mode'], spec['stop_aware']
+    topk, temperature = spec['topk'], spec['temperature']
 
-    fed_tok = argmax_tok
-    if decode_mode == 'argmax':
+    if mode == 'argmax':
         t = 32 if argmax_tok == STOP_ID else min(max(argmax_tok, 0), N_ACT - 1)
-        value = float(centers[t].item())
-    elif decode_mode == 'expect':
-        value = float((p * centers).sum().item())
-    elif decode_mode == 'expect_topk':
-        k = min(topk, N_ACT)
-        tv, ti = torch.topk(p, k)
-        tv = tv / tv.sum()
-        value = float((tv * centers[ti]).sum().item())
-    elif decode_mode == 'expect_temp':
-        pt = torch.softmax(act / temperature, dim=-1)
-        value = float((pt * centers).sum().item())
-    elif decode_mode == 'sample':
+        return float(centers[t].item()), argmax_tok, stats
+
+    if mode == 'sample':
         ps = torch.softmax(act / temperature, dim=-1)
         tok = int(torch.multinomial(ps, 1, generator=generator).item())
-        value = float(centers[tok].item())
-        fed_tok = tok                                      # ancestral: feed the sample back
-    else:
-        raise ValueError(f'unknown decode_mode {decode_mode}')
+        return float(centers[tok].item()), tok, stats     # ancestral: feed the sample back
 
-    return value, fed_tok, stats
+    # ── expectation family ────────────────────────────────────────────────────
+    # stop_aware=True  : support {0..63} U {128}; STOP contributes the tokenizer's own
+    #                    detokenize_step(STOP) value of 0.0. This is the PRIMARY family —
+    #                    for a stationary vehicle STOP *is* the answer, and dropping it
+    #                    renormalises over the residual noise floor.
+    # stop_aware=False : the literal "drop id 128" rule, kept as the control.
+    if stop_aware:
+        vlog  = torch.cat([act, logits[STOP_ID:STOP_ID + 1]])                  # [65]
+        vcent = torch.cat([centers, torch.zeros(1, device=logits.device)])
+    else:
+        vlog, vcent = act, centers                                             # [64]
+
+    if mode == 'expect':
+        q = torch.softmax(vlog, dim=-1)
+        value = float((q * vcent).sum().item())
+    elif mode == 'expect_topk':
+        q = torch.softmax(vlog, dim=-1)
+        tv, ti = torch.topk(q, min(topk, vlog.numel()))
+        tv = tv / tv.sum()
+        value = float((tv * vcent[ti]).sum().item())
+    elif mode == 'expect_temp':
+        q = torch.softmax(vlog / temperature, dim=-1)
+        value = float((q * vcent).sum().item())
+    else:
+        raise ValueError(f'unknown decode mode {mode}')
+    return value, argmax_tok, stats
 
 
 @torch.no_grad()
 def prefill_context(raw, visual_tokens, ego_state, device=DEVICE, dtype=DTYPE):
     """Run the 1,540-token context ONCE and return a reusable prefill.
 
-    The 1,540-token prefill dominates per-rollout cost (the 23 follow-on steps are
-    single-token). decode_trajectory_ex crops the cache back to ctx_len when it is
-    done, so one prefill can serve many rollouts of the same sample — which is what
-    makes K-sample decoding (minADE@K) affordable.
+    The prefill dominates per-rollout cost (the 23 follow-on steps are single-token).
+    decode_trajectory_ex crops the cache back to ctx_len when done, so one prefill
+    serves many variants and many K-rollouts of the same sample.
     """
     raw = raw.module if hasattr(raw, 'module') else raw
     vis = visual_tokens.to(device, dtype=dtype)
@@ -246,29 +248,38 @@ def prefill_context(raw, visual_tokens, ego_state, device=DEVICE, dtype=DTYPE):
 def decode_trajectory_ex(raw, visual_tokens, ego_state, tokenizer, device=DEVICE,
                          dtype=DTYPE, decode_mode='argmax', topk=5, temperature=1.0,
                          collect_stats=False, generator=None, pre=None,
-                         stop_aware=False):
-    """KV-cached AR decode of 24 slots under `decode_mode`.
+                         stop_aware=False, a_spec=None, k_spec=None):
+    """KV-cached AR decode of 24 slots.
 
-    `pre`: an optional prefill_context() result to reuse (visual_tokens/ego_state are
-    then ignored). Returns (tokens[24], accels[12], curvs[12], stats[24] or None).
-    With decode_mode='argmax' this is output-identical to decode_trajectory().
+    a_spec / k_spec: per-half decode rules (see half_spec) enabling MIXED decoding,
+    e.g. expectation on the accel half + argmax on the curvature half. When omitted
+    both halves use decode_mode/topk/temperature/stop_aware.
+
+    `pre`: optional prefill_context() result to reuse.
+    Returns (tokens[24], accels[12], curvs[12], stats[24] or None). With
+    decode_mode='argmax' this is output-identical to decode_trajectory().
     """
-    if decode_mode not in DECODE_MODES:
-        raise ValueError(f'decode_mode must be one of {DECODE_MODES}')
+    if a_spec is None:
+        a_spec = half_spec(decode_mode, stop_aware, topk, temperature)
+    if k_spec is None:
+        k_spec = half_spec(decode_mode, stop_aware, topk, temperature)
+    for sp in (a_spec, k_spec):
+        if sp['mode'] not in DECODE_MODES:
+            raise ValueError(f"decode mode must be one of {DECODE_MODES}")
     raw = raw.module if hasattr(raw, 'module') else raw
     lm = raw.cosmos.model.language_model
 
     if pre is None:
         pre = prefill_context(raw, visual_tokens, ego_state, device=device, dtype=dtype)
     past, ctx_len, ctx_dtype = pre['past'], pre['ctx_len'], pre['ctx_dtype']
-    past.crop(ctx_len)                       # drop any tokens left by a previous rollout
+    past.crop(ctx_len)                       # drop tokens left by a previous rollout
 
     toks, values, stats = [], [], []
     logits = pre['logits0']                  # [129]
 
     for step in range(TRAJ_LEN):
-        v, fed, st = _step_value(logits, tokenizer, step, decode_mode,
-                                 topk, temperature, generator, stop_aware=stop_aware)
+        spec = a_spec if step < TRAJ_LEN // 2 else k_spec
+        v, fed, st = _step_value(logits, tokenizer, step, spec, generator)
         values.append(v); toks.append(fed)
         if collect_stats:
             stats.append(st)
