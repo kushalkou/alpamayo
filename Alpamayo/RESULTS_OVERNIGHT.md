@@ -586,6 +586,19 @@ Oversampled turning cases (max|GT curv|>0.05) from **16.2% → ~40%** of drawn s
 | TURNING (n=638) | 5.218 | 5.579 | 5.873 | **5.594** | 5.699 |
 | **OVERALL (n=3614)** | 3.062 | 4.236 | 3.820 | **3.924** | 3.978 |
 
+> **Checkpoint labelling (corrected).** These two full-vision ADE@6s figures are
+> different checkpoints and only ONE of them is turn-weighted — do not quote them as
+> two readings of the same model:
+> - **4.236** = `_w2_full_fixed/alpamayo_best.pt` — W2, fixed-ego, **NOT turn-weighted**
+>   (`results/res_w2_full.json`).
+> - **3.924** = `_y1_full_turnw/alpamayo_best.pt` — Y1, fixed-ego **+ turn-weighted
+>   sampling**. This is the correct number for the best turn-weighted full-vision model.
+>
+> Both were measured on the same full 3,614-sample test set with the same argmax AR
+> decode and the V1-fixed rollout, so the 4.236 → 3.924 delta is exactly the effect of
+> turn-weighting. Independently re-measured at Gate 0 of the decode-rule work:
+> **3.924 overall / 3.566 straight / 5.594 turning**, reproducing this table exactly.
+
 Per-horizon (Y1, overall mean): full 0.219/0.601/1.172/**3.924** @1/2/3/6s;
 ego-only 0.210/0.601/1.184/**3.978**. (Y1 ego best == latest == epoch 10; Y1 full best =
 epoch 8; full_latest epoch 10 is worse at 4.103, so selection was fine.)

@@ -81,6 +81,24 @@ Config must point `dataroot`, cosmos weights, checkpoint dir, and trajectories a
 
 **Tokenizer (validated — do not change).** `tokenize` → 12 (accel, curv) tuples, both 0–63. 64 accel bins over [-11,+10] m/s²; 64 curv bins over [-0.8,+0.65] rad/m; +1 STOP(=128) → **vocab 129**. Stored flattened `[a0..a11, k0..k11]` = 24 tokens. Roundtrip reconstruction ADE = **0.885m** (immovable floor). Unicycle: dt=0.5s, 12 steps.
 
+**Token id layout — NON-OBVIOUS, read before touching decode.** The vocab is 129 wide
+but **only 65 ids are ever used**. Acceleration and curvature tokens BOTH occupy ids
+**0–63**; what distinguishes them is the **slot position** (slots 0–11 = accel, slots
+12–23 = curvature), *not* the id. So **ids 64–127 are dead classes** that never appear
+as a training target. Any decode that softmaxes over the full 129 logits is including
+64 untrained classes; the correct per-slot distribution is over ids 0–63 (+ STOP=128
+where relevant), with the bin centers chosen by slot half. This is easy to misread as
+"64 accel ids + 64 curvature ids + STOP" and that misreading already cost one spec
+error — decoding the *mean* while dropping STOP renormalises over the residual noise
+floor and drives stationary vehicles away (see the decode-rule work). Track the mass
+the head puts on ids 64–127 as a leak diagnostic.
+
+**STOP handling in the argmax decode** (`inference.decode_trajectory`, `ar_eval.ar_decode`)
+is a **special case, not a clip**: `a_tok = 32 if a_tok == 128 else min(max(a_tok,0),63)`.
+The `== 128` test short-circuits before the clamp, so STOP maps to bin 32, never to 63.
+Note bin 32 is not zero (accel center −0.336 m/s², curv center −0.064 rad/m), whereas
+the tokenizer's own `detokenize_step(STOP)` returns exactly (0.0, 0.0).
+
 ---
 
 ## 7. Data
