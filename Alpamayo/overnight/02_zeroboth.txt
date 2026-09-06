@@ -1,0 +1,29 @@
+[probe] test n=3614  TURNING n=638
+
+(1) mean per-sample L2 |zeroboth - CV| trajectory distance, TURNING subset
+    horizon     mean L2 (m)     median        p95
+    1s               0.0453     0.0401     0.0804
+    2s               0.1400     0.1474     0.1708
+    3s               0.3241     0.3528     0.3730
+    6s               1.4765     1.6665     1.7378
+
+(2) decomposition on TURNING -- ADE@6s vs ground truth
+    variant                            ADE6s    median       p95
+    CV (accel=0, curv=0)               5.218     4.953    10.579
+    zeroboth (accel+curv)              5.146     4.769    10.833
+    zeroboth ACCEL + CV curv           5.137     4.743    10.796
+    CV accel + zeroboth CURV           5.229     4.920    10.580
+
+    trajectory divergence from CV (mean L2 @6s, TURNING):
+      zeroboth (accel+curv)             1.4765
+      zeroboth ACCEL + CV curv          1.4509
+      CV accel + zeroboth CURV          0.2273
+
+(3) per-sample ADE@6s correlation (TURNING): pearson r = 0.9552, spearman = 0.9475
+    CV 5.218  zeroboth 5.146  oracle min 4.794  gain vs CV 0.424
+    fraction where zeroboth < CV: 0.4765
+
+(4) zeroboth max|predicted curvature| over all 3614 test samples
+    V1s (expectation): mean 0.00638  p50 0.00638  p95 0.00638  max 0.00638  frac>0.05 0.0000
+    argmax           : mean 0.00430  p50 0.00430  p95 0.00430  max 0.00430  frac>0.05 0.0000
+    max|predicted ACCEL|: mean 0.3694  p50 0.3694  p95 0.3694  max 0.3694
