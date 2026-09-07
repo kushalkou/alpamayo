@@ -31,6 +31,14 @@ MODELS = {
     'y1_ego':  (f'{CK}/_y1_egoonly_turnw/alpamayo_best.pt', True,  False),
     'zeroboth_jul12': (f'{CK}/_zeroboth_run_jul12/alpamayo_best_e1_val2.0392.pt', True, True),
 }
+# Z-series seed replicas (Gate 4.2 seed robustness, and the seed control for the
+# Gate 4.5 'vision beyond ego' term: full-vs-ego differ by SEED as well as modality)
+SEED_MODELS = {
+    'full_s123':  (f'{CK}/_z1_full_s123/alpamayo_best.pt',  False, False),
+    'full_s2024': (f'{CK}/_z1_full_s2024/alpamayo_best.pt', False, False),
+    'ego_s123':   (f'{CK}/_z1_ego_s123/alpamayo_best.pt',   True,  False),
+    'ego_s2024':  (f'{CK}/_z1_ego_s2024/alpamayo_best.pt',  True,  False),
+}
 
 
 @torch.no_grad()
@@ -68,8 +76,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--split', required=True, choices=['val', 'test'])
     ap.add_argument('--limit', type=int, default=None)
+    ap.add_argument('--seeds', action='store_true',
+                    help='dump the Z-series seed replicas instead of the main three')
     args = ap.parse_args()
-    shard = f'/tmp/claude-1000/dump_shards/{args.split}'
+    global MODELS
+    if args.seeds:
+        MODELS = SEED_MODELS
+    shard = f'/tmp/claude-1000/dump_shards/{args.split}{"_seeds" if args.seeds else ""}'
 
     dist.init_process_group(backend='nccl')
     lr = int(os.environ['LOCAL_RANK']); torch.cuda.set_device(lr)
@@ -134,7 +147,7 @@ def main():
         g = pickle.load(open(os.path.join(shard, f's_{r}.pkl'), 'rb'))
         META.update(g['meta'])
         for m in g['data']: DATA[m].update(g['data'][m])
-    op = os.path.join(OUT, f'dump_{args.split}.pkl')
+    op = os.path.join(OUT, f'dump_{args.split}{"_seeds" if args.seeds else ""}.pkl')
     with open(op, 'wb') as f: pickle.dump({'meta': META, 'data': DATA}, f)
     print(f"[dump] saved -> {op}  n={len(META)}", flush=True)
     print("DUMP_DONE", flush=True)

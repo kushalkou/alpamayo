@@ -1,0 +1,55 @@
+========================================================================================
+GATE 4.5 — NESTED BLEND: where does the correction come from?
+  traj = CV + a*(zeroboth-CV) + b*(ego-zeroboth) + c*(full-ego)
+  'signal' = correlated with (GT - CV). NOT perception.
+========================================================================================
+
+--- ALL (fit VAL n=3572, eval TEST n=3614) ---
+    term                                     coef               95% CI  excludes 0
+    a  const-accel (zeroboth-CV)          +0.2352  [+0.1848,+0.2866]         YES
+    b  ego beyond const (ego-zeroboth)    +0.4712  [+0.4351,+0.5074]         YES
+    c  vision beyond ego (full-ego)       +0.2546  [+0.2192,+0.2897]         YES
+
+    marginal TEST ADE@6s as terms are added (CV = 3.0622):
+      + a (const-accel)        3.0431   marginal +0.0191 m   cumulative +0.0191 m
+      + b (ego)                2.9034   marginal +0.1397 m   cumulative +0.1588 m
+      + c (vision)             2.8359   marginal +0.0675 m   cumulative +0.2262 m
+
+--- TURNING only (fit VAL n=609, eval TEST n=638) ---
+    term                                     coef               95% CI  excludes 0
+    a  const-accel (zeroboth-CV)          +0.9709  [+0.8348,+1.1146]         YES
+    b  ego beyond const (ego-zeroboth)    +0.5853  [+0.4987,+0.6762]         YES
+    c  vision beyond ego (full-ego)       +0.3325  [+0.2248,+0.4411]         YES
+
+    marginal TEST ADE@6s as terms are added (CV = 5.2178):
+      + a (const-accel)        5.1413   marginal +0.0765 m   cumulative +0.0765 m
+      + b (ego)                4.7175   marginal +0.4237 m   cumulative +0.5002 m
+      + c (vision)             4.5733   marginal +0.1442 m   cumulative +0.6445 m
+
+========================================================================================
+GATE 4.6 — EFFECT-SIZE SANITY
+========================================================================================
+
+[y1_full]  r = corr(D, G-C) = +0.3392  (fit on VAL)
+    predicted MSE_blend = MSE_CV*(1-r^2) = 27.845*0.8850 = 24.641
+    observed  MSE_blend at ADE-optimal alpha=0.30   = 25.073
+    observed  MSE_blend at MSE-optimal alpha=0.3301 = 25.082
+    MSE_CV = 27.845   reduction at MSE-opt = 9.92%  (predicted 11.50%)
+    blend gain vs CV by horizon (TEST, ADE mean, m):
+      horizon          CV    blend     gain   gain %
+      1s           0.1504   0.1474  +0.0030    2.03%
+      2s           0.4765   0.4428  +0.0337    7.06%
+      3s           0.9433   0.8761  +0.0672    7.12%
+      6s           3.0622   2.9099  +0.1523    4.97%
+
+[y1_ego]  r = corr(D, G-C) = +0.3131  (fit on VAL)
+    predicted MSE_blend = MSE_CV*(1-r^2) = 27.845*0.9020 = 25.115
+    observed  MSE_blend at ADE-optimal alpha=0.25   = 24.883
+    observed  MSE_blend at MSE-optimal alpha=0.2824 = 24.798
+    MSE_CV = 27.845   reduction at MSE-opt = 10.94%  (predicted 9.80%)
+    blend gain vs CV by horizon (TEST, ADE mean, m):
+      horizon          CV    blend     gain   gain %
+      1s           0.1504   0.1425  +0.0079    5.23%
+      2s           0.4765   0.4415  +0.0350    7.34%
+      3s           0.9433   0.8760  +0.0672    7.13%
+      6s           3.0622   2.8942  +0.1679    5.48%
