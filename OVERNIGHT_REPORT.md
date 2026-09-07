@@ -4,7 +4,10 @@ Run 2026-09-06 19:05 UTC -> 21:46 UTC. All 10 items COMPLETE. No training run st
 
 ## MORNING SUMMARY
 
-1.  All 10 items completed. Nothing failed. Verification passed EXACTLY (0.000e+00).
+0.  GATE 4 COMPLETE, RESULTS FROZEN. Vision verdict: NO effect overall (ensemble
+    diversity), a robust +0.122 m effect ON TURNING ONLY, 3/3 seed configurations.
+    Headline survives every check and is seed-robust (full +0.1436 sd 0.0087).
+1.  All 10 overnight items completed. Nothing failed. Verification passed EXACTLY.
 2.  SOMETHING FINALLY BEATS CV. A model+CV shrinkage ensemble, alpha fit on val and
     applied to test: ego-only 2.894 m vs CV 3.062 (-0.168, 95% CI [-0.194,-0.142],
     p<1e-4); full-vision 2.910 (-0.152, [-0.181,-0.123], p<1e-4).

@@ -409,3 +409,102 @@ Recorded so these do not propagate into the paper or Wednesday's slides.
    curvature selects genuinely harder samples and loses catastrophically (+1.654 m,
    p<1e-4). 3.2b confirms this from the other direction -- routing alpha by the
    past-curvature detector is worse than a single global alpha.
+
+
+---
+
+# GATE 4 — VALIDATION AND VISION VERDICT (results frozen)
+
+Raw: `Alpamayo/overnight/08_gate41.txt` .. `12_gate47b.txt`.
+
+## 4.1 The headline is signal, not variance reduction
+
+Nulls (Gaussian matched to D's variance; permuted D; constant mean correction) all select
+alpha*=0 and gain 0.0000 against the real 0.1523 m. Since alpha=0 recovers CV, a null
+cannot gain by construction, so three non-boundary tests were added: forcing the real
+alpha*=0.30 onto a signal-free predictor COSTS 0.32-0.36 m; a permutation test on
+corr(D, G-CV) gives +0.3392 with 0/2000 permutations reaching it (p=0.0005); and the real
+val curve dips then rises where the null rises monotonically. Closed form
+a* = <D,G-CV>/||D||^2 = 0.3301 matches the empirical 0.30.
+
+## 4.2 Seed robustness — the headline holds
+
+| family | alpha* | mean gain vs CV | sd | range |
+|---|---|---|---|---|
+| full (s42/s123/s2024) | 0.30 / 0.30 / 0.30 | **+0.1436** | 0.0087 | [+0.1349, +0.1523] |
+| ego (s42/s123/s2024) | 0.25 / 0.25 / 0.30 | **+0.1542** | 0.0254 | [+0.1249, +0.1699] |
+
+alpha* is essentially seed-invariant and every seed beats CV. The headline is not a
+one-checkpoint artifact.
+
+## 4.3 The blend removes bad outcomes; it does not improve the typical drive
+
+STRAIGHT win rate **0.4802** [0.4623, 0.4981] -- BELOW 50% -- with median gap -0.0059 m,
+while the mean improves +0.110 m. The mean gain is bought entirely in the tail
+(p90 +1.19, p95 +1.51, p99 +2.12). TURNING wins on both counts (0.6661, median +0.2903).
+STATIONARY wins only 0.2267.
+
+## 4.4 Identities exact
+
+max|ADE(alpha=1) - ADE(unblended)| = 0.000e+00 and max|ADE(alpha=0) - ADE(CV)| = 0.000e+00
+for all three checkpoints, in the same code path that produced the headline.
+
+## 4.6 Effect size and horizon profile
+
+MSE_CV*(1-r^2) predicts 24.641; observed 25.073 at the ADE-optimal alpha (9.92% reduction
+vs 11.50% predicted; the gap is expected because alpha minimises ADE, not MSE, and r is fit
+on val). Gain by horizon peaks mid-range, not late:
+**2.03% @1s, 7.06% @2s, 7.12% @3s, 4.97% @6s.**
+
+## 4.7 VISION VERDICT — split by stratum
+
+### The contrast families were confounded; the clean test is "add one model"
+
+Base span is {zeroboth-CV, ego_base-CV}. A contrast (P-Q) whose Q is already in that span
+adds exactly one new model direction P; a contrast where neither endpoint is in the span
+adds only the difference direction P-Q, which is generally not the useful one. That is why
+in the raw 4.7b table EVERY contrast containing the base model gained (0.05-0.08) and every
+other contrast gained ~0.000, **regardless of family**. Comparing family means over that
+table is therefore meaningless.
+
+Deconfounded design: add ONE model at a time as the third basis vector, so the span
+structure is identical for every candidate, and repeat for all three choices of base ego
+seed. Marginal gain is scale-invariant (verified: max|fitted_raw - fitted_normalised| =
+4.3e-14), so basis-vector norm cannot explain any difference.
+
+### Result: no vision effect overall, a robust vision effect on turning
+
+Marginal test ADE gain from adding one model, mean over models of each kind:
+
+| base ego | ALL: FULL | ALL: EGO | ALL diff | TURNING: FULL | TURNING: EGO | TURN diff |
+|---|---|---|---|---|---|---|
+| ego_s42 | +0.0612 | +0.0651 | **-0.0039** | +0.1689 | +0.0272 | **+0.1416** |
+| ego_s123 | +0.1155 | +0.1311 | **-0.0156** | +0.2997 | +0.1675 | **+0.1323** |
+| ego_s2024 | +0.0520 | +0.0594 | **-0.0074** | +0.2116 | +0.1183 | **+0.0934** |
+
+**ALL: adding an ego-only model helps as much as adding a full-vision model** -- the
+difference is negative in all three configurations (mean -0.009 m). The Gate 4.5 term c is
+ENSEMBLE DIVERSITY overall, and the "vision contributes as a correction term" reading of
+the overall number is WITHDRAWN.
+
+**TURNING: adding a full-vision model helps more, in all three configurations**
+(+0.1416, +0.1323, +0.0934; mean **+0.122 m**, sd 0.026, 3/3 positive). Within each
+configuration the ranges separate completely -- every full-vision model added beats every
+ego-only model added. This is the one place vision shows a genuine, seed-robust benefit,
+and only as a CORRECTION TERM, never as a replacement.
+
+Honest limits: three paired configurations, 3 full vs 2 ego models each; the modality
+contrast is necessarily cross-run since no two checkpoints differ in vision alone; and this
+is the same 638-sample turning subset used throughout.
+
+## 4.7c The 3-term blend is not val-overfitting
+
+| blend | params | VAL gain | TEST gain | degradation |
+|---|---|---|---|---|
+| 1-term | 1 | +0.1622 | +0.1523 | +0.0099 |
+| 3-term | 3 | +0.2334 | +0.2262 | +0.0071 |
+
+The 3-term blend degrades LESS from val to test than the 1-term. 5-fold CV within val gives
+stable coefficients: a +0.2355 (sd 0.0203, cv 8.6%), b +0.4713 (sd 0.0215, cv 4.6%),
+c +0.2547 (sd 0.0154, cv 6.1%); held-out gain +0.2290 (sd 0.0844). The decomposition is
+identified, even though 4.7 shows term c is not specifically *vision* overall.

@@ -1,0 +1,112 @@
+==========================================================================================
+GATE 4.7 — VISION VERDICT.  val n=3572  test n=3614
+==========================================================================================
+
+==========================================================================================
+GATE 4.2 — SEED ROBUSTNESS of the 1-term global blend (alpha fit on VAL)
+==========================================================================================
+  model           alpha*  test ADE  gain vs CV
+  CV                   -     3.062     +0.0000
+  full_s42          0.30     2.910     +0.1523
+  full_s123         0.30     2.919     +0.1435
+  full_s2024        0.30     2.927     +0.1349
+  -> full mean     0.300               +0.1436   sd(alpha*)=0.000  sd(gain)=0.0087  range [+0.1349,+0.1523]
+  ego_s42           0.25     2.894     +0.1679
+  ego_s123          0.25     2.937     +0.1249
+  ego_s2024         0.30     2.892     +0.1699
+  -> ego mean      0.267               +0.1542   sd(alpha*)=0.029  sd(gain)=0.0254  range [+0.1249,+0.1699]
+
+==========================================================================================
+4.7a — BASIS-VECTOR NORMS (mean per-sample Frobenius norm, VAL)
+==========================================================================================
+  base 1  zeroboth - CV                7.3749
+  base 2  ego_s42 - zeroboth          13.4208
+  same-seed modality  full_s42 - ego_s42  13.7639
+  same-seed modality  full_s123 - ego_s123  14.6232
+  same-seed modality  full_s2024 - ego_s2024  13.7113
+  cross-seed modality  full_s42 - ego_s123  14.2094
+  cross-seed modality  full_s42 - ego_s2024  14.3400
+  cross-seed modality  full_s123 - ego_s42  14.0497
+  cross-seed modality  full_s123 - ego_s2024  14.5777
+  cross-seed modality  full_s2024 - ego_s42  13.5733
+  cross-seed modality  full_s2024 - ego_s123  13.8673
+  same-modality seed  full_s42 - full_s123  13.3529
+  same-modality seed  full_s42 - full_s2024  13.5008
+  same-modality seed  full_s123 - full_s2024  13.6319
+  same-modality seed  ego_s42 - ego_s123  12.9283
+  same-modality seed  ego_s42 - ego_s2024  12.7851
+  same-modality seed  ego_s123 - ego_s2024  13.0165
+
+==========================================================================================
+4.7b — CONTRAST FAMILIES on ALL (val n=3572, test n=3614)
+  third basis vector varied; identical 3-term fit; marginal gain is
+  scale-invariant, coefficients are shown in NORMALISED units
+==========================================================================================
+  family               contrast                     c_norm       95% CI (norm)  marg gain
+  same-seed modality   full_s42 - ego_s42          +3.5048 [+3.0174,+3.9873]    +0.0675
+  same-seed modality   full_s123 - ego_s123        +0.1252 [-0.2627,+0.5104]    +0.0005
+  same-seed modality   full_s2024 - ego_s2024      +0.2506 [-0.0981,+0.6153]    -0.0021
+  cross-seed modality  full_s42 - ego_s123         +0.0913 [-0.3158,+0.4724]    -0.0000
+  cross-seed modality  full_s42 - ego_s2024        +0.2885 [-0.0958,+0.6544]    -0.0027
+  cross-seed modality  full_s123 - ego_s42         +3.4220 [+2.9434,+3.9464]    +0.0624
+  cross-seed modality  full_s123 - ego_s2024       +0.3144 [-0.0674,+0.6860]    -0.0017
+  cross-seed modality  full_s2024 - ego_s42        +3.2166 [+2.6994,+3.7737]    +0.0537
+  cross-seed modality  full_s2024 - ego_s123       +0.0787 [-0.3050,+0.4508]    +0.0001
+  same-modality seed   full_s42 - full_s123        -0.0377 [-0.4136,+0.3227]    +0.0002
+  same-modality seed   full_s42 - full_s2024       +0.0068 [-0.3477,+0.3704]    -0.0000
+  same-modality seed   full_s123 - full_s2024      +0.0416 [-0.3137,+0.3898]    +0.0001
+  same-modality seed   ego_s42 - ego_s123          -2.8565 [-3.3416,-2.3845]    +0.0518
+  same-modality seed   ego_s42 - ego_s2024         -2.4860 [-2.9875,-2.0381]    +0.0783
+  same-modality seed   ego_s123 - ego_s2024        +0.1559 [-0.1637,+0.4862]    -0.0016
+
+  SEED-contrast gain distribution: mean +0.0215  sd 0.0348  min -0.0016  max +0.0783  n=6
+  same-seed modality   mean +0.0219 sd 0.0395 range [-0.0021,+0.0675]  -> +0.01 SD above seed mean   OUTSIDE seed range
+  cross-seed modality  mean +0.0186 sd 0.0307 range [-0.0027,+0.0624]  -> -0.08 SD above seed mean   OUTSIDE seed range
+
+  >>> VERDICT (ALL): ENSEMBLE DIVERSITY -- modality gain sits inside the seed range
+
+==========================================================================================
+4.7b — CONTRAST FAMILIES on TURNING (val n=609, test n=638)
+  third basis vector varied; identical 3-term fit; marginal gain is
+  scale-invariant, coefficients are shown in NORMALISED units
+==========================================================================================
+  family               contrast                     c_norm       95% CI (norm)  marg gain
+  same-seed modality   full_s42 - ego_s42          +5.4056 [+3.6554,+7.1716]    +0.1442
+  same-seed modality   full_s123 - ego_s123        +0.5396 [-1.1605,+1.9913]    +0.0112
+  same-seed modality   full_s2024 - ego_s2024      +2.8967 [+1.4930,+4.1813]    +0.0066
+  cross-seed modality  full_s42 - ego_s123         +0.4105 [-1.2193,+1.9421]    +0.0066
+  cross-seed modality  full_s42 - ego_s2024        +2.5214 [+0.9899,+3.9835]    +0.0060
+  cross-seed modality  full_s123 - ego_s42         +5.6312 [+3.7438,+7.2865]    +0.1901
+  cross-seed modality  full_s123 - ego_s2024       +2.6082 [+1.0915,+4.0059]    +0.0216
+  cross-seed modality  full_s2024 - ego_s42        +5.9828 [+4.1921,+7.6861]    +0.1723
+  cross-seed modality  full_s2024 - ego_s123       +0.9860 [-0.5293,+2.4487]    +0.0173
+  same-modality seed   full_s42 - full_s123        -0.1242 [-1.5723,+1.4396]    +0.0006
+  same-modality seed   full_s42 - full_s2024       -0.6629 [-2.1333,+0.7590]    +0.0004
+  same-modality seed   full_s123 - full_s2024      -0.5283 [-2.0951,+1.0449]    -0.0022
+  same-modality seed   ego_s42 - ego_s123          -3.8027 [-5.5015,-1.9430]    +0.0285
+  same-modality seed   ego_s42 - ego_s2024         -1.3143 [-3.0133,+0.2671]    +0.0260
+  same-modality seed   ego_s123 - ego_s2024        +1.5462 [+0.2079,+2.7821]    -0.0198
+
+  SEED-contrast gain distribution: mean +0.0056  sd 0.0184  min -0.0198  max +0.0285  n=6
+  same-seed modality   mean +0.0540 sd 0.0782 range [+0.0066,+0.1442]  -> +2.63 SD above seed mean   OUTSIDE seed range
+  cross-seed modality  mean +0.0690 sd 0.0873 range [+0.0060,+0.1901]  -> +3.44 SD above seed mean   OUTSIDE seed range
+
+==========================================================================================
+4.7a — SCALE-INVARIANCE CHECK (raw vs normalised fit, same contrast)
+==========================================================================================
+  raw coefficients        [0.2352 0.4712 0.2546]
+  normalised coefficients [0.2352 0.4712 3.5048]  (c_norm = c_raw * 13.7639 = 3.5048)
+  max |fitted_raw - fitted_normalised| = 4.263e-14   -> marginal gains are identical either way
+
+==========================================================================================
+4.7c — GENERALIZATION: 1-term vs 3-term blend, and 5-fold CV within VAL
+==========================================================================================
+  blend         params   VAL gain  TEST gain  degradation
+  1-term             1    +0.1622    +0.1523      +0.0099
+  3-term             3    +0.2334    +0.2262      +0.0071
+
+  5-fold CV within VAL — coefficient stability:
+    a const-accel    mean +0.2355  sd 0.0203  range [+0.2040,+0.2557]  cv%=8.6
+    b ego            mean +0.4713  sd 0.0215  range [+0.4516,+0.5018]  cv%=4.6
+    c vision         mean +0.2547  sd 0.0154  range [+0.2389,+0.2774]  cv%=6.1
+    held-out gain     mean +0.2290  sd 0.0844
