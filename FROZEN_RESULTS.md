@@ -29,6 +29,23 @@ The full-vision model gives 2.910 m (+0.152, CI [-0.181,-0.123], seeds +0.144 +/
 with alpha ~= 0.25-0.30. No trained model beats CV on its own; the best standalone learned
 model scores 3.266 m and has no inputs at all (see Correction 4).
 
+### Reproduction
+
+From a clean shell (`env -i`, no inherited environment):
+
+    cd /home/dgx1user/Alpamayo-Kushal/Alpamayo/code
+    /home/dgx1user/miniconda3/envs/alpamayo/bin/python shrink.py
+
+reproduces the headline **2.894** exactly, with alpha* = 0.25 selected on val, alongside
+CV 3.062. Every `ALL` row of the output is byte-identical to the committed run in
+`Alpamayo/overnight/03_05_shrink.txt`. The internal identity check prints
+`max |ADE(alpha=0) - ADE(CV)| = 0.00e+00`.
+
+The script reads `Alpamayo/results/dump_{val,test}.pkl`, produced by
+`dump_decode.py` on 8 GPUs; those dumps were verified against a slow one-pass-per-variant
+re-decode at **0.000e+00** deviation (bitwise identical), so the offline pipeline is exact
+rather than merely close.
+
 ---
 
 ## THE FOUR FINDINGS
