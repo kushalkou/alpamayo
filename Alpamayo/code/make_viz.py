@@ -38,6 +38,45 @@ def stack(T, idx): return np.stack([T[i] for i in idx])
 def ade_arr(P, G): return np.linalg.norm(P - G, axis=2).mean(1)
 
 
+
+def panel_e():
+    """(e) the turning vision effect across the three base-ego configurations.
+
+    Marginal test ADE gain from adding ONE model to a fixed baseline span (Gate 4.7,
+    deconfounded). Numbers are frozen -- read from the committed run, not recomputed.
+    """
+    import matplotlib.pyplot as plt
+    cfg = ['base ego_s42', 'base ego_s123', 'base ego_s2024']
+    full = [[0.1442, 0.1901, 0.1723], [0.2806, 0.3171, 0.3016], [0.1814, 0.2376, 0.2158]]
+    ego = [[0.0285, 0.0260], [0.2289, 0.1060], [0.1632, 0.0733]]
+    diff = [0.1416, 0.1323, 0.0934]
+    fig, ax = plt.subplots(figsize=(8.6, 5.0), dpi=150)
+    for k in range(3):
+        y = 2 - k
+        ax.plot([min(full[k]), max(full[k])], [y + 0.12] * 2, color=S1, lw=3,
+                solid_capstyle='round', zorder=3)
+        ax.plot(full[k], [y + 0.12] * len(full[k]), 'o', ms=8, color=S1,
+                markeredgecolor=SURF, markeredgewidth=1.5, zorder=4)
+        ax.plot([min(ego[k]), max(ego[k])], [y - 0.12] * 2, color=S2, lw=3,
+                solid_capstyle='round', zorder=3)
+        ax.plot(ego[k], [y - 0.12] * len(ego[k]), 'o', ms=8, color=S2,
+                markeredgecolor=SURF, markeredgewidth=1.5, zorder=4)
+        ax.annotate(f"+{diff[k]:.3f} m", (max(full[k]) + 0.012, y), color=INK,
+                    fontsize=10.5, va='center')
+    ax.annotate('full-vision model added', (full[0][0], 2.12), color=S1, fontsize=10.5,
+                textcoords='offset points', xytext=(-6, 14), ha='left')
+    ax.annotate('ego-only model added', (ego[0][0], 1.88), color=S2, fontsize=10.5,
+                textcoords='offset points', xytext=(-6, -20), ha='left')
+    ax.set_yticks([2, 1, 0]); ax.set_yticklabels(cfg, fontsize=10.5)
+    ax.set_ylim(-0.6, 2.7); ax.set_xlim(0, 0.40)
+    ax.set_xlabel('marginal TEST ADE@6s gain from adding one model (m) — TURNING, n=638')
+    ax.set_title('Vision helps on turning, as a correction term\n'
+                 'ranges separate within every base config; gap +0.122 m (sd 0.026), 3/3',
+                 loc='left', fontsize=12)
+    ax.grid(axis='x', color=GRID, lw=0.8); ax.set_axisbelow(True)
+    fig.tight_layout(); fig.savefig(f'{VIZ}/e_turning_vision.png'); plt.close(fig)
+
+
 def main():
     os.makedirs(VIZ, exist_ok=True)
     Dv, mv, iv, Gv, CVv = load('val')
@@ -137,7 +176,10 @@ def main():
     ax.set_yticks(ypos); ax.set_yticklabels(labels, fontsize=10.5)
     ax.set_xlim(-0.1, 0.78)
     ax.set_xlabel('ADE@6s improvement (m), full test set n=3,614   [95% CI]')
-    ax.set_title('The estimator is worth more than the cameras', loc='left')
+    ax.set_title('The estimator is worth more than the cameras\n'
+                 'vision effect is OVERALL, as a replacement\n'
+                 'on turning it does help as a correction term (+0.122 m)',
+                 loc='left', fontsize=11.5)
     ax.grid(axis='x', color=GRID, lw=0.8); ax.set_axisbelow(True)
     fig.tight_layout(); fig.savefig(f'{VIZ}/c_decode_vs_vision.png'); plt.close(fig)
 
@@ -172,6 +214,7 @@ def main():
     fig.tight_layout(rect=(0, 0.06, 1, 0.97))
     fig.savefig(f'{VIZ}/d_bev_turning.png'); plt.close(fig)
 
+    panel_e()
     print("alpha*:", {k: (astars[k], cis[k]) for k, _, _ in MODELS})
     print("wrote:", sorted(os.listdir(VIZ)))
 
