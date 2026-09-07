@@ -1,0 +1,89 @@
+========================================================================================
+GATE 4.1 — IS alpha* VARIANCE REDUCTION OR REAL SIGNAL?
+========================================================================================
+
+========================================================================================
+[y1_full / V1s]
+========================================================================================
+
+(a) BIAS / VARIANCE of the per-sample error vs ground truth (ego frame, TEST)
+    subset     predictor        MSE    bias^2       var  |bias| (m)
+    ALL        CV            27.845     0.483    27.362       0.507
+    ALL        model         38.783     1.828    36.956       1.038
+    TURNING    CV            61.332     0.259    61.073       0.356
+    TURNING    model         73.763     0.783    72.980       0.681
+
+(b) CLOSED-FORM OPTIMUM (fit on VAL)
+    a*_MSE = <D, G-C> / ||D||^2                 = +0.3301
+    corr(D, G-C) = <D,G-C>/(|D||G-C|)           = +0.3392
+    empirical a* minimising ADE (the headline)  = 0.30
+    a* predicted by 'CV + zero-mean noise, NO signal' = 0.0000
+    -> a positive a*_MSE means D points along the correction CV needs.
+
+(c) NULL CONTROLS — identical val-fit / test-eval pipeline
+    predictor       alpha*   test ADE   gain vs CV       sd
+    CV                   -      3.062        0.000        -
+    real             0.300      2.910       0.1523        -
+    null_mean        0.000      3.062       0.0000        -
+    null_gauss       0.000          -       0.0000   0.0000
+    null_perm        0.000          -       0.0000   0.0000
+
+(d) SHARPER TESTS (the nulls above sit on the alpha=0 boundary by
+    construction, so their zero gain is necessary, not incidental)
+    d1. forcing the real alpha*=0.30 onto each predictor (TEST):
+       real           2.910   vs CV 3.062  -> +0.1523 m
+       null_gauss     3.424   vs CV 3.062  -> -0.3618 m
+       null_perm      3.378   vs CV 3.062  -> -0.3161 m
+       null_mean      3.120   vs CV 3.062  -> -0.0581 m
+    d2. permutation test on corr(D, G-C): observed +0.3392, 0/2000 permutations reach it -> p = 0.00050
+    d3. VAL curve shape (ADE@6s at alpha = 0.0 / 0.1 / 0.3 / 0.5):
+       real       3.0926 3.0001 2.9304 2.9890   (dips then rises)
+       null_gauss 3.0926 3.1681 3.4538 3.8619   (monotone increasing)
+
+    GAP: real gain 0.1523 m
+      minus null_gauss  (+0.0000) = +0.1523 m (100.0% of the real gain)
+      minus null_perm   (+0.0000) = +0.1523 m (100.0% of the real gain)
+      minus null_mean   (+0.0000) = +0.1523 m (100.0% of the real gain)
+
+========================================================================================
+[y1_ego / V1s]
+========================================================================================
+
+(a) BIAS / VARIANCE of the per-sample error vs ground truth (ego frame, TEST)
+    subset     predictor        MSE    bias^2       var  |bias| (m)
+    ALL        CV            27.845     0.483    27.362       0.507
+    ALL        model         40.448     2.764    37.684       1.281
+    TURNING    CV            61.332     0.259    61.073       0.356
+    TURNING    model         76.429     0.179    76.250       0.354
+
+(b) CLOSED-FORM OPTIMUM (fit on VAL)
+    a*_MSE = <D, G-C> / ||D||^2                 = +0.2824
+    corr(D, G-C) = <D,G-C>/(|D||G-C|)           = +0.3131
+    empirical a* minimising ADE (the headline)  = 0.25
+    a* predicted by 'CV + zero-mean noise, NO signal' = 0.0000
+    -> a positive a*_MSE means D points along the correction CV needs.
+
+(c) NULL CONTROLS — identical val-fit / test-eval pipeline
+    predictor       alpha*   test ADE   gain vs CV       sd
+    CV                   -      3.062        0.000        -
+    real             0.250      2.894       0.1679        -
+    null_mean        0.000      3.062       0.0000        -
+    null_gauss       0.000          -       0.0000   0.0000
+    null_perm        0.000          -       0.0000   0.0000
+
+(d) SHARPER TESTS (the nulls above sit on the alpha=0 boundary by
+    construction, so their zero gain is necessary, not incidental)
+    d1. forcing the real alpha*=0.25 onto each predictor (TEST):
+       real           2.894   vs CV 3.062  -> +0.1679 m
+       null_gauss     3.356   vs CV 3.062  -> -0.2943 m
+       null_perm      3.303   vs CV 3.062  -> -0.2408 m
+       null_mean      3.103   vs CV 3.062  -> -0.0413 m
+    d2. permutation test on corr(D, G-C): observed +0.3131, 0/2000 permutations reach it -> p = 0.00050
+    d3. VAL curve shape (ADE@6s at alpha = 0.0 / 0.1 / 0.3 / 0.5):
+       real       3.0926 3.0049 2.9577 3.0509   (dips then rises)
+       null_gauss 3.0926 3.1765 3.4969 3.9533   (monotone increasing)
+
+    GAP: real gain 0.1679 m
+      minus null_gauss  (+0.0000) = +0.1679 m (100.0% of the real gain)
+      minus null_perm   (+0.0000) = +0.1679 m (100.0% of the real gain)
+      minus null_mean   (+0.0000) = +0.1679 m (100.0% of the real gain)

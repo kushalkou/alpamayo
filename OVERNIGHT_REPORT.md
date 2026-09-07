@@ -231,3 +231,95 @@ max|GT curvature| and STATIONARY OVERLAPS both (2976 / 638 / 622, summing past 3
 Items 6-7 use disjoint strata, carving stationary out first (2441 / 551 / 622 = 3614).
 Same underlying samples; the CV column differs between the two (3.062 overall either way,
 but 2.600 vs 3.101 on "straight") because of that overlap. Compare like with like.
+
+
+---
+
+## GATE 4.1 — IS alpha* VARIANCE REDUCTION OR REAL SIGNAL? — HEADLINE SURVIVES
+
+Raw: `Alpamayo/overnight/08_gate41.txt`. All in the EGO frame (rotate by -yaw0; ADE is
+rotation invariant, but it makes "mean deviation" meaningful).
+
+Setup. With M=model, C=CV, G=ground truth, D=M-C and R=C-G:
+
+    blend(a) - G = a*D + R      =>  squared-error optimum  a* = <D, G-C> / ||D||^2
+
+Under "CV + zero-mean noise independent of the residual" that inner product has
+expectation zero, so a* = 0. A strictly positive a* means D points along the correction
+CV actually needs.
+
+### (a) bias / variance vs ground truth (TEST, ego frame)
+
+    subset     predictor      MSE    bias^2      var   |bias| m
+    ALL        CV           27.845    0.483   27.362      0.507
+    ALL        model        38.783    1.828   36.956      1.038
+    TURNING    CV           61.332    0.259   61.073      0.356
+    TURNING    model        73.763    0.783   72.980      0.681
+
+The model is a WORSE standalone predictor than CV on every component -- more bias and
+more variance -- which is why it loses head-to-head. That is not incompatible with it
+being a useful *component*; see (b).
+
+### (b) closed-form optimum, fit on VAL
+
+    a*_MSE = <D, G-C> / ||D||^2                        y1_full +0.3301   y1_ego +0.2824
+    corr(D, G-C)                                       y1_full +0.3392   y1_ego +0.3131
+    empirical a* minimising ADE (the headline)         y1_full  0.30     y1_ego  0.25
+    a* predicted by "CV + zero-mean noise, NO signal"           0.0000
+
+The closed form (0.3301) and the empirical ADE optimum (0.30) agree to within one grid
+step, and both are far from the no-signal prediction of 0.
+
+### (c) null controls — identical val-fit / test-eval pipeline
+
+    predictor      alpha*   test ADE   gain vs CV      sd (20 seeds)
+    CV                  -      3.062       0.0000       -
+    real            0.300      2.910       0.1523       -
+    null_mean       0.000      3.062       0.0000       -
+    null_gauss      0.000          -       0.0000       0.0000
+    null_perm       0.000          -       0.0000       0.0000
+
+Every null selects alpha*=0 and therefore gains exactly nothing. `null_mean` is the
+constant population-level correction (mean D learned on val); `null_perm` takes D from a
+random OTHER sample, preserving its magnitude and temporal structure while destroying
+scene alignment; `null_gauss` is the specified zero-mean Gaussian matched to D's
+per-timestep variance.
+
+### (d) sharper tests — because a null pinned at the alpha=0 boundary is one-sided
+
+Zero gain for the nulls is *necessary* (alpha=0 recovers CV), so three tests that are not
+boundary-limited:
+
+    d1. force the real alpha*=0.30 onto each predictor (TEST):
+        real          2.910  -> +0.1523 m vs CV
+        null_gauss    3.424  -> -0.3618 m
+        null_perm     3.378  -> -0.3161 m
+        null_mean     3.120  -> -0.0581 m
+
+    d2. permutation test on corr(D, G-C): observed +0.3392,
+        0 of 2000 permutations reach it  ->  p = 0.0005
+
+    d3. VAL curve shape, ADE@6s at alpha = 0.0 / 0.1 / 0.3 / 0.5
+        real        3.0926  3.0001  2.9304  2.9890   dips then rises
+        null_gauss  3.0926  3.1681  3.4538  3.8619   monotone increasing
+
+### VERDICT — the item-4 conclusion is NOT retracted
+
+The gap is the whole effect: real gain 0.1523 m, every null 0.0000 m, i.e. **100% of the
+blend improvement requires signal and none of it is variance reduction**. Blending a
+signal-free predictor of identical magnitude at the same strength does not merely fail to
+help, it *costs* 0.32-0.36 m. The correlation between the model's deviation and the
+correction CV needs is +0.34 with p=0.0005.
+
+Two further points worth stating:
+
+1. **The gain is entirely scene-specific, not a constant prior correction.** `null_mean`
+   -- the average deviation applied to every sample -- gains nothing (alpha*=0) and costs
+   0.058 m when forced. So the model is not just supplying "CV decelerates too little on
+   average"; it is supplying a per-scene correction.
+2. **A model can be worse than CV standalone and still carry usable information.** From
+   (a) the model has 39% higher MSE and double the bias of CV. Those facts coexist because
+   ADE ranks predictors while corr(D, G-C) measures whether the model's *disagreement*
+   with CV is informative. This reconciles the whole project: every head-to-head test said
+   the models were useless, and they were -- as replacements. As correction terms they are
+   not.
