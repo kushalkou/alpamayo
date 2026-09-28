@@ -308,3 +308,49 @@ report p through a history-invisible turn fraction.
 ANSWER: the winner map keeps its shape (BLEND only in the p=0 low-rho corner, MODEL
 elsewhere). The accel magnitude moves the absolute ADE (CV 3.45 -> 6.18 at p=.2) and
 shifts the p=0 BLEND/MODEL boundary slightly: smaller accel -> BLEND extends to rho=0.5.
+
+---
+
+## 5. LOCATING nuScenes (computed, not interpreted)
+
+Code: Alpamayo/code/leak/locate.py; nuScenes CE from leak/dump_ce.py (free-running,
+argmax fed back, 65-way STOP-aware support; its y1_ego expect values reproduce the
+frozen dump bit-exactly). Logs: overnight2_locate_{sim,nus}.log.
+
+### p
+
+    sim turn fraction (max|GT curv| > 0.05), 3-seed mean:
+      p=0: 0.000  p=.1: 0.098  p=.2: 0.200  p=.35: 0.350  p=.5: 0.500  p=.75: 0.748
+    nuScenes 638/3614 = 0.177  ->  p_hat = 0.177 (between the p=.1 and p=.2 rows)
+
+### rho
+
+Sim (seed 0, accel slots 1-11; slots 2-11 within 0.002 everywhere):
+
+    L1 (CE_noobs - CE_obs)/CE_noobs        L2 1 - CE_obs/CE_unigram|v0bin
+    p\rho  0     .1    .25   .5    .75   1  |  0     .1    .25   .5    .75   1
+    0.10 -.004 .000  .017  .070  .163  .332 | .010  .011  .029  .082  .174  .340
+    0.20 -.005 -.002 .012  .069  .162  .328 | .008  .009  .023  .081  .172  .335
+    (all p rows are within ~0.01 of these; full grid in the log)
+
+nuScenes (test n=3614, free-running CE):
+
+    accel slots   CE y1_ego  CE y1_full  CE unigram|v0   L1       L2(full)  L2(ego)
+    1-11           3.408      3.473       2.368          -0.019   -0.467    -0.439
+    2-11           3.690      3.739       2.374          -0.013   -0.575    -0.555
+
+IMPLIED rho: NEITHER locator lands on the sim's scale. Both nuScenes values sit below
+the sim's rho=0 value (L1 -0.019 vs sim min -0.005; L2 -0.47 vs sim min +0.005), so
+the implied rho is "below 0" for both. They agree in sign only.
+
+Facts relevant to reading this (not interpretation):
+  - nuScenes free-running CE is ABOVE the v0 unigram: the models are worse than a
+    speed-conditioned token histogram under their own rollouts. Per-slot CE grows
+    with the horizon (y1_ego a1..a11: 0.59 2.36 3.06 3.55 3.66 3.87 4.03 4.03 4.10
+    4.13 4.12), and 14% of GT tokens in slots 2-11 get probability < 1e-3.
+  - Slot 1 (0.59) is the leaked slot.
+  - The sim MLP is NON-autoregressive and trained with unweighted CE. The nuScenes
+    models are AR (free-running here) and trained with sqrt inverse-frequency
+    weighted CE. The two CE scales are therefore not like-for-like; the locator gap
+    may be a property of the decoder and loss, not of rho.
+  - The earlier nuScenes "2.24 vs 2.33" was teacher-forced and is not comparable.
