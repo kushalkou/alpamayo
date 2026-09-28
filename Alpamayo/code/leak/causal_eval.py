@@ -17,7 +17,8 @@ import shrink_lib as SL
 from gate41 import rot, ade_arr, fit_alpha, NSEED
 from tokenizer import TrajectoryTokenizer, STOP_TOKEN
 
-RES = SL.RES
+import os
+RES = os.environ.get('CAUSAL_EVAL_RES', SL.RES)
 TAUS = (0.3, 0.5, 0.7, 0.9)
 
 
