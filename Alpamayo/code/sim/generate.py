@@ -62,24 +62,24 @@ def nuscenes_priors():
     return v0, edges, bands
 
 
-def draw_z(rs, p, v0, edges, bands):
+def draw_z(rs, p, v0, edges, bands, arange=(A_LO, A_HI)):
     lon = int(rs.randint(3))                                  # 0 brake 1 hold 2 accel
     if rs.rand() < p:
         lat = 0 if rs.rand() < 0.5 else 2                     # 0 left 1 straight 2 right
     else:
         lat = 1
-    A = float(rs.uniform(A_LO, A_HI))
+    A = float(rs.uniform(*arange))
     b = int(np.searchsorted(edges, v0, side='right') - 1)
     K = float(rs.choice(bands[min(max(b, 0), 9)]))
     t_on = int(rs.choice(T_ON))
     return (lon, lat, A, K, t_on)
 
 
-def encode(z):
+def encode(z, arange=(A_LO, A_HI)):
     lon, lat, A, K, t_on = z
     o = np.zeros(OBS_DIM, np.float32)
     o[lon] = 1; o[3 + lat] = 1
-    o[6] = (A - A_LO) / (A_HI - A_LO)
+    o[6] = (A - arange[0]) / (arange[1] - arange[0])
     o[7] = K / 0.5
     o[8] = (t_on + 4) / 12.0
     return o
@@ -101,11 +101,11 @@ def curv_profile(z):
     return seg, sgn * prof
 
 
-def make_sample(rs, p, rho, v0, edges, bands, tok):
-    z = draw_z(rs, p, v0, edges, bands)
+def make_sample(rs, p, rho, v0, edges, bands, tok, arange=(A_LO, A_HI)):
+    z = draw_z(rs, p, v0, edges, bands, arange)
     visible = rs.rand() < rho
-    zo = z if visible else draw_z(rs, p, v0, edges, bands)
-    obs = encode(zo)
+    zo = z if visible else draw_z(rs, p, v0, edges, bands, arange)
+    obs = encode(zo, arange)
     lon, lat, A, K, t_on = z
     seg, kprof = curv_profile(z)
     k_noisy = kprof + rs.randn(len(seg)) * SIG_K
@@ -148,7 +148,7 @@ def make_sample(rs, p, rho, v0, edges, bands, tok):
     }
 
 
-def generate(p, rho, seed):
+def generate(p, rho, seed, arange=(A_LO, A_HI)):
     import contextlib, io
     from tokenizer import TrajectoryTokenizer
     with contextlib.redirect_stdout(io.StringIO()):
@@ -158,20 +158,23 @@ def generate(p, rho, seed):
     for k, (split, n) in enumerate(SPLITS):
         rs = np.random.RandomState([seed, k, int(round(p * 1000)), int(round(rho * 1000))])
         v0s = rs.choice(v0_pool, n, replace=True)
-        S = [make_sample(rs, p, rho, float(v), edges, bands, tok) for v in v0s]
+        S = [make_sample(rs, p, rho, float(v), edges, bands, tok, arange) for v in v0s]
         out[split] = {
             'ego': np.stack([x['ego'] for x in S]), 'obs': np.stack([x['obs'] for x in S]),
             'tokens': np.stack([x['tokens'] for x in S]),
             'acc': np.stack([x['acc'] for x in S]), 'cur': np.stack([x['cur'] for x in S]),
             'meta': {i: x['meta'] for i, x in enumerate(S)},
         }
-    out['config'] = dict(p=p, rho=rho, seed=seed, A=(A_LO, A_HI), SIG_A=SIG_A, SIG_K=SIG_K,
+    out['config'] = dict(p=p, rho=rho, seed=seed, A=tuple(arange), SIG_A=SIG_A, SIG_K=SIG_K,
                          T_ON=(int(T_ON[0]), int(T_ON[-1])), PLATEAU=PLATEAU)
     return out
 
 
-def cell_name(p, rho, seed):
-    return f'p{p:.2f}_rho{rho:.2f}_s{seed}'
+def cell_name(p, rho, seed, arange=(A_LO, A_HI)):
+    base = f'p{p:.2f}_rho{rho:.2f}_s{seed}'
+    if tuple(arange) != (A_LO, A_HI):
+        base += f'_A{arange[0]:g}-{arange[1]:g}'
+    return base
 
 
 def main():

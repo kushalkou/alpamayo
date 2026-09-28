@@ -173,3 +173,66 @@ CV seeded with backward speed |p0 - p-1|/dt: 3.538 vs forward v0 3.061
 v0 itself reads pose +1. It is shared by CV and every model, so it is not a
 differential leak. It is still not deployable as-is: a real vehicle cannot measure
 the next 0.5 s of displacement.
+
+---
+
+## 2. SIM G2, G3, G4
+
+Model is a NON-AUTOREGRESSIVE MLP (simplification). Every comparison is given against
+plain CV and CV + v0-conditioned mean control ("v0mean": train mean control within the
+sample's v0 bin, 15 fixed bins; see model.py V0_EDGES). Test n=3614, ADE@6s, paired
+bootstrap. Free parameter recorded: accel magnitude U(0.2,1.0) m/s^2, hand-set to put
+CV ADE on nuScenes scale (see item 4 for sensitivity).
+Logs: Alpamayo/overnight2_g{2,3,3_seeds}.log.
+
+G1 re-run with the extended harness (unchanged data): v0mean 2.587, which is WORSE than
+CV (2.545) standalone. Blend - CV = -0.004 [-0.007,-0.001]. Under the winner rule the
+(0,0) cell is therefore labelled BLEND on a 0.004 m v0-only effect (see G1 diagnosis).
+
+### G2 -- rho=1, p=0.5: PASS
+
+    CV 7.069   v0mean 7.177   model 1.113   blend 1.113 (a*=1.00)
+    model - CV       -5.957 [-6.274,-5.651]    margin 5.957 m (84.3% of CV)
+    model - v0mean   -6.065 [-6.381,-5.762]
+
+The model sits near the 0.94 m token floor. That is expected, not suspicious: at
+rho=1 the future is fully visible up to the aleatoric noise.
+
+### G3 -- p=0.5, rho sweep: PASS on the 3-seed mean (seed 0 alone: not monotone)
+
+Seed 0:
+
+    rho    CV     v0mean  model  blend  a*   model-CV                 model-v0mean
+    0.00  6.945  7.027  4.917  4.891 0.95  -2.029 [-2.263,-1.796]   -2.110 [-2.342,-1.885]
+    0.25  6.931  7.040  4.915  4.876 0.95  -2.016 [-2.263,-1.773]   -2.126 [-2.366,-1.895]
+    0.50  6.784  6.853  4.141  4.131 0.95  -2.643 [-2.907,-2.384]   -2.712 [-2.975,-2.451]
+    0.75  6.745  6.831  2.948  2.948 1.00  -3.797 [-4.066,-3.532]   -3.883 [-4.155,-3.614]
+    1.00  7.069  7.177  1.113  1.113 1.00  -5.957 [-6.274,-5.651]   -6.065 [-6.381,-5.762]
+
+Seed 0 breaks monotonicity vs CV at rho 0 -> .25 (+2.029 -> +2.016, 0.013 m). Each rho
+is an independently drawn dataset, and the per-cell CI half-width is ~0.23 m. Seeds 1
+and 2 (data seed = train seed):
+
+    rho   CV-model per seed (0,1,2)   mean    rel.   v0mean-model  info gain
+    0.00  +2.029 +1.848 +2.313       +2.063  0.297    +2.143        0.0855
+    0.25  +2.016 +2.295 +2.076       +2.129  0.306    +2.228        0.1048
+    0.50  +2.643 +2.678 +2.612       +2.644  0.378    +2.728        0.1578
+    0.75  +3.797 +4.127 +3.875       +3.933  0.569    +4.016        0.2406
+    1.00  +5.957 +5.712 +5.865       +5.845  0.839    +5.944        0.3914
+
+The 3-seed mean is strictly monotone vs CV, vs v0mean, in relative terms, and in
+accel info gain. The seed-0 dip is sampling noise: the seed-to-seed sd at rho=0 is
+about 0.23 m, 17x the dip. Also note the model beats CV by ~2 m even at rho=0,
+because p=0.5 turns are partly visible in history (onset < 0 for 4/13 of turns), and
+CV never turns.
+
+### G4 -- expectation beats argmax at every G3 point: PASS (seed 0)
+
+    rho    argmax  expect   expect-argmax
+    0.00   5.025   4.917   -0.109 [-0.149,-0.069]
+    0.25   5.075   4.915   -0.160 [-0.214,-0.105]
+    0.50   4.309   4.141   -0.168 [-0.233,-0.101]
+    0.75   3.076   2.948   -0.128 [-0.173,-0.081]
+    1.00   1.481   1.113   -0.369 [-0.394,-0.343]
+
+G2-G4 pass -> full map launched (tmux session "sim").
