@@ -236,3 +236,75 @@ CV never turns.
     1.00   1.481   1.113   -0.369 [-0.394,-0.343]
 
 G2-G4 pass -> full map launched (tmux session "sim").
+
+---
+
+## 3. SIM PILOT and FULL MAP
+
+Code: sim/gates.py (pilot, map), sim/map_report.py. Table: Alpamayo/viz/sim_map.csv
+(108 rows = 36 cells x 3 seeds, every quantity with a paired-bootstrap CI vs CV and vs
+v0mean). Figure: Alpamayo/viz/sim_phase_map.png. Logs: overnight2_map*.log.
+Seeds: data seed = train seed in {0,1,2}. Model = NON-AUTOREGRESSIVE MLP.
+
+### Pilot (seed 0), ADE@6s mean; CIs are paired bootstrap on test (n=3614)
+
+    p    rho   CV     v0mean model  blend  a*   model-CV                 blend-CV                 winner
+    0.00 0.00  2.545  2.587  2.792  2.540  0.10 +0.248 [+0.222,+0.273]  -0.004 [-0.007,-0.001]  BLEND
+    0.00 0.50  2.513  2.528  2.366  2.333  0.65 -0.148 [-0.196,-0.099]  -0.180 [-0.210,-0.149]  MODEL
+    0.00 1.00  2.476  2.519  1.175  1.158  0.95 -1.301 [-1.363,-1.237]  -1.318 [-1.380,-1.258]  MODEL
+    0.20 0.00  4.320  4.364  3.595  3.559  0.90 -0.725 [-0.900,-0.559]  -0.761 [-0.927,-0.601]  MODEL
+    0.20 0.50  4.302  4.354  3.259  3.243  0.90 -1.042 [-1.207,-0.882]  -1.059 [-1.217,-0.902]  MODEL
+    0.20 1.00  4.292  4.339  1.215  1.215  1.00 -3.077 [-3.285,-2.876]  -3.077 [-3.281,-2.876]  MODEL
+    0.50 0.00  6.945  7.027  4.917  4.891  0.95 -2.029 [-2.263,-1.796]  -2.055 [-2.290,-1.827]  MODEL
+    0.50 0.50  6.784  6.853  4.141  4.131  0.95 -2.643 [-2.907,-2.384]  -2.654 [-2.918,-2.401]  MODEL
+    0.50 1.00  7.069  7.177  1.113  1.113  1.00 -5.957 [-6.274,-5.651]  -5.957 [-6.274,-5.648]  MODEL
+
+(model-v0mean and blend-v0mean columns are in the log and CSV. v0mean is worse than
+CV in every pilot cell.)
+
+### Full map, 3 seeds: majority winner (k/3), mean alpha*, mean ADE@6s
+
+    p \ rho   0          0.1        0.25       0.5        0.75       1
+    0.00      BLEND 3/3  BLEND 3/3  BLEND 3/3  MODEL 3/3  MODEL 3/3  MODEL 3/3
+              a*=.08     a*=.10     a*=.25     a*=.68     a*=1.0     a*=.95
+    0.10      MODEL 2/3  MODEL 3/3  MODEL 3/3  MODEL 3/3  MODEL 3/3  MODEL 3/3
+              a*=.72     a*=.75     a*=.77     a*=.90     a*=.95     a*=.95
+    0.20      MODEL 3/3  (all MODEL 3/3, a* .82-1.00)
+    0.35      MODEL 3/3  (all MODEL 3/3, a* .90-1.00)
+    0.50      MODEL 3/3  (all MODEL 3/3, a* .92-1.00)
+    0.75      MODEL 3/3  (all MODEL 3/3, a* .95-1.00)
+
+MAP SHAPE: CV never wins. BLEND owns only the p=0, rho <= 0.25 corner (small alpha*,
+0.08-0.25). Every cell with any turns, or with rho >= 0.5, is MODEL, with alpha* -> 1.
+
+WHY the model wins at rho=0 once p>0 (decomposition, seed 0,
+overnight2_map_decomp.log):
+
+    p=0.20 rho=0              n     CV      model   model-CV              share of gain
+      turn in progress       223   17.169   4.359  -12.810 [-14.8,-10.9]   1.09
+      turn, onset >= 0       509    8.960   7.870   -1.091 [ -1.5, -0.7]   0.21
+      straight              2882    2.506   2.780   +0.274 [+0.24,+0.31]  -0.30
+    p=0.50 rho=0: shares 0.89 / 0.19 / -0.08, straight model-CV +0.326
+
+The rho=0 advantage is almost entirely turns ALREADY IN PROGRESS at t=0
+(onset < 0, 4/13 of turns, plus the onset=0 ramp segment, which falls in the history).
+Those are visible in the history yaw rate, and CV never turns. This is a second
+predictability channel that rho does not control. On STRAIGHT samples the model
+LOSES to CV (+0.27 to +0.33 m), which is the nuScenes pattern. The p axis therefore
+mixes "turn fraction" with "fraction of the future visible from history". Flagged for
+the planner: to make rho the only predictability dial, restrict onset to >= 1, or
+report p through a history-invisible turn fraction.
+
+---
+
+## 4. SENSITIVITY -- accel magnitude (seed 0, pilot subgrid)
+
+    U(0.1,0.5):  p=0: BLEND BLEND MODEL | p=.2: MODEL x3 | p=.5: MODEL x3
+    U(0.2,1.0):  p=0: BLEND MODEL MODEL | p=.2: MODEL x3 | p=.5: MODEL x3
+    U(0.5,2.0):  p=0: BLEND MODEL MODEL | p=.2: MODEL x3 | p=.5: MODEL x3
+    (columns rho = 0, .5, 1; full numbers in overnight2_sens_summary.log)
+    CV ADE at (p=.2, rho=0): 3.45 / 4.32 / 6.18 for the three ranges.
+
+ANSWER: the winner map keeps its shape (BLEND only in the p=0 low-rho corner, MODEL
+elsewhere). The accel magnitude moves the absolute ADE (CV 3.45 -> 6.18 at p=.2) and
+shifts the p=0 BLEND/MODEL boundary slightly: smaller accel -> BLEND extends to rho=0.5.
