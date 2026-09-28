@@ -9,7 +9,7 @@ Arguments are parsed by finetune.py's own __main__ block (exec'd verbatim).
 Y1 ego recipe:
   python -m torch.distributed.run --nproc_per_node=8 leak/finetune_causal.py \
       --tag ego_s42 --zero_vision --turn_weighted --seed 42 --epochs 10 --patience 5 \
-      --grad_accum_steps 3
+      --batch_size 3 --grad_accum_steps 1   (Y1: 698 steps/GPU/epoch = bs 3, accum 1)
 """
 import os, sys
 CODE = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/code'

@@ -2,8 +2,8 @@
 
 (MORNING SUMMARY is filled in at the end of the run; see bottom of this section.)
 
-MORNING SUMMARY
-  [pending]
+MORNING SUMMARY (provisional -- written 20:30 UTC while item 6 trains; see item 6)
+  [item 6 causal retrain still running; this block is rewritten when it lands]
 
 ---
 
