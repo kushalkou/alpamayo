@@ -2,8 +2,20 @@
 
 (MORNING SUMMARY is filled in at the end of the run; see bottom of this section.)
 
-MORNING SUMMARY (provisional -- written 20:30 UTC while item 6 trains; see item 6)
-  [item 6 causal retrain still running; this block is rewritten when it lands]
+MORNING SUMMARY
+- LEAK CONFIRMED: ego input holds GT accel slot 1 + curv slot 12 exactly; models read it
+  (slot-1 acc 0.774 vs 0.305). Leaked rule +0.65 m vs CV; causal no-learning rule +0.18.
+- CAUSAL RETRAIN (ego, Y1 recipe): blend beats CV by only 0.014 m [0.003,0.024],
+  alpha*=0.10 (leaky model, same samples: 0.164). The leak is 91% of the headline.
+- FROZEN: headline 2.894 WITHDRAWN. F1 decode rule SURVIVES (+0.29 m causal). F2
+  shrinkage SURVIVES in kind, magnitude withdrawn. F3 r=+0.34 WITHDRAWN (causal +0.16).
+  F4 vision-on-turning AT RISK (causal full-vision still training, ~19:00 UTC).
+  C1-C6 unaffected. Proposed text: FROZEN_RESULTS_v2_DRAFT.md.
+- SIM: G1-G4 pass (G3 on 3-seed mean). Map: CV never wins; BLEND only p=0, rho<=.25;
+  MODEL elsewhere, driven by turns already visible in history (an uncontrolled 2nd dial).
+- nuScenes: p_hat=0.177. Both rho locators fall below sim rho=0: no rho implied.
+- HUMAN: approve v2 draft; restrict sim turn onset >= 1?; v0 reads pose +1 (shared with
+  CV, not deployable: backward-speed CV is 3.538 vs 3.061).
 
 ---
 
@@ -354,3 +366,68 @@ Facts relevant to reading this (not interpretation):
     weighted CE. The two CE scales are therefore not like-for-like; the locator gap
     may be a property of the decoder and loss, not of rho.
   - The earlier nuScenes "2.24 vs 2.33" was teacher-forced and is not comparable.
+
+---
+
+## 6. CAUSAL RETRAIN -- ego-only
+
+Recipe = Y1 ego exactly: turn-weighted sampling, seed 42, 10 epochs / patience 5,
+batch 3 x accum 1 x 8 GPUs (effective 24), AR-val-ADE selection with the corrected STOP
+mapping, fp16 backbone / fp32 adapters / fp32 CE, 8-GPU DDP, tmux "causal". Only changes:
+  - ego features from leak/causal_ego.py (past + current poses only, 1d definitions);
+  - every split filtered to >= 2 past poses (train 15573/16763, val 3318, test 3358);
+  - the zeroed visual tokens are produced directly instead of encoding and then
+    zeroing (numerically identical);
+  - the 400-sample selection subset is drawn from the filtered val, so it is not the
+    same 400 as Y1's.
+(A first launch used batch 1 x accum 3. It was killed within minutes and restarted;
+its log is kept as overnight2_train_causal_ego_ABORTED_bs1.log.)
+Best checkpoint: epoch 6, selection median ADE 3.565. Train 20:12-05:24 UTC.
+Code: leak/{causal_ego,finetune_causal,dump_ce,causal_eval}.py.
+Log: Alpamayo/overnight2_causal_ego_eval.log.
+
+TEST, causal subset n=3358, paired throughout. CV 3.059 (median 2.422).
+
+    model       decode           ADE@6s (median)   vs CV
+    causal_ego  argmax           4.460 (3.506)    +1.401 [+1.286,+1.512]
+    causal_ego  V1s (expect)     4.170 (3.469)    +1.111 [+1.015,+1.210]
+    causal_ego  hybrid tau=0.9   4.157 (3.478)    +1.098 [+1.001,+1.194]
+    y1_ego      V1s (leaky)      3.626 (2.977)    +0.567 [+0.470,+0.665]
+
+    SHRINKAGE (V1s; alpha fit on val subset, applied to test)
+    causal_ego  alpha*=0.10 [0.05,0.10]  blend 3.045 (2.408)  blend-CV -0.014 [-0.024,-0.003]
+                                                               p=0.011, win rate 0.493
+    y1_ego      alpha*=0.25 [0.25,0.30]  blend 2.895 (2.261)  blend-CV -0.164 [-0.191,-0.137]
+    blend[causal_ego] - blend[y1_ego] = +0.150 [+0.126,+0.173]
+    causal_ego blend - CV, STRAIGHT (n=2762): -0.004 [-0.015,+0.007]  (n.s.)
+    causal_ego blend - CV, TURNING  (n=596):  -0.062 [-0.093,-0.031]
+
+    NULLS (gate41 definitions)     alpha*   gain vs CV   gain at forced real alpha*
+      real                          0.100    +0.0139       +0.0139
+      null_mean                     0.000    +0.0000       -0.0184
+      null_gauss                    0.000    +0.0000       -0.0740
+      null_perm                     0.000    +0.0000       -0.0585
+    corr(D, G-C) on val = +0.161 (was +0.307 for y1_ego on the same subset), perm p=0.0005
+
+    per-slot argmax accuracy   a0     a1     a2     a3     k0
+      causal_ego             0.988  0.283  0.254  0.244  0.700
+      y1_ego                 0.998  0.773  0.304  0.271  0.695
+    -> the slot-1 fingerprint is gone (0.283 vs 0.773).
+
+For scale, on the same subset (item 1):
+    no-learning causal rule (CV + last accel/yaw rate)  gain +0.184 [+0.138,+0.228]
+    zero-input model (zeroboth) blend                   gain +0.008 [+0.006,+0.010]
+
+THE QUESTION -- does a causal ego-only model + CV blend still beat CV?
+Yes, but only by 0.014 m (3.045 vs 3.059, CI [-0.024,-0.003], p=0.011). That is 9% of
+the 0.164 m the leaky model shows on the same samples. The leak accounts for 91% of the
+headline gain, and what is left is about what a zero-input model buys.
+
+The remaining gain is still real signal, not variance reduction: all three nulls select
+alpha=0 and lose 0.02-0.07 m at the forced alpha, and corr(D, G-C) = +0.16 with p=0.0005.
+But it is small. It lives entirely on turning samples. And a hand-written causal rule
+beats the trained model by 0.17 m.
+
+6b (causal full-vision) started at 05:58 UTC in the same tmux session. It is about
+13 h of training, so it is NOT done by morning; dumps follow automatically, and
+causal_eval.py causal_full runs the same analysis.
