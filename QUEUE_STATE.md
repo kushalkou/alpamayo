@@ -4,10 +4,10 @@ Resume rule after a reboot: tmux sessions die. Re-launch the incomplete step bel
 step's outputs are files, so completed steps are skipped.
 
 ## Track G (GPU)
-- [running] w1: 3.5a retry (w1/run_retry.sh) -> Alpamayo/w1_overfit256_retry.log,
+- [done] w1: 3.5a retry -- GATE FAIL (slot-0 0.598; median 0.447; shuffle ok) (w1/run_retry.sh) -> Alpamayo/w1_overfit256_retry.log,
             dumps -> Alpamayo/w1_retry_dump.log (RETRY_QUEUE_DONE marker)
             resume: bash Alpamayo/code/w1/run_retry.sh (tmux w1)
-- [queued]  G1 fix run + dumps + diagnostic-c probe: Alpamayo/code/w1/run_gq.sh (tmux fix),
+- [running] G1 fix run (started 15:29 UTC) + dumps + diagnostic-c probe: Alpamayo/code/w1/run_gq.sh (tmux fix),
             status Alpamayo/gq_status.log (GQ_DONE marker). No GPU was free alongside w1
             (8 x ~30/32 GB), so it waits for w1.
 - [pending] G2 gate (w1/gate35.py on retry_* and fix_* dumps) -> G3 recipe decision

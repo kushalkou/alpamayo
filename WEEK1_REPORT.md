@@ -712,3 +712,24 @@ Paired scene-level bootstrap, seed 42, ALL 5,119 (L2@3s | ADE6):
     (excl. first frames: L1-L2 +0.072 | +0.117; L5-L2 -0.296 | -0.484; OKIN-L2 +0.359 |
      +0.316, all CIs excluding 0)
 Figures: Alpamayo/viz/review/f6_mini_ladder.{png,pdf}, f7_flip_rate.{png,pdf}.
+
+## QUEUE G2 (part 1) -- GATE 3.5a on the RETRY (LoRA dropout 0, constant LR)
+
+Pre-registered PASS = final AR median ADE@6s <= 1.0 AND slot-0 TF acc >= 0.90 AND the
+shuffled slot-0 acc drops to <= half of unshuffled. w1/gate35.py; log
+Alpamayo/w1_gate35_retry.log. 256 overfit samples; floor 0.426 mean / 0.092 median.
+
+    checkpoint                   epoch  AR median ADE@6s (mean)   slot-0 acc  exact 24-token seq
+    retry final                   150   0.447 (1.711)             0.598       0.559
+    retry final, INPUT-SHUFFLED   150   4.696 (5.882)             0.047       0.027
+    retry best                    144   0.430 (1.590)             0.637       0.590
+    run 1 final                   150   1.058 (2.336)             0.488       0.426
+    run 1 best                    128   0.899 (2.231)             0.488       0.434
+    TF token accuracy (all 24 slots), retry epoch 150: 97.8%
+
+  median 0.447 <= 1.0: yes;  slot-0 0.598 >= 0.90: NO;  shuffle 0.598 -> 0.047 (<= half): yes
+  RETRY: FAIL (on slot-0 accuracy only). Removing dropout and LR decay moves slot 0
+  from 0.49 to 0.60 and the median from 1.06 to 0.45 m. The model reads its input
+  (shuffling collapses slot 0 to 0.05 and the median ADE to 4.7 m), but the
+  context -> first-token mapping still misses 40% of the 256 samples.
+  The fix run (w1/fixrun.py) started 15:29 UTC; it is gated with the same rule.
