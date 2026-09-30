@@ -755,3 +755,23 @@ Alpamayo/w1_gate35_fix.log.
 G3 (pre-registered): fix passes -> Stage A uses the FIX recipe. Launched as
 `RECIPE=fix bash w1/run_stageA.sh` (tmux stageA). It starts when the diagnostic-c
 probe (tmux fix) ends, and runs A1, A2, A3, A0, pausing for each report.
+
+## QUEUE G1 -- diagnostic c: gradient norms (200-step probe, run-1 recipe)
+
+w1/finetune_w1.py --probe_grad: per-group gradient L2 norm at every optimizer step,
+after GradScaler unscale and before clip_grad_norm_(1.0); ego + cmd, no visual tokens,
+the same 256 samples, run-1 recipe. Log Alpamayo/w1_probe_grad.log; summary
+Alpamayo/w1_probe_grad_summary.txt. 10 of 200 steps were fp16 overflow steps (NaN,
+skipped by GradScaler).
+
+    steps      ego_mlp     ego_xtok(cmd)   lora        output_head   traj_embed   ego_mlp/lora
+    1-10       1.859e+01   2.543e+00       1.915e+01   1.084e+02     4.920e-01    0.971
+    11-50      1.220e+01   1.508e+00       1.203e+01   3.622e+01     3.741e-01    1.022
+    51-100     1.399e+00   2.714e-01       2.325e+00   7.656e+00     5.216e-02    0.675
+    101-200    1.999e+00   4.580e-01       5.226e+00   8.118e+00     6.482e-02    0.446
+    (medians over the step range)
+
+Numbers only: the ego-MLP gradient is the same order as LoRA's (ratio 0.45-1.02). The
+global norm (dominated by output_head, 100+ early) is far above the clip threshold 1.0,
+so every step is clipped. AdamW normalises per parameter, so gradient magnitude alone
+does not set the update size of the ego MLP; its LR does.

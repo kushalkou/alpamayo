@@ -1,0 +1,6 @@
+diagnostic c: per-group grad L2 norm per optimizer step (after unscale, before clip), run-1 recipe, 200 steps; nan steps (GradScaler overflow, skipped): 10
+steps          ego_mlp     ego_xtok         lora  output_head   traj_embed   ego_mlp/lora
+  1-10       1.859e+01    2.543e+00    1.915e+01    1.084e+02    4.920e-01   0.971
+ 11-50       1.220e+01    1.508e+00    1.203e+01    3.622e+01    3.741e-01   1.022
+ 51-100      1.399e+00    2.714e-01    2.325e+00    7.656e+00    5.216e-02   0.675
+101-200      1.999e+00    4.580e-01    5.226e+00    8.118e+00    6.482e-02   0.446
