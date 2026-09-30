@@ -672,3 +672,43 @@ w1/fixrun.py + --fix in finetune_w1.py / dump_w1.py:
     cmd embedding keeps x1.
 Unit test w1/test_fixrun.py PASS (init norm 0.87; buffers/gain saved; cmd excluded
 from the x10 group; first Adam step exactly 10x; group lr restored).
+
+## QUEUE C1 -- mini information ladder on the Ego-MLP (a SMALL-MODEL demonstration of
+## the ladder logic; not the VLA)
+
+Code: w1/ladder.py; log: Alpamayo/w1_ladder.log; predictions: results/w1_ladder.pkl.
+Ego-MLP recipe of 3.5b (512-512 MLP, L1 on 12 lidar-frame waypoints, holdout selection
+with TRUE labels), 3 seeds, CPU. Official val. Privileged inputs are marked [P].
+L5n = L5 trained with 10% meta-action flips (seed 42, as A2), tested at 0/10/20/40%
+flips (seed 777).
+
+Seed mean +- sd (3 seeds):
+
+    rung                                   ALL 5,119              EXCL. FIRST FRAMES 4,979
+                                           ADE@6s   L2@3s NoAvg   ADE@6s   L2@3s NoAvg
+    L0  CV (no learning)                   3.742    2.762         3.314    2.420
+    L0  kinematic rule (no learning)       3.161    2.178         2.712    1.820
+    L1  Ego-MLP, ego only                  2.591    1.738         2.123    1.368
+    L2  Ego-MLP, ego + cmd [P]             2.439    1.637         2.027    1.310
+    L2b Ego-MLP, cmd only [P]              9.849    9.103         9.845    9.099
+    L5  Ego-MLP, ego + oracle lon+lat [P]  1.750    1.193         1.537    1.013
+    L5n flip 0 / 10 / 20 / 40% [P]         1.820 2.033 2.246 2.693   1.559 1.768 1.966 2.369
+        (L2@3s)                            1.241 1.388 1.552 1.868   1.015 1.161 1.314 1.599
+    oracle-kinematic, flip 0/10/20/40 [P]  2.671 3.626 4.447 6.082   2.337 3.314 4.154 5.808
+    (all seed sds <= 0.011; full four-convention tables with mean/median/p95 and
+     collision in the log)
+
+Gap closed = (X - L2)/(L5 - L2), seed-mean ADE@6s | L2@3s, ALL 5,119:
+    L1 -0.222 | -0.227;  L5n flip0 +0.899 | +0.891;  flip10 +0.589 | +0.560;
+    flip20 +0.280 | +0.191;  flip40 -0.370 | -0.519;  oracle-kinematic -0.338 | -0.717.
+    (L2b is -10.8 | -16.8: without ego status the MLP has no speed, 9.85 m ADE.)
+
+Paired scene-level bootstrap, seed 42, ALL 5,119 (L2@3s | ADE6):
+    L1 - CV   -1.012 [-1.149,-0.877] | -1.136 [-1.314,-0.956]
+    L1 - KIN  -0.429 [-0.504,-0.355] | -0.554 [-0.670,-0.439]
+    L1 - L2   +0.116 [+0.087,+0.145] | +0.173 [+0.130,+0.218]   (the cmd is worth 0.12-0.17 m)
+    L5 - L2   -0.443 [-0.506,-0.379] | -0.685 [-0.772,-0.600]   (the oracle lon adds 0.44-0.69 m)
+    OKIN - L2 +0.321 [+0.165,+0.506] | +0.237 [-0.001,+0.534]
+    (excl. first frames: L1-L2 +0.072 | +0.117; L5-L2 -0.296 | -0.484; OKIN-L2 +0.359 |
+     +0.316, all CIs excluding 0)
+Figures: Alpamayo/viz/review/f6_mini_ladder.{png,pdf}, f7_flip_rate.{png,pdf}.

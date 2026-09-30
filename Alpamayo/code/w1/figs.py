@@ -179,7 +179,7 @@ def f6():
         v = [np.nanmean(q['ade']) for q in (p if isinstance(p, list) else [p])]
         ax.bar(i, np.mean(v), color=c, hatch='//' if priv else None, edgecolor='white', width=0.7)
         if len(v) > 1: ax.scatter([i] * len(v), v, color=INK, s=16, zorder=3)
-        ax.text(i, np.mean(v) + 0.05, f'{np.mean(v):.2f}', ha='center', color=INK)
+        ax.text(i, np.mean(v) + 0.25, f'{np.mean(v):.2f}', ha='center', color=INK)
     ax.set_xticks(range(len(rows))); ax.set_xticklabels([r[0] for r in rows])
     ax.set_ylabel('ADE@6s (m), official val'); ax.set_title(
         'Mini information ladder on a small Ego-MLP (hatched = privileged input)')
