@@ -108,10 +108,21 @@ Official val, 3 seeds, seed mean (sd <= 0.011); commit e0f7516; figures f6, f7.
     L5 trained with 10% flips, test flips  0%: 1.820   10%: 2.033   20%: 2.246   40%: 2.693  (ADE, all)
     gap closed (X-L2)/(L5-L2), ADE, all    L1 -0.22; L5n 0.90 / 0.59 / 0.28 / -0.37 at 0/10/20/40%
 
-## T7. Stage A (VLA, official split) -- pending
+## T7. Stage A: the VLA on the official split
 
-Filled in as runs finish: A1 (ego + cmd [P]), A2 (+ oracle meta-action [P]), A3 (A1 +
-turn-weighted sampling), A0 (visual tokens removed vs zeroed, custom split).
+T7-A1. With ego status and the command, the VLA beats CV by 0.68 m at 3 s and the
+kinematic rule by 0.10 m, but stays 0.45 m behind a small MLP on the same inputs.
+
+    official val, all 5,119; A1 = ego + cmd [P], fix recipe, no visual tokens, hybrid decode
+                    L2 TemAvg 1/2/3 s    L2 NoAvg 3 s   Col% TemAvg 3 s   ADE@6s
+    CV              0.376 0.784 1.326    2.762          0.75              3.742
+    kinematic rule  0.278 0.562 0.998    2.178          0.57              3.161
+    Ego-MLP + cmd   0.241 0.461 0.777    1.633          0.87              2.434
+    A1              0.274 0.555 0.967    2.080          0.57              3.082
+    A1 - KIN, L2@3s: -0.098 [-0.163,-0.032]; ADE6 -0.079 [-0.192,+0.039] (n.s.)
+    A1 - Ego-MLP, L2@3s: +0.447 [+0.379,+0.516]
+    input-shuffle: ADE6 3.08 -> 5.66, slot-0 accuracy 0.20 -> 0.05 (reads its inputs)
+    (commit: see the A1 section of WEEK1_REPORT.md; later runs A2, A3, A0 appended below)
 
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 

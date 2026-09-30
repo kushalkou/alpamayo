@@ -825,3 +825,51 @@ Notes (numbers only): a classifier that sees the same inputs as L2 adds no infor
 and its predicted intent scores slightly WORSE than L2 (-0.09 to -0.14 gap). At the same
 error rate, confusion-shaped noise costs less than uniform flips (e.g. 2.005 vs 2.033 at
 10%, 2.553 vs 2.693 at 40%).
+
+## STAGE A -- A1: VLA, ego + cmd [P], FIX recipe, official split (seed 42)
+
+Run: w1/finetune_w1.py --tag A1 --cmd --fix --no_vision, Y1 epochs/patience,
+batch 3 x 8 GPUs, natural sampling, plain CE, tokenizer (ii), v0_can. Selection = AR
+median ADE@6s on the fixed 400-sample holdout subset: best at epoch 10 (2.052), i.e.
+the LAST epoch -- selection was still improving (epochs 4-10: 2.20 2.28 2.30 2.36 2.10
+2.19 2.05), so A1 may be under-trained at 10 epochs.
+Cost: 0.43 s/step, 763 steps/epoch; train 18:25-19:33 UTC (9.1 GPU-h on 8 V100);
+dumps (holdout 1,717 + val 5,119 + shuffled val 5,119) 42 min (5.6 GPU-h); ~15 GPU-h total.
+Logs: Alpamayo/w1_stageA_A1.log, w1_stageA_A1_dump.log, w1_gateA_A1.txt (all tables).
+Decode: STOP-aware hybrid, tau = 0.7 chosen on holdout.
+
+Official val, ALL 5,119 (ADE/FDE@6s on the n_fut=12 part):
+    method          L2 NoAvg 1/2/3s   L2 TemAvg 1/2/3s   Col% NoAvg      Col% TemAvg     ADE6 mean/med/p95   FDE6   L2@3s med/p95
+    CV              0.527 1.448 2.762 0.376 0.784 1.326  0.10 0.47 2.07  0.14 0.27 0.75  3.742/2.763/9.889  8.735  1.937/7.427
+    KIN             0.362 1.049 2.178 0.278 0.562 0.998  0.08 0.29 1.39  0.16 0.23 0.57  3.161/2.240/8.199  7.750  1.449/5.636
+    Ego-MLP+cmd     0.324 0.822 1.633 0.241 0.461 0.777  0.08 0.82 1.78  0.29 0.56 0.87  2.434/1.675/6.178  6.067  1.033/4.166
+    A1 argmax       0.433 1.188 2.355 0.315 0.642 1.106  0.16 0.68 1.47  0.21 0.45 0.80  3.450/2.350/10.06  8.563  1.519/6.898
+    A1 expect       0.397 1.066 2.138 0.292 0.583 1.003  0.64 1.13 2.01  0.57 0.80 1.17  3.130/2.111/8.518  7.802  1.336/5.679
+    A1 hybrid       0.373 1.024 2.080 0.274 0.555 0.967  0.04 0.43 1.33  0.10 0.25 0.57  3.082/2.124/8.652  7.738  1.342/5.698
+    A1 blend a=.70  0.395 1.063 2.097 0.287 0.581 0.993  0.04 0.35 1.29  0.10 0.24 0.56  3.018/2.141/8.233  7.388  1.406/5.653
+
+EXCL. FIRST FRAMES (4,979):
+    CV              0.401 1.209 2.420 0.281 0.630 1.118  0.10 0.32 1.73  0.14 0.22 0.62  3.314/2.657/8.699  7.999  1.889/6.675
+    KIN             0.231 0.799 1.820 0.180 0.403 0.782  0.08 0.14 1.02  0.16 0.18 0.43  2.712/2.187/7.113  6.980  1.413/5.022
+    Ego-MLP+cmd     0.206 0.595 1.306 0.153 0.316 0.580  0.08 0.74 1.61  0.30 0.53 0.80  2.022/1.626/5.319  5.355  1.007/3.679
+    A1 hybrid       0.248 0.785 1.740 0.180 0.403 0.760  0.04 0.34 1.04  0.10 0.21 0.46  2.658/2.068/7.336  7.021  1.312/5.035
+
+Paired scene-level bootstrap (hybrid; negative = A1 better), L2@3s | L2T@3s | ADE6:
+  ALL    A1 - CV       -0.682 [-0.796,-0.568] | -0.359 [-0.410,-0.309] | -0.661 [-0.826,-0.495]
+         A1 - KIN      -0.098 [-0.163,-0.032] | -0.032 [-0.055,-0.008] | -0.079 [-0.192,+0.039] p=0.18
+         A1 - Ego-MLP  +0.447 [+0.379,+0.516] | +0.190 [+0.161,+0.219] | +0.648 [+0.545,+0.755]
+         expect-argmax -0.217 [-0.284,-0.147] | -0.103 [-0.138,-0.067] | -0.320 [-0.402,-0.235]
+  EXCL.  A1 - CV       -0.681 [-0.795,-0.567] | -0.359 [-0.410,-0.308] | -0.656 [-0.823,-0.486]
+         A1 - KIN      -0.080 [-0.147,-0.013] | -0.022 [-0.046,+0.002] | -0.054 [-0.169,+0.067] p=0.38
+         A1 - Ego-MLP  +0.434 [+0.368,+0.500] | +0.180 [+0.153,+0.208] | +0.637 [+0.534,+0.743]
+Strata, A1 - KIN (L2@3s): straight -0.041 [-0.127,+0.042] (n=3488); turning -0.326
+  [-0.531,-0.123] (n=638); stationary -0.152 [-0.221,-0.095] (n=993).
+Blend (alpha 0.70, fit on holdout): - CV -0.665 [-0.756,-0.575] L2@3s, -0.725 ADE6;
+  - KIN -0.081 [-0.121,-0.041] L2@3s, -0.143 [-0.216,-0.069] ADE6. Nulls: all select
+  alpha 0 (gain 0.0000); forced real alpha costs -0.005 / -0.727 / -0.591 m (mean /
+  gauss / perm).
+Slot-0 accuracy (val) 0.202; INPUT-SHUFFLE: slot-0 0.202 -> 0.050, ADE6 3.082 -> 5.657
+  (x1.84) -> PASSES the shuffle test (not within 5%), so A2, A3 and A0 all run.
+Per-slot argmax accuracy (val): accel 0.20 0.18 0.17 0.17 0.16 0.16 0.16 0.16 0.15 0.15
+  0.15 0.14 | curv 0.21 0.19 0.18 0.18 0.16 0.16 0.16 0.16 0.15 0.15 0.15 0.14. Smooth
+  decay, no single-slot spike (no leak fingerprint). Free-running CE a1-11 = 5.675.
