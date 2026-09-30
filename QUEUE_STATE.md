@@ -13,6 +13,6 @@ step's outputs are files, so completed steps are skipped.
 - [pending] G2 gate (gate35.py, both runs) -> G3 recipe decision -> G4 Stage A1, A2, A3, A0
 
 ## Track C (CPU)
-- [pending] C1 mini ladder (w1/ladder.py)
-- [pending] C2 figures (Alpamayo/viz/review/)
+- [running] C1 mini ladder (w1/ladder.py, tmux ladder, log Alpamayo/w1_ladder.log); resume: rerun it
+- [partial] C2 figures: f1-f5 done (w1/figs.py); f6,f7 wait for C1 ladder (+A2)
 - [pending] C3 REVIEW_RESULTS.md
