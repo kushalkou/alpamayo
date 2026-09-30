@@ -33,6 +33,7 @@ def main():
     ap.add_argument('--cmd', action='store_true')
     ap.add_argument('--meta', action='store_true')
     ap.add_argument('--no_vision', action='store_true')
+    ap.add_argument('--fix', action='store_true', help='checkpoint from the 3.5a fix run')
     ap.add_argument('--zero_vision', action='store_true')
     ap.add_argument('--splits', default='val,holdout')
     ap.add_argument('--flips', default='0')
@@ -54,6 +55,9 @@ def main():
     model = load_model(device=device)
     if extra:
         model = extra_tokens.install(model, extra, records.N_CLS)
+    if a.fix:
+        import fixrun                      # buffers in_mean/in_sd are loaded from the checkpoint
+        model = fixrun.install_fix(model, torch.zeros(4), torch.ones(4))
     ck = torch.load(a.ckpt or f'{CK}/_w1_{a.tag}/alpamayo_best.pt', map_location='cpu')
     missing = [k for k in ck['model_state'] if k not in model.state_dict()]
     assert not missing, missing[:5]

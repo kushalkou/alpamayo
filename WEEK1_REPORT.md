@@ -609,3 +609,66 @@ log Alpamayo/w1_overfit_diag.log):
   -> The one allowed retry (LoRA dropout 0, constant LR, same epochs) targets exactly
   this and was launched: tag overfit256_retry, log Alpamayo/w1_overfit256_retry.log.
   The ego-MLP keeps its own dropout 0.1 (only the specified knobs changed).
+
+===========================================================================================
+PLANNER RESPONSE after overfit run 1 (slot-0 diagnosis accepted; gate 3.5a redefined:
+PASS = final AR median ADE@6s <= 1.0 m AND slot-0 TF accuracy >= 90%, plus an
+INPUT-SHUFFLE test) + AMENDMENT (items e, f).
+===========================================================================================
+
+## Retry status
+
+The first retry launch died at epoch 27/150: the DGX was shut down at 09:01 UTC and
+rebooted at 12:16 UTC on a new kernel (5.15.0-179 -> -194), and all tmux sessions were
+lost. The log and checkpoints are kept as *_KILLED_*. Relaunched from scratch at 12:55
+UTC (w1/run_retry.sh: train -> dumps of final / final+shuffle / best). Epoch 1
+reproduces the killed run exactly (median 20.5344).
+
+## Item 4 -- FROZEN_RESULTS.md history
+
+Added "History -- origin of the leak": 875d3a2 (2026-07-14) rewrote compute_ego_state
+backward -> forward differences. It is the origin of the leak and of the reported
+"-36%" (6.610 -> 4.236 m), which was measured with leaked inputs (commit 67987a3).
+
+## Amendment e -- are the context tokens distinguishable? (run 1 final checkpoint, CPU)
+
+Code: w1/diag_distinct.py; log: Alpamayo/w1_diag_distinct_run1.log. The 256 overfit
+samples; ego tokens = EgoEncoderMLP(ego rows) in eval mode; RMSNorm = LM layer-0
+input_layernorm (eps 1e-6).
+
+    token      L2 norm   cos raw   cos RMSNorm   mean-share raw   mean-share RMSNorm
+    ego t-3    19.452    0.7198    0.7199        0.6203           0.7216
+    ego t-2    19.365    0.7203    0.7204        0.6217           0.7221
+    ego t-1    19.541    0.7156    0.7158        0.6195           0.7174
+    ego t      19.253    0.7294    0.7294        0.6415           0.7311
+    cmd         1.192    0.7711    0.7712        0.7734           0.7724
+    (cos = mean pairwise cosine across the 256 samples; mean-share =
+     ||mean_i x_i||^2 / mean_i ||x_i||^2. cmd has only 3 distinct vectors; the 256
+     split 21 right / 11 left / 224 straight.)
+
+Pairwise cosine after RMSNorm is 0.72-0.73, below the 0.95 "near-indistinguishable"
+line. The across-sample mean vector carries 62-64% of the ego token's squared norm (72-73%
+after RMSNorm). The Cosmos text-embedding mean norm is 0.870; the ego tokens are 22x
+that (diag_inputs.py (a)). The fix run's final checkpoint gets the same table, if a
+fix run happens.
+
+## Amendment f -- padding
+
+No padding anywhere: every train/holdout record has ego_state (5,4) and 12 target pairs
+(checked on all 18,313 + 1,417), the visual token count is fixed per run (0 here), the
+batches are stacked by the default collate (which errors on unequal shapes), and the
+AR decode uses batch size 1. The "left-pad" in ego features repeats rows INSIDE the
+fixed 4 rows, not the sequence.
+
+## Fix run -- prepared, NOT launched (only if the retry fails)
+
+w1/fixrun.py + --fix in finetune_w1.py / dump_w1.py:
+  - features standardised with official-train stats (buffers ego_encoder.in_mean/in_sd);
+  - no absolute heading/position exists to drop (yaw relative to t0; no x/y);
+  - post-MLP LayerNorm + learnable scalar gain, init 0.870/sqrt(3584), so the token
+    norm = 0.87 at init;
+  - ego-MLP LR x10 via LrMultAdamW. finetune.py resets every group's lr each step, and
+    Adam is gradient-scale invariant, so the multiplier is applied inside step(). The
+    cmd embedding keeps x1.
+Unit test w1/test_fixrun.py PASS (init norm 0.87; buffers/gain saved; cmd excluded
+from the x10 group; first Adam step exactly 10x; group lr restored).

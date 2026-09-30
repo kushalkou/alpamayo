@@ -47,6 +47,7 @@ WEIGHTED = pop_flag('--weighted', default=False)
 OVERFIT = int(pop_flag('--overfit', True, '0'))
 LORA_DROP = pop_flag('--lora_dropout', True, None)      # 3.5a retry: 0
 MIN_LR_RATIO = pop_flag('--min_lr_ratio', True, None)   # 3.5a retry: 1.0 = constant LR after warmup
+FIX = pop_flag('--fix', default=False)                  # 3.5a fix run: w1/fixrun.py
 # A2 (--meta): the two meta-action tokens lat (= command, FLIPPABLE) and lon; no separate
 # (unflippable) cmd token, which would contradict a flipped lat label.
 EXTRA = ['lat', 'lon'] if META else (['cmd'] if CMD else [])
@@ -81,12 +82,24 @@ dataset.build_scene_split = build_split_w1
 finetune.build_scene_split = build_split_w1
 if not WEIGHTED:
     finetune.get_class_weights = lambda ds, device='cuda:0': torch.ones(TRAJ_VOCAB, device=device)
-if EXTRA:
+if EXTRA or FIX:
     _load = finetune.load_model
 
     def load_model_x(*a, **kw):
-        return extra_tokens.install(_load(*a, **kw), EXTRA, records.N_CLS | {'cmd': 3})
+        m = _load(*a, **kw)
+        if EXTRA:
+            m = extra_tokens.install(m, EXTRA, records.N_CLS)
+        if FIX:
+            import fixrun
+            mean, sd = fixrun.train_stats()
+            m = fixrun.install_fix(m, mean, sd)
+            print(f'[w1] FIX: standardise mean {mean.tolist()} sd {sd.tolist()}; post LayerNorm + '
+                  f'gain {float(m.ego_encoder.post_gain):.5f}; ego-MLP lr x{fixrun.EGO_LR_MULT}', flush=True)
+        return m
     finetune.load_model = load_model_x
+if FIX:
+    import fixrun
+    torch.optim.AdamW = fixrun.LrMultAdamW
 if NOVIS:
     dataset.preprocess_image = lambda path, augment=False: torch.zeros(3, 1, 1)
     finetune.encode_live = lambda visual, images, device: torch.zeros(
