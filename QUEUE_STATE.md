@@ -20,3 +20,4 @@ step's outputs are files, so completed steps are skipped.
 - [done] C1 mini ladder (e0f7516)
 - [partial] C2 figures f1-f7 done (f7 without the A2 line; rerun `python w1/figs.py f5 f7` after gating/A2)
 - [partial] C3 REVIEW_RESULTS.md: T1-T6 written; T5 retry/fix and T7 Stage A pending
+- [done] C4/C5 mini rung 3 (b1917e1), C6 REVIEW_RESULTS T8 (da1bbbe); f7 updated
