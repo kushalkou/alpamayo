@@ -45,6 +45,8 @@ FLIP = float(pop_flag('--meta_flip', True, '0'))
 NOVIS = pop_flag('--no_vision', default=False)
 WEIGHTED = pop_flag('--weighted', default=False)
 OVERFIT = int(pop_flag('--overfit', True, '0'))
+LORA_DROP = pop_flag('--lora_dropout', True, None)      # 3.5a retry: 0
+MIN_LR_RATIO = pop_flag('--min_lr_ratio', True, None)   # 3.5a retry: 1.0 = constant LR after warmup
 # A2 (--meta): the two meta-action tokens lat (= command, FLIPPABLE) and lon; no separate
 # (unflippable) cmd token, which would contradict a flipped lat label.
 EXTRA = ['lat', 'lon'] if META else (['cmd'] if CMD else [])
@@ -91,9 +93,14 @@ if NOVIS:
         images.shape[0], 0, 3584, dtype=torch.float16, device=device)
     ar_eval.encode_live_one = lambda visual, images, device, dtype=torch.float16: torch.zeros(
         1, 0, 3584, dtype=dtype, device=device)
+if LORA_DROP is not None:
+    finetune.CFG['lora_dropout'] = float(LORA_DROP)
+if MIN_LR_RATIO is not None:
+    finetune.CFG['min_lr_ratio'] = float(MIN_LR_RATIO)
 finetune.CFG['checkpoint_dir'] = f'{finetune.CFG["checkpoint_dir"]}/_w1_{TAG}'
 os.makedirs(finetune.CFG['checkpoint_dir'], exist_ok=True)
-print(f'[w1] ckpt dir {finetune.CFG["checkpoint_dir"]}  plain_CE={not WEIGHTED}', flush=True)
+print(f'[w1] ckpt dir {finetune.CFG["checkpoint_dir"]}  plain_CE={not WEIGHTED}  '
+      f'lora_dropout={finetune.CFG["lora_dropout"]}  min_lr_ratio={finetune.CFG["min_lr_ratio"]}', flush=True)
 
 if __name__ == '__main__':
     src = open(f'{CODE}/finetune.py').read()

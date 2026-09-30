@@ -564,3 +564,48 @@ EXCLUDING THE FIRST FRAME OF SCENE (n=4,979; drops the 140 samples with no causa
 From here on every table reports ALL 5,119 and EXCLUDING the first frame of each scene
 without causal speed (n=140, v0 = 0 kept). The 140 = the first-of-scene samples with no
 CAN message <= t0 and no past pose. The other 10 first frames have CAN and stay in.
+
+## STEP 3.5a -- OVERFIT GATE
+
+Setup: ego + cmd, tokenizer (ii), visual tokens removed, plain CE, Y1 recipe otherwise
+(lr 5e-5 peak, 100-step warmup, cosine to 0.1x, LoRA dropout 0.1). Trained AND selected
+(AR argmax median ADE@6s) on the same 256 official-train samples; 150 epochs x 10
+steps; 0.36 s/step; ~2.5 h wall on 8 GPUs (most of it per-epoch validation and saving).
+Teacher-forced token accuracy on the 256 is logged every epoch.
+Log: Alpamayo/w1_overfit256.log.
+
+Rule (planner): PASS iff the final AR median ADE@6s <= 1.0 m (floor on these 256:
+0.426 mean / 0.092 median).
+
+  RUN 1 RESULT: FAIL (marginal). Epoch 150 median 1.058 (mean 2.336). The best
+  (selected) checkpoint, epoch 128, has median 0.899 (mean 2.231). The last 5 epochs
+  swing 0.93-1.43. TF token accuracy 97.1% at epoch 150 (0.2% -> 17.7% @7 -> 51.7% @25
+  -> 90.1% @37 -> 97%).
+
+DIAGNOSIS (w1/overfit_diag.py, free-running dumps of both checkpoints on the 256;
+log Alpamayo/w1_overfit_diag.log):
+
+                         best (ep128)       latest (ep150)
+    ADE@6s floor         0.426 / 0.092      0.426 / 0.092     (mean / median)
+    ADE@6s AR argmax     2.231 / 0.899      2.336 / 1.058
+    ADE@6s AR expect     2.383 / 1.228      2.445 / 1.465
+    exact 24-token seq   0.434              0.426
+    first wrong slot     slot 0: 131, slot 1: 8, others 6 (of 145 failures)
+    all-correct samples  n=111: ADE 0.413 = their floor 0.413
+    first error in accel n=145: ADE 3.623 (median 2.585)
+    wrong tokens         85% are >= 4 bins off (5% off by one)
+
+  The failure is ONE slot: accel slot 0, the only token predicted from the context
+  alone (no token prefix). It is right in ~49% of samples. When it is right, the other
+  23 tokens are recalled exactly and the sample hits its tokenizer floor. When it is
+  wrong, the model continues ANOTHER sample's memorised sequence (far-off bins, errors
+  cascade; per-slot AR accuracy is flat at ~0.47 across all 24 slots).
+  The planner's categories use aggregate TF accuracy, but the aggregate hides the
+  failure: slot 0 has no prefix under teacher forcing either, so its TF accuracy is
+  the same ~49%. The remaining 23 slots are ~100% given the true prefix, i.e. the
+  sequence is keyed on its first token. So this is an OPTIMISATION failure of the
+  context -> first-token mapping, and the downstream cascade is exposure.
+  Expectation decode does not rescue it (median 1.23 vs argmax 0.90).
+  -> The one allowed retry (LoRA dropout 0, constant LR, same epochs) targets exactly
+  this and was launched: tag overfit256_retry, log Alpamayo/w1_overfit256_retry.log.
+  The ego-MLP keeps its own dropout 0.1 (only the specified knobs changed).

@@ -37,6 +37,8 @@ def main():
     ap.add_argument('--splits', default='val,holdout')
     ap.add_argument('--flips', default='0')
     ap.add_argument('--limit', type=int, default=None)
+    ap.add_argument('--overfit', type=int, default=0,
+                    help='dump the same N train samples finetune_w1 --overfit N trained on')
     a = ap.parse_args()
     extra = ['lat', 'lon'] if a.meta else (['cmd'] if a.cmd else [])
     dataset.compute_ego_state = lambda traj: traj['w1_ego']
@@ -61,7 +63,10 @@ def main():
 
     for split in a.splits.split(','):
         for f in [float(x) for x in a.flips.split(',')]:
-            R = records.build(split, extra, f, flip_seed=777, n_fut=6)
+            R = records.build(split, extra, f, flip_seed=777, n_fut=6 if not a.overfit else 12)
+            if a.overfit:                      # identical selection to finetune_w1 --overfit
+                rs = np.random.RandomState(0)
+                R = [R[i] for i in sorted(rs.choice(len(R), a.overfit, replace=False))]
             if a.limit: R = R[:a.limit]
             ds = NuScenesVLADataset(R, split=split, augment=False)
             my = list(range(len(R)))[lr::ws]
