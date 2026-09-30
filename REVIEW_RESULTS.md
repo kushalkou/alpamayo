@@ -124,6 +124,21 @@ kinematic rule by 0.10 m, but stays 0.45 m behind a small MLP on the same inputs
     input-shuffle: ADE6 3.08 -> 5.66, slot-0 accuracy 0.20 -> 0.05 (reads its inputs)
     (commit fe97d9c; later runs A2, A3, A0 appended below)
 
+T7-A2. Given the oracle meta-action, the VLA beats CV by 1.1 m and the oracle-kinematic
+rule by 0.30 m at 3 s, but only ties the small MLP; it still does better than the
+rule as the labels get noisier.
+
+    all 5,119; A2 = ego + oracle meta-action [P] (lat + lon tokens), trained with 10% flips
+                        L2 TemAvg 1/2/3 s    L2 NoAvg 3 s   Col% TemAvg 3 s   ADE@6s
+    oracle-kinematic    0.348 0.658 1.022    1.955          0.70              2.671
+    A2                  0.255 0.487 0.805    1.651          0.48              2.454
+    A2 - oracle-kinematic, L2@3s: -0.304 [-0.464,-0.171]; ADE6 -0.217 [-0.482,-0.006]
+    A2 - Ego-MLP + cmd,  L2@3s: +0.018 [-0.056,+0.092] (n.s.)
+    A2 - A1,             L2@3s: -0.429 [-0.489,-0.370]
+    test flips 0/10/20/40%: A2 ADE6 2.454 / 2.580 / 2.676 / 3.000;
+                            oracle-kinematic 2.671 / 3.626 / 4.447 / 6.082 (figure f7)
+    (commit A2HASH)
+
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 
 T8a. A classifier that predicts the longitudinal intent from ego status + command gets 68%

@@ -873,3 +873,52 @@ Slot-0 accuracy (val) 0.202; INPUT-SHUFFLE: slot-0 0.202 -> 0.050, ADE6 3.082 ->
 Per-slot argmax accuracy (val): accel 0.20 0.18 0.17 0.17 0.16 0.16 0.16 0.16 0.15 0.15
   0.15 0.14 | curv 0.21 0.19 0.18 0.18 0.16 0.16 0.16 0.16 0.15 0.15 0.15 0.14. Smooth
   decay, no single-slot spike (no leak fingerprint). Free-running CE a1-11 = 5.675.
+
+## STAGE A -- A2: VLA, ego + ORACLE meta-action [P] (lat = cmd, lon), 10% training flips
+
+Run: --meta --meta_flip 0.1 --fix --no_vision, otherwise as A1 (2 extra tokens lat + lon,
+no separate cmd token). Selection (holdout 400, AR median ADE@6s) by epoch:
+2.16 2.38 1.79 1.90 1.94 1.68 1.81 1.90 1.63 1.67 -> best epoch 9 (1.631).
+Cost: 0.36 s/step; train 20:29-21:38 UTC (9.2 GPU-h); dumps 93 min (holdout + val at
+4 flip rates + shuffled val; 12.4 GPU-h); ~22 GPU-h total. Decode: hybrid, tau 0.3
+(holdout). Full tables: Alpamayo/w1_gateA_A2.txt.
+
+    ALL 5,119       L2 NoAvg 1/2/3s   L2 TemAvg 1/2/3s   Col% NoAvg      Col% TemAvg     ADE6 mean/med/p95   FDE6   L2@3s med/p95
+    ORACLE-KIN [P]  0.477 1.145 1.955 0.348 0.658 1.022  0.12 0.70 1.58  0.14 0.35 0.70  2.671/1.708/8.901  6.342  1.181/6.466
+    A2 argmax       0.395 1.006 1.899 0.288 0.563 0.928  0.02 0.51 1.27  0.14 0.36 0.63  2.773/1.918/8.625  6.953  1.188/5.781
+    A2 expect       0.355 0.878 1.665 0.262 0.498 0.816  0.55 0.90 1.82  0.50 0.68 1.03  2.496/1.610/7.499  6.334  0.996/4.925
+    A2 hybrid       0.345 0.864 1.651 0.255 0.487 0.805  0.02 0.29 1.02  0.11 0.21 0.48  2.454/1.631/7.576  6.222  1.017/5.005
+    A2 blend a=.80  0.352 0.878 1.658 0.260 0.496 0.814  0.02 0.21 1.00  0.10 0.18 0.43  2.435/1.657/7.356  6.094  1.042/4.926
+    EXCL. FIRST FRAMES 4,979
+    ORACLE-KIN [P]  0.360 0.933 1.666 0.259 0.518 0.839  0.12 0.58 1.43  0.14 0.32 0.64  2.337/1.677/6.917  5.857  1.158/5.265
+    A2 hybrid       0.249 0.681 1.391 0.183 0.370 0.646  0.02 0.24 0.88  0.11 0.20 0.44  2.131/1.594/6.257  5.677  1.002/4.300
+    (CV / KIN / Ego-MLP / A1 rows as in the A1 section)
+
+Paired scene-level bootstrap (hybrid), L2@3s | L2T@3s | ADE6:
+  ALL    A2 - CV          -1.111 [-1.234,-0.989] | -0.521 [-0.576,-0.467] | -1.288 [-1.462,-1.116]
+         A2 - KIN         -0.527 [-0.599,-0.456] | -0.194 [-0.221,-0.167] | -0.706 [-0.826,-0.590]
+         A2 - ORACLE-KIN  -0.304 [-0.464,-0.171] | -0.218 [-0.288,-0.158] | -0.217 [-0.482,-0.006]
+         A2 - Ego-MLP     +0.018 [-0.056,+0.092] | +0.028 [-0.006,+0.061] | +0.020 [-0.078,+0.120]  (n.s.)
+         A2 - A1          -0.429 [-0.489,-0.370] | -0.162 [-0.188,-0.136] | -0.628 [-0.715,-0.539]
+  EXCL.  A2 - KIN         -0.429 [-0.504,-0.356] | -0.135 [-0.163,-0.109] | -0.581 [-0.705,-0.460]
+         A2 - ORACLE-KIN  -0.275 [-0.440,-0.139] | -0.193 [-0.265,-0.132] | -0.206 [-0.481,+0.012] p=0.068
+         A2 - Ego-MLP     +0.085 [+0.016,+0.154] | +0.066 [+0.037,+0.096] | +0.110 [+0.015,+0.205]
+         A2 - A1          -0.349 [-0.410,-0.288] | -0.113 [-0.139,-0.089] | -0.527 [-0.616,-0.437]
+Pre-registered check "A2 must beat the kinematic rule AND the oracle-kinematic rule, CI
+excluding 0": PASS on ALL 5,119 (L2@3s and ADE6 vs both). Excluding first frames, the
+ADE6 margin over oracle-kinematic is -0.206 [-0.481,+0.012] (not significant); L2@3s
+-0.275 remains significant. No STOP; the queue continues to A3.
+Strata, A2 - KIN (L2@3s): straight -0.375 [-0.466,-0.286]; turning -1.075
+  [-1.254,-0.892]; stationary -0.709 [-0.949,-0.541].
+Blend a=0.80: - CV -1.104 L2@3s; - KIN -0.520 [-0.580,-0.462] L2@3s, -0.725 ADE6. Nulls
+  select alpha 0; forced alpha costs -0.020 / -1.093 / -0.903.
+Slot-0 acc 0.215; INPUT-SHUFFLE: ADE6 2.454 -> 6.069 (x2.47), slot-0 0.215 -> 0.043: passes.
+Per-slot argmax accuracy: accel 0.21 0.17 0.18 0.17 0.17 0.16 0.16 0.15 0.15 0.15 0.14 0.14 |
+  curv 0.21 0.19 0.19 0.18 0.17 0.17 0.16 0.16 0.15 0.15 0.15 0.15 (no spike);
+  free-running CE a1-11 5.110 (A1 5.675).
+FLIP-RATE SWEEP (test flips on lat+lon, seed 777; A2 trained at 10%), ALL 5,119:
+    test flip                 0%      10%     20%     40%
+    A2 ADE6                   2.454   2.580   2.676   3.000
+    A2 L2@3s                  1.651   1.744   1.839   2.067
+    ORACLE-KIN ADE6 (same)    2.671   3.626   4.447   6.082
+    (C1 Ego-MLP L5-noise ADE6, lon-only flips: 1.820 / 2.033 / 2.246 / 2.693)
