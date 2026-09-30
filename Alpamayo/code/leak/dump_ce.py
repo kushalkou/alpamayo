@@ -39,6 +39,8 @@ def main():
     ap.add_argument('--models', required=True)
     ap.add_argument('--causal', action='store_true')
     ap.add_argument('--limit', type=int, default=None)
+    ap.add_argument('--probs', action='store_true',
+                    help='also store the 65-way free-running distribution per slot')
     a = ap.parse_args()
     names = a.models.split(',')
     if a.causal:
@@ -94,7 +96,7 @@ def main():
             pre = prefill_context(model, vt, ego, device=device)
             past, ctx_len, ctx_dtype = pre['past'], pre['ctx_len'], pre['ctx_dtype']
             logits = pre['logits0']
-            av, ev, ps, l65, l129 = [], [], [], [], []
+            av, ev, ps, l65, l129, q65 = [], [], [], [], [], []
             for step in range(TRAJ_LEN):
                 centers = torch.as_tensor(slot_centers(tok, step), dtype=torch.float32,
                                           device=logits.device)
@@ -103,6 +105,7 @@ def main():
                 vcent = torch.cat([centers, torch.zeros(1, device=logits.device)])
                 q = torch.softmax(vlog, -1)
                 ev.append(float((q * vcent).sum())); ps.append(float(q[-1]))
+                if a.probs: q65.append(q.float().cpu().numpy().astype('float32'))
                 av.append(0.0 if tokid == STOP_ID else float(centers[min(max(tokid, 0), N_ACT - 1)]))
                 g = gt[step]; gi = N_ACT if g == STOP_ID else g
                 l65.append(float(torch.log_softmax(vlog, -1)[gi]))
@@ -114,6 +117,7 @@ def main():
                 logits = model.output_head(out.last_hidden_state[:, -1, :].float())[0]
             d[i] = {'argmax': av, 'expect': ev, 'p_stop': ps}
             c[i] = {'lp65': l65, 'lp129': l129, 'gt': gt}
+            if a.probs: c[i]['q65'] = np.stack(q65)
             if m0 and n_ % 50 == 0:
                 print(f'  [{name}] {n_}/{len(my)}  {time.time()-t0:.0f}s', flush=True)
         data[name], ce[name] = d, c

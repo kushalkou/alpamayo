@@ -321,3 +321,84 @@ Verbatim, with line numbers:
 ANSWER: yes. VAD's ego status reads future information in four places, all small in
 time (<= ~20 ms for CAN; 0.5 s for the first-of-scene forward difference and the
 except-path v0). Magnitude unmeasured; flagged only.
+
+## STEP 2 -- targets + tokenizer
+
+Code: Alpamayo/code/w1/targets.py -> Alpamayo/data/w1_targets.pkl.
+Log: Alpamayo/w1_targets.log.
+
+### 2b (done first, it defines the targets). Frame
+
+The model's trajectory is now VAD's evaluation trajectory itself: LIDAR_TOP sensor
+positions at future keyframes 1..n_fut (<= 12) in the t0 LIDAR frame, built exactly
+as vad_nuscenes_converter.py builds gt_ego_fut_trajs. The first 6 steps equal the
+gate-3 GT (asserted, < 1e-9). The rollout runs in that frame from (0,0) with heading
+pi/2, so predictions need NO conversion, and there is no 0.06-0.08 m CAM/LIDAR offset
+anymore.
+
+### 2a. Targets
+
+Chord construction from v0 = v0_can: segment speeds s_k and headings theta_k of the
+lidar trajectory; acc[0] = (s_0 - v0)/dt (now nontrivial), acc[k] = (s_k - s_k-1)/dt,
+cur[k] = wrap(theta_k - theta_k-1)/(s_k dt), theta_-1 = pi/2. The heading is held when
+a segment is < 0.01 m. Continuous targets reproduce the trajectory to max 6.3 cm
+(error only from that hold rule; 6341 of 29049 samples > 1e-6 m).
+
+Tokenizer (ii) = 64 equal-mass bins per channel fit on the new official-train targets
+(181,536 non-STOP steps), centre = MEDIAN of the bin. Mean centres (the item-5
+definition) were tried first and failed on these targets: the chord curvature has a
+heavy low-speed noise tail (p1/p99 -0.15/+0.15 rad/m, but the edge-bin means reach
+-1.7/+2.9), so real turns decoded badly. Holdout floor with mean vs median centres:
+0.785 vs 0.440 ADE@6s. Chosen on HOLDOUT (Alpamayo/w1_bins_variants.log); val was not
+used. STOP rule unchanged (s_k < 0.1 -> STOP -> (0,0)).
+
+FLOOR = rollout(detok(tok(GT targets))) from the true v0_can; L2 over n_fut >= 6,
+ADE/FDE@6s over n_fut = 12:
+
+    set / variant            n      L2 NoAvg 1/2/3s   L2 TemAvg 1/2/3s   ADE@6s mean/med/p95   FDE@6s
+    holdout (ii) ALL       1717     0.088 0.198 0.328 0.064 0.117 0.176  0.440/0.079/0.908    0.918
+    holdout (ii) CAN ok    1667     0.022 0.066 0.130 0.015 0.034 0.061  0.182/0.075/0.738    0.445
+    holdout (ii) no CAN      50     2.285 4.589 6.906 1.714 2.863 4.017  7.494/5.893/22.13   13.860
+    holdout (i) uniform    1717     0.158 0.436 0.835 0.112 0.235 0.399  1.125/0.511/3.782    2.692
+    val     (ii) ALL       5119     0.122 0.274 0.453 0.089 0.162 0.243  0.600/0.103/1.245    1.249
+    val     (ii) CAN ok    4979     0.028 0.087 0.175 0.019 0.045 0.080  0.240/0.099/0.846    0.599
+    val     (ii) no CAN     140     3.464 6.920 10.34 2.597 4.328 6.046  11.09/10.41/27.19   20.20
+    val     (i) uniform    5119     0.213 0.577 1.089 0.150 0.313 0.526  1.475/0.766/4.488    3.508
+
+Roundtrip: tokens regenerate identically (deterministic) and detok is bit-stable:
+PASS on both sets. (ii) cuts the uniform floor by 61% (holdout ADE@6s), so it passes
+the >= 40% rule on the new targets too.
+
+NOTE: the "no CAN" rows are the first sample of each scene. There, NOTHING causal
+exists: no past keyframe, no CAN message <= t0, and no lidar sweep precedes the first
+keyframe in any of the 850 scenes (checked). v0 falls back to 0, and their a0 target
+lies beyond the bin range. They are 2.7% of val but 58% of val's floor ADE. They stay
+in every evaluation, per instructions.
+
+### 2c. CE weights
+
+Would-be sqrt-inverse-frequency weights on the new train tokens: max/min = 3.67 over
+the 65 classes, but 1.00 excluding STOP (the bins are equal-mass by construction).
+Per slot, excluding STOP: 2.5 at slot 0 and 2.4 at slot 12, 1.1 everywhere else.
+DECISION: plain CE. The literal rule (max/min < 2) is not met ONLY because of STOP, and
+down-weighting STOP would miscalibrate the p(STOP) that the hybrid decode relies on.
+FLAG: if the planner wants the rule read literally, weighting stays on.
+
+### 2d. Calibration of the OLD causal_ego (custom split, val n=3318, free-running)
+
+Code: w1/calib_2d.py. Distributions from leak/dump_ce.py --probs.
+Log: Alpamayo/w1_calib_2d.log. Report only.
+
+    slot  KL(pred||GT)  mean pred accel  mean GT accel  pred-GT   p(STOP) pred/GT
+    a0      0.0013         -0.007           0.000        -0.007    0.159/0.160
+    a1      0.3375         -0.017           0.036        -0.052    0.162/0.158
+    a2      0.2837         -0.344           0.036        -0.379    0.172/0.157
+    a3      0.3038          0.016           0.027        -0.010    0.174/0.156
+    a4      0.1761         -0.186           0.025        -0.211    0.180/0.155
+    a5      0.1723         -0.104           0.023        -0.127    0.193/0.155
+    a6      0.1431         -0.212           0.028        -0.240    0.209/0.155
+    a7      0.1476         -0.143           0.031        -0.174    0.225/0.156
+    a8      0.1646         -0.139           0.034        -0.173    0.232/0.158
+    a9      0.1387         -0.205           0.029        -0.234    0.236/0.160
+    a10     0.1226         -0.202           0.031        -0.233    0.241/0.161
+    a11     0.1327         -0.139           0.027        -0.167    0.247/0.161
