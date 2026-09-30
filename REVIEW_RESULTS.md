@@ -122,7 +122,7 @@ kinematic rule by 0.10 m, but stays 0.45 m behind a small MLP on the same inputs
     A1 - KIN, L2@3s: -0.098 [-0.163,-0.032]; ADE6 -0.079 [-0.192,+0.039] (n.s.)
     A1 - Ego-MLP, L2@3s: +0.447 [+0.379,+0.516]
     input-shuffle: ADE6 3.08 -> 5.66, slot-0 accuracy 0.20 -> 0.05 (reads its inputs)
-    (commit: see the A1 section of WEEK1_REPORT.md; later runs A2, A3, A0 appended below)
+    (commit fe97d9c; later runs A2, A3, A0 appended below)
 
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 
