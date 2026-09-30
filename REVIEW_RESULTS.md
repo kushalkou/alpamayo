@@ -137,7 +137,7 @@ rule as the labels get noisier.
     A2 - A1,             L2@3s: -0.429 [-0.489,-0.370]
     test flips 0/10/20/40%: A2 ADE6 2.454 / 2.580 / 2.676 / 3.000;
                             oracle-kinematic 2.671 / 3.626 / 4.447 / 6.082 (figure f7)
-    (commit A2HASH)
+    (commit 3409c31)
 
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 

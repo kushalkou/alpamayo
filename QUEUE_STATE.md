@@ -11,7 +11,7 @@ step's outputs are files, so completed steps are skipped.
             status Alpamayo/gq_status.log (GQ_DONE marker). No GPU was free alongside w1
             (8 x ~30/32 GB), so it waits for w1.
 - [done] G2 gates; G3 decision = FIX recipe
-- [running] G4 Stage A: A1 done+reported (fe97d9c); A2 running. Originally launched 18:05 UTC: RECIPE=fix|retry bash Alpamayo/code/w1/run_stageA.sh (tmux stageA).
+- [running] G4 Stage A: A1 reported (fe97d9c); A2 reported (3409c31); A3 running. Originally launched 18:05 UTC: RECIPE=fix|retry bash Alpamayo/code/w1/run_stageA.sh (tmux stageA).
             Resumable: skips runs with results/STAGEA_<run>_TRAINED / _REPORTED markers.
             After each run it waits for results/STAGEA_<run>_REPORTED (touch after the
             report section is committed). Status: Alpamayo/stageA_status.log
