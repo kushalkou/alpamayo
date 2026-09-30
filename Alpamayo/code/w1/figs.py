@@ -195,13 +195,27 @@ def f7():
     ax.plot([100 * f for f in F], y, marker='D', ms=8, lw=2, color=BLUE, label='Ego-MLP + oracle (trained at 10% flips)')
     y = [np.nanmean(PER[('OKIN', f)]['ade']) for f in F]
     ax.plot([100 * f for f in F], y, marker='s', ms=8, lw=2, color=AQUA, label='oracle-kinematic rule')
+    if os.path.exists(f'{RES}/w1_rung3.pkl'):             # C4c / C5
+        R3 = pickle.load(open(f'{RES}/w1_rung3.pkl', 'rb'))
+        y0 = np.mean([np.nanmean(PER[('L5n', s, 0.0)]['ade']) for s in seeds])
+        yc = [y0] + [np.mean([np.nanmean(R3['PER'][('L5n', s, f'conf{e}')]['ade']) for s in seeds])
+                     for e in (10, 20, 40)]
+        ax.plot([0, 10, 20, 40], yc, marker='D', ms=8, lw=2, ls='--', color=VIOLET,
+                label='Ego-MLP + oracle, confusion-shaped noise')
+        acc = np.mean([(R3['PRED'][s] == R3['yva']).mean() for s in seeds])
+        yp = np.mean([np.nanmean(R3['PER'][('L5n', s, 'pred')]['ade']) for s in seeds])
+        ax.scatter([100 * (1 - acc)], [yp], s=160, marker='*', color=ORANGE, zorder=5,
+                   label=f'Ego-MLP + PREDICTED intent (classifier acc {acc:.0%})')
+    y2 = np.mean([np.nanmean(PER[('L2', s, 0.0)]['ade']) for s in seeds])
+    ax.axhline(y2, color=BLUE, ls=':', lw=1.2)
+    ax.text(1, y2 + 0.06, 'Ego-MLP + cmd (no intent)', color=BLUE, ha='left', fontsize=12)
     a2 = [f'{RES}/w1_dump_A2_val_f{f}.pkl' for f in F]
     if all(os.path.exists(p) for p in a2) and os.path.exists(f'{RES}/w1_a2_flip_ade.pkl'):
         v = pickle.load(open(f'{RES}/w1_a2_flip_ade.pkl', 'rb'))
-        ax.plot([100 * f for f in F], [v[f] for f in F], marker='o', ms=8, lw=2, color=ORANGE, label='VLA A2')
+        ax.plot([100 * f for f in F], [v[f] for f in F], marker='o', ms=8, lw=2, color=YELLOW, label='VLA A2')
     ax.axhline(np.nanmean(PER['CV']['ade']), color=GREY, ls=':', lw=1.5)
     ax.text(40, np.nanmean(PER['CV']['ade']) + 0.03, 'CV', color=INK2, ha='right')
-    ax.set_xticks([0, 10, 20, 40]); ax.set_xlabel('meta-action labels flipped at test (%)')
+    ax.set_xticks([0, 10, 20, 30, 40]); ax.set_xlabel('meta-action (lon) label error rate at test (%)')
     ax.set_ylabel('ADE@6s (m), official val'); ax.legend()
     ax.set_title('How much each model leans on the oracle meta-action')
     save(fig, 'f7_flip_rate')

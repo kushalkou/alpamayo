@@ -775,3 +775,53 @@ Numbers only: the ego-MLP gradient is the same order as LoRA's (ratio 0.45-1.02)
 global norm (dominated by output_head, 100+ early) is far above the clip threshold 1.0,
 so every step is clipped. AdamW normalises per parameter, so gradient magnitude alone
 does not set the update size of the ego MLP; its LR does.
+
+## QUEUE C4/C5 -- mini rung 3 on the Ego-MLP: predicted vs oracle intent (small-model
+## demonstration; CPU; G4 untouched)
+
+Code: w1/rung3.py; log Alpamayo/w1_rung3.log; results/w1_rung3.pkl. 3 seeds. The L5 and
+L5-noise models of C1 were retrained with the identical recipe/seed and reproduce C1's
+predictions exactly (max |dev| 0.00e+00 m); classifier seed s feeds L5/L5n seed s.
+
+C4a. Meta-action classifier: MLP on causal ego (16) + cmd [P] (3) -> lon (4 classes),
+CE, holdout-accuracy selection. Val accuracy 0.677 / 0.676 / 0.672 (majority "maintain"
+0.392); excl. first frames 0.686 / 0.686 / 0.681. Confusion, all 5,119, summed over 3 seeds
+(rows true, cols predicted):
+
+                stop   accel   decel   maint   recall
+    stop        2303     112      66      78   0.900
+    accel        634    2254      90    1132   0.548
+    decel         72      65    1205    1331   0.451
+    maint        258     671     481    4605   0.766
+  (excl. first frames: identical except stop row 2225/112/66/78 and accel row
+   370/2185/90/1132; recall 0.897 / 0.579 / 0.451 / 0.767)
+
+C4b/C5. Seed means; gap closed = (X - L2)/(L5 - L2) against C1's L2 and L5:
+
+    ALL 5,119                              ADE@6s   L2 TemAvg 1/2/3 s     gap ADE   gap TemAvg3s
+    L5 oracle lon [P] (C1)                 1.750    0.240 0.420 0.637     +1.000    +1.000
+    L5 PREDICTED lon                       2.498    0.249 0.471 0.796     -0.087    -0.097
+    L5-noise oracle lon [P] (C1)           1.820    0.236 0.422 0.650     +0.899    +0.910
+    L5-noise PREDICTED lon                 2.534    0.245 0.469 0.798     -0.139    -0.117
+    L5-noise confusion-shaped 10%          2.005    0.243 0.440 0.695     +0.630    +0.596
+    L5-noise confusion-shaped 20%          2.210    0.250 0.463 0.749     +0.332    +0.227
+    L5-noise confusion-shaped 40%          2.553    0.263 0.501 0.835     -0.166    -0.372
+    L5-noise uniform flip 10/20/40% (C1)   2.033 / 2.246 / 2.693          +0.589 / +0.280 / -0.370
+    L2 ego + cmd [P] (C1)                  2.439    0.246 0.466 0.782      0.000     0.000
+
+    EXCL. FIRST FRAMES 4,979
+    L5 oracle lon [P] (C1)                 1.537    0.184 0.332 0.522     +1.000    +1.000
+    L5 PREDICTED lon                       2.089    0.162 0.329 0.601     -0.126    -0.258
+    L5-noise oracle lon [P] (C1)           1.559    0.162 0.307 0.503     +0.954    +1.318
+    L5-noise PREDICTED lon                 2.120    0.155 0.324 0.600     -0.190    -0.247
+    L5-noise confusion-shaped 10/20/40%    1.731 / 1.908 / 2.210          +0.602 / +0.242 / -0.374
+    L5-noise uniform flip 10/20/40% (C1)   1.768 / 1.966 / 2.369          +0.528 / +0.124 / -0.699
+    L2 ego + cmd [P] (C1)                  2.027    0.157 0.321 0.585      0.000     0.000
+  Realised confusion-shaped error rates: 0.102 / 0.201 / 0.398.
+
+C4c. The classifier's ~32% error rate is marked on f7 (orange star). It lands where the
+L5-noise curve has already fallen back to the no-intent L2 line.
+Notes (numbers only): a classifier that sees the same inputs as L2 adds no information,
+and its predicted intent scores slightly WORSE than L2 (-0.09 to -0.14 gap). At the same
+error rate, confusion-shaped noise costs less than uniform flips (e.g. 2.005 vs 2.033 at
+10%, 2.553 vs 2.693 at 40%).
