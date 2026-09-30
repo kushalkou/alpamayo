@@ -48,6 +48,7 @@ OVERFIT = int(pop_flag('--overfit', True, '0'))
 LORA_DROP = pop_flag('--lora_dropout', True, None)      # 3.5a retry: 0
 MIN_LR_RATIO = pop_flag('--min_lr_ratio', True, None)   # 3.5a retry: 1.0 = constant LR after warmup
 FIX = pop_flag('--fix', default=False)                  # 3.5a fix run: w1/fixrun.py
+PROBE = pop_flag('--probe_grad', default=False)         # diagnostic c: grad norms per group
 # A2 (--meta): the two meta-action tokens lat (= command, FLIPPABLE) and lon; no separate
 # (unflippable) cmd token, which would contradict a flipped lat label.
 EXTRA = ['lat', 'lon'] if META else (['cmd'] if CMD else [])
@@ -82,7 +83,8 @@ dataset.build_scene_split = build_split_w1
 finetune.build_scene_split = build_split_w1
 if not WEIGHTED:
     finetune.get_class_weights = lambda ds, device='cuda:0': torch.ones(TRAJ_VOCAB, device=device)
-if EXTRA or FIX:
+_GROUP = {}
+if EXTRA or FIX or PROBE:
     _load = finetune.load_model
 
     def load_model_x(*a, **kw):
@@ -95,11 +97,34 @@ if EXTRA or FIX:
             m = fixrun.install_fix(m, mean, sd)
             print(f'[w1] FIX: standardise mean {mean.tolist()} sd {sd.tolist()}; post LayerNorm + '
                   f'gain {float(m.ego_encoder.post_gain):.5f}; ego-MLP lr x{fixrun.EGO_LR_MULT}', flush=True)
+        for n, q in m.named_parameters():
+            if q.requires_grad:
+                _GROUP[id(q)] = ('lora' if 'lora_' in n else 'ego_xtok' if '.xtok.' in n else
+                                 'ego_mlp' if n.startswith('ego_encoder') else n.split('.')[0])
         return m
     finetune.load_model = load_model_x
 if FIX:
     import fixrun
     torch.optim.AdamW = fixrun.LrMultAdamW
+if PROBE:
+    # diagnostic c: per-group grad L2 norm at every optimizer step (after unscale,
+    # before clipping); rank 0 prints; run with --max_steps 200.
+    _clip = torch.nn.utils.clip_grad_norm_
+    _step = [0]
+
+    def clip_probe(params, max_norm, *a, **kw):
+        params = list(params)
+        acc = {}
+        for q in params:
+            if q.grad is not None and id(q) in _GROUP:
+                g = _GROUP[id(q)]
+                acc[g] = acc.get(g, 0.0) + float(q.grad.detach().float().pow(2).sum())
+        _step[0] += 1
+        if int(os.environ.get('LOCAL_RANK', 0)) == 0:
+            print('[probe] step %d ' % _step[0] + ' '.join(f'{k}={v ** 0.5:.4e}' for k, v in sorted(acc.items())),
+                  flush=True)
+        return _clip(params, max_norm, *a, **kw)
+    torch.nn.utils.clip_grad_norm_ = clip_probe
 if NOVIS:
     dataset.preprocess_image = lambda path, augment=False: torch.zeros(3, 1, 1)
     finetune.encode_live = lambda visual, images, device: torch.zeros(
