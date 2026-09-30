@@ -112,3 +112,30 @@ Official val, 3 seeds, seed mean (sd <= 0.011); commit e0f7516; figures f6, f7.
 
 Filled in as runs finish: A1 (ego + cmd [P]), A2 (+ oracle meta-action [P]), A3 (A1 +
 turn-weighted sampling), A0 (visual tokens removed vs zeroed, custom split).
+
+## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
+
+T8a. A classifier that predicts the longitudinal intent from ego status + command gets 68%
+of val samples right (the majority class alone gets 39%).
+
+    3 seeds, official val all 5,119: accuracy 0.677 / 0.676 / 0.672
+    recall: stop 0.900, accelerate 0.548, decelerate 0.451, maintain 0.766
+    (decelerate is mostly mistaken for maintain; accelerate for maintain or stop)
+
+T8b. Feeding the predicted intent into the oracle-trained model is no better than not
+having intent at all, while the true (oracle) intent is worth about 0.7 m.
+
+    seed-mean ADE@6s (L2 TemAvg 3 s), all 5,119         gap closed (L2 = 0, L5 = 1)
+    L2 ego + cmd [P]                      2.439 (0.782)   0.000
+    L5 ego + ORACLE intent [P]            1.750 (0.637)   1.000
+    L5 ego + PREDICTED intent             2.498 (0.796)  -0.087
+    L5-noise + PREDICTED intent           2.534 (0.798)  -0.139
+    (excl. first frames: 2.027 / 1.537 / 2.089 / 2.120)
+
+T8c. Realistic (confusion-shaped) intent errors hurt a little less than random flips at
+the same rate, and a 68%-accurate classifier sits past the point where intent stops
+helping (figure f7).
+
+    L5-noise, ADE@6s at 10 / 20 / 40% error    confusion-shaped 2.005 / 2.210 / 2.553
+                                               uniform flips    2.033 / 2.246 / 2.693
+    classifier-predicted intent (about 32% error)               2.534
