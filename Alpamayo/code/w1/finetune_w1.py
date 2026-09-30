@@ -11,8 +11,9 @@ verbatim) with these patches:
   rollout   ar_eval sees future_speeds[0] = v0_can, heading row = pi/2, GT = the
             lidar-frame trajectory (records.py), so its ADE is in VAD's frame
   loss      plain CE (STEP 2c) unless --weighted
-  extra     --cmd: command token; --meta: + meta-action lon token (lat = command
-            token, which is then flippable); --meta_flip f: training flip rate
+  extra     --cmd: command token; --meta: the two meta-action tokens lat (= command,
+            flippable) + lon, INSTEAD of the cmd token; --meta_flip f: training flip
+            rate (applies to lat and lon)
   vision    --no_vision: visual tokens REMOVED (context has 0 visual tokens; no image
             IO). The flag is independent of --zero_vision (zeroed but present).
   sampling  natural by default; --turn_weighted = old weights (old CAM curvature > .05)
@@ -44,7 +45,9 @@ FLIP = float(pop_flag('--meta_flip', True, '0'))
 NOVIS = pop_flag('--no_vision', default=False)
 WEIGHTED = pop_flag('--weighted', default=False)
 OVERFIT = int(pop_flag('--overfit', True, '0'))
-EXTRA = (['cmd'] if CMD else []) + (['lon'] if META else [])
+# A2 (--meta): the two meta-action tokens lat (= command, FLIPPABLE) and lon; no separate
+# (unflippable) cmd token, which would contradict a flipped lat label.
+EXTRA = ['lat', 'lon'] if META else (['cmd'] if CMD else [])
 
 import pickle, numpy as np, torch
 import dataset, finetune, ar_eval, tokenizer as TKZ
@@ -52,17 +55,7 @@ import records, extra_tokens
 from model import TRAJ_VOCAB
 
 
-class W1Tokenizer(TKZ.TrajectoryTokenizer):
-    """Tokenizer (ii): percentile bins (median centres) on the lidar-frame targets.
-    tokenize() returns the precomputed tokens; detokenize_step() is inherited
-    (STOP -> (0,0), else the bin centres below)."""
-    def __init__(self):
-        b = pickle.load(open('/home/dgx1user/Alpamayo-Kushal/Alpamayo/data/w1_targets.pkl', 'rb'))['bins']
-        self.accel_centers, self.curv_centers = np.asarray(b[0]), np.asarray(b[1])
-        self.accel_bins, self.curv_bins = np.asarray(b[2]), np.asarray(b[3])
-
-    def tokenize(self, traj):
-        return list(traj['w1_tokens'])
+from w1tok import W1Tokenizer
 
 
 def build_split_w1(*a, **kw):

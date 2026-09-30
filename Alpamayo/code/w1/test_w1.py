@@ -47,8 +47,8 @@ def test_record_ignores_future():
 def test_tokenizer_and_rollout_path():
     """GT tokens through the UNCHANGED ar_eval rollout reproduce the step-2a floor, in
     the lidar frame, with the patched fields (v0 = future_speeds[0], yaw0 = ego[3,1])."""
-    import finetune_w1 as FW
-    tok = FW.W1Tokenizer()
+    from w1tok import W1Tokenizer
+    tok = W1Tokenizer()
     R = records.build('holdout', ('cmd',))[:200]
     for t in R:
         ak = tok.tokenize(t)

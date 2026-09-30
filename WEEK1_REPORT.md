@@ -402,3 +402,91 @@ Log: Alpamayo/w1_calib_2d.log. Report only.
     a9      0.1387         -0.205           0.029        -0.234    0.236/0.160
     a10     0.1226         -0.202           0.031        -0.233    0.241/0.161
     a11     0.1327         -0.139           0.027        -0.167    0.247/0.161
+
+## STEP 3 -- training wrapper (official split) + unit tests
+
+Code: Alpamayo/code/w1/finetune_w1.py. It runs the UNCHANGED finetune.py loop (its own
+__main__ exec'd verbatim) with these patches:
+  - data: train = official train minus the 50 holdout scenes, n_fut=12 (18,313; the
+    <2-past-pose exclusion is gone because features now fall back to CAN / zeros).
+    Selection = AR val ADE@6s (argmax, corrected STOP) on finetune's fixed 400-sample
+    subset (seed 1234) of the HOLDOUT n_fut=12 set -- 1,417 samples, not the 1,317 in
+    the planner text, since the causal-subset filter no longer applies. Official val
+    is never loaded.
+  - ego features: w1/records.py ego_state_w1 = backward pose differences for the last
+    4 poses; the current row = CAN (v0_can, yr_can, a_can) at the last message <= t0.
+    Yaw is RELATIVE to t0 (+pi/2): previously it was the global yaw -- a normalisation
+    change, noted for item 7c.
+  - tokens: tokenizer (ii) (w1/w1tok.py).
+  - rollout/GT: records carry future_speeds[0] = v0_can, the heading row pi/2, and the
+    lidar-frame GT, so the unchanged ar_eval scores in VAD's frame.
+  - loss: plain CE (2c).
+  - extra tokens (w1/extra_tokens.py): --cmd adds 1 token. --meta adds 2 meta-action
+    tokens, lat (= command, flippable) and lon, INSTEAD of cmd: an unflippable cmd
+    token next to a flipped lat label would leak the true label. Rows 4+ of ego_state;
+    each is its own embedding under ego_encoder.xtok.*, so it is saved and trained.
+  - --no_vision: visual tokens REMOVED (no image IO, context = 4 ego tokens + extras).
+  - --turn_weighted keeps the OLD weights (old CAM curvature > 0.05 -> ~40%).
+  - --overfit N; checkpoints under models/checkpoints/_w1_<tag>/.
+Unit tests, w1/test_w1.py -- 5/5 PASS:
+  1. ego features read only past/current poses + the t0-causal CAN fields
+     (whitelisted dict);
+  2. scrambling future_* leaves them bit-identical;
+  3. GT tokens through the UNCHANGED ar_eval rollout reproduce the step-2a floor, and
+     GT = the lidar-frame trajectory (max diff < 1e-4 m, from the float32 pi/2 row);
+  4. extra tokens: shapes with visual tokens present and removed, token identity,
+     saved in state_dict, receive grad;
+  5. flips: lon 10%, lat 10%, cmd 0%, rows carry the shown label.
+Also: w1/test_can_causal.py (CAN never after t0), w1/test_causal_ego.py,
+w1/test_command.py. leak/finetune_causal.py and leak/dump_ce.py gained a
+--no_vision / 'remove' option for A0.
+Speed with visual tokens removed: 0.36 s/step on 8 V100s (vs 4.6 s with 1,536 zeroed
+visual tokens).
+
+Meta-action classes (A2; lon from GT speed at 3 s vs v0_can, thresholds as specified):
+
+    split     stop           accelerate     decelerate     maintain
+    train     3506 (0.191)   4457 (0.243)   3331 (0.182)   7019 (0.383)
+    holdout    324 (0.229)    367 (0.259)    214 (0.151)    512 (0.361)
+    val        853 (0.167)   1370 (0.268)    891 (0.174)   2005 (0.392)
+
+No class is below 2%. Note: "stop" is almost entirely already-stationary vehicles:
+3503 of the 3506 train "stop" samples have command straight.
+
+## STEP 3.5b -- ego-status MLP baseline (AD-MLP style)
+
+Code: w1/ego_mlp.py. Inputs = the VLA's causal ego state (16) + one-hot command (3).
+Output = 12 waypoints in the lidar frame (direct regression, L1 loss). MLP
+19-512-512-24, 100 epochs, selection on holdout ADE@6s. 3 seeds, 1 GPU, ~25 s each.
+Log: Alpamayo/w1_egomlp.log. Official val, ALL 5,119:
+
+    method        L2 NoAvg 1/2/3s   L2 TemAvg 1/2/3s   Col% NoAvg      Col% TemAvg     ADE6 mean/med/p95   FDE6   L2@3s med/p95
+    CV            0.527 1.448 2.762 0.376 0.784 1.326  0.10 0.47 2.07  0.14 0.27 0.75  3.742/2.763/9.889 8.735  1.937/7.427
+    KIN           0.362 1.049 2.178 0.278 0.562 0.998  0.08 0.29 1.39  0.16 0.23 0.57  3.161/2.240/8.199 7.750  1.449/5.636
+    ORACLE-KIN    0.477 1.145 1.955 0.348 0.658 1.022  0.12 0.70 1.58  0.14 0.35 0.70  2.671/1.708/8.901 6.342  1.181/6.466
+    egoMLP s42    0.324 0.822 1.633 0.241 0.461 0.777  0.08 0.82 1.78  0.29 0.56 0.87  2.434/1.675/6.178 6.067  1.033/4.166
+    egoMLP s123   0.328 0.823 1.636 0.244 0.463 0.779  0.59 0.23 1.76  0.53 0.37 0.75  2.437/1.691/6.096 6.073  1.047/4.171
+    egoMLP s2024  0.326 0.829 1.641 0.243 0.464 0.782  0.59 0.80 1.86  0.53 0.65 0.98  2.440/1.696/6.154 6.075  1.054/4.166
+
+  Scene-level paired bootstrap (s42; the other seeds are within 0.01):
+    egoMLP - CV          L2@3s -1.129 [-1.279,-0.982]  L2T@3s -0.549 [-0.617,-0.481]  ADE6 -1.309 [-1.509,-1.110]
+    egoMLP - KIN         L2@3s -0.545 [-0.634,-0.458]  L2T@3s -0.222 [-0.255,-0.188]  ADE6 -0.727 [-0.863,-0.592]
+    egoMLP - ORACLE-KIN  L2@3s -0.322 [-0.508,-0.166]  L2T@3s -0.246 [-0.327,-0.177]  ADE6 -0.237 [-0.535,+0.000] p=0.050
+    KIN - CV             L2@3s -0.584 [-0.652,-0.516]  L2T@3s -0.327 [-0.367,-0.288]  ADE6 -0.582 [-0.652,-0.509]
+  Strata, L2@3s NoAvg: straight (3488) CV 2.43 / KIN 1.79 / O-KIN 1.79 / MLP 1.37;
+  turning (638) 4.61 / 3.41 / 2.69 / 1.87; stationary (993) 2.75 / 2.74 / 2.08 / 2.42.
+
+Oracle-kin table (train medians of the per-sample mean control over 3 s): lon accel
+stop 0.000 / accelerate +0.680 / decelerate -0.596 / maintain +0.022 m/s^2; lat curvature
+right -0.0292 / left +0.0300 / straight -0.0001 rad/m.
+
+Notes (not interpreted):
+  - A causal ego MLP + the (future-derived) command beats VAD-Base's published L2
+    (TemAvg 0.41/0.70/1.05) at 0.24/0.46/0.78, but collides more (TemAvg 0.29/0.56/0.87%
+    vs 0.07/0.17/0.41). The 1 s NoAvg collision swings 0.08-0.59% across seeds (4-30
+    samples).
+  - The CV here (0.527/1.448/2.762) differs slightly from step 1b's CV v0_can
+    (0.539/1.461/2.779): the rollout now starts in the lidar frame along +y, whereas
+    step 1b converted a CAM-heading rollout. The difference is the lidar mount yaw.
+  - The "stationary" stratum (v0_can < 0.5) includes the 140 first-of-scene samples
+    whose v0 falls back to 0 while actually moving; that is why CV scores 2.75 there.
