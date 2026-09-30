@@ -83,7 +83,7 @@ Input diagnostics on run 1 (commits c4fc454, 982d1ec): ego tokens have L2 norm 1
 0.87 for Cosmos text embeddings (22x); ego features unstandardised; mean pairwise cosine
 of ego tokens across samples 0.72 after the layer-0 RMSNorm; mean-share 0.62-0.73;
 no padding; slot 0 reads the last context token (cmd) under a full causal mask.
-Same test, two follow-up runs (commits e0c6680 and this section's commit):
+Same test, two follow-up runs (commits e0c6680, ed26214):
 
     run                                         median ADE@6s   slot-0 acc   shuffled slot-0   gate
     run 1 (Y1 recipe)                           1.058           0.488        --                FAIL
