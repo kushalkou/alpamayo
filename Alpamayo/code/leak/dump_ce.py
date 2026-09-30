@@ -29,6 +29,7 @@ ALL = {
     'y1_full': (f'{CK}/_y1_full_turnw/alpamayo_best.pt', False, False, False),
     'causal_ego':  (f'{CK}/_causal_ego_s42/alpamayo_best.pt', True, False, True),
     'causal_full': (f'{CK}/_causal_full_s42/alpamayo_best.pt', False, False, True),
+    'A0_causal_ego_novis': (f'{CK}/_causal_A0_ego_novis_s42/alpamayo_best.pt', 'remove', False, True),
 }
 
 
@@ -88,7 +89,8 @@ def main():
             t = trajs[i]
             if zv:
                 ego = dataset.compute_ego_state(t)
-                vt = torch.zeros(1, 1536, 3584, dtype=torch.float16, device=device)
+                vt = torch.zeros(1, 0 if zv == 'remove' else 1536, 3584,
+                                 dtype=torch.float16, device=device)
             else:
                 item = ds[i]; ego = item['ego_state']
                 vt = encode_live_one(visual, item['images'], device)

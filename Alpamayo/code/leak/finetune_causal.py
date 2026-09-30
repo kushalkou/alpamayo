@@ -18,6 +18,9 @@ sys.path.insert(0, CODE); sys.path.insert(0, f'{CODE}/leak')
 tag = 'causal'
 if '--tag' in sys.argv:
     k = sys.argv.index('--tag'); tag = sys.argv[k + 1]; del sys.argv[k:k + 2]
+NOVIS = '--no_vision' in sys.argv          # WEEK1 A0: visual tokens REMOVED (not zeroed)
+if NOVIS:
+    sys.argv.remove('--no_vision')
 
 import causal_ego
 causal_ego.patch()
@@ -45,7 +48,15 @@ print(f'[causal] ckpt dir {finetune.CFG["checkpoint_dir"]}', flush=True)
 # tokens and then replaces them with zeros_like(). Skip the image load + frozen encoder and
 # hand back those zeros directly (same shape [B,1536,3584], same fp16 dtype). No RNG is
 # involved in either path (augment is off), so training is numerically identical.
-if '--zero_vision' in sys.argv:
+if NOVIS:
+    import torch, ar_eval
+    dataset.preprocess_image = lambda path, augment=False: torch.zeros(3, 1, 1)
+    finetune.encode_live = lambda visual, images, device: torch.zeros(
+        images.shape[0], 0, 3584, dtype=torch.float16, device=device)
+    ar_eval.encode_live_one = lambda visual, images, device, dtype=torch.float16: torch.zeros(
+        1, 0, 3584, dtype=dtype, device=device)
+    print('[causal] no_vision: visual tokens REMOVED (context = 4 ego tokens)', flush=True)
+elif '--zero_vision' in sys.argv:
     import torch, ar_eval
     dataset.preprocess_image = lambda path, augment=False: torch.zeros(3, 1, 1)
     finetune.encode_live = lambda visual, images, device: torch.zeros(
