@@ -178,3 +178,146 @@ says (iv).
 ---
 
 STOPPED here per instructions. Items 6-7 are not launched.
+
+===========================================================================================
+PLANNER DECISIONS ON e089d0f (D1 tokenizer (ii); D2 FROZEN v2 approved; D3 stage A only)
++ AMENDMENT. Work below.
+===========================================================================================
+
+## D2. FROZEN_RESULTS v2 -- done (fc22e97)
+
+FROZEN_RESULTS.md is now the approved v2, with the edits applied: kinematic-rule
+reference line (+0.184 m); F2 "survives in kind, 0.014 m, same order as zero-input
+0.008"; F4 WITHDRAWN citing 6b. The v1 text is kept unchanged as
+FROZEN_RESULTS_v1_LEAKY.md. (Interpretation: "keep v1 as ..._v1_LEAKY" was read as v2
+taking the FROZEN_RESULTS.md name. Revert with git if that was not intended.)
+
+## STEP 1 -- v0
+
+### 1a. The old "constant turn rate 3.014"
+
+v2_characterize.py computes yr = compute_ego_state(traj)[3,2]. With TODAY's
+compute_ego_state that is wrap(future_yaws[0] - yaw0)/dt -- a future yaw -- and
+re-running the script today gives a LEAKY 2.799. The published 3.014, however, was
+produced before the W1 change, when compute_ego_state used backward differences:
+a causal recomputation (yr = wrap(yaw0 - yaw_-1)/dt, 0 without a past pose, same loop,
+custom test n=3614) reproduces it exactly, 3.014 / median 2.402. So 3.014 is causal.
+Causal CTR - CV = -0.048 [-0.100,+0.004], p=0.074 (not significant).
+Code: Alpamayo/code/w1/ctr_recheck.py.
+
+### 1b. CAN bus
+
+Not previously on the DGX, the NAS or the WS. Official source: the nuScenes public
+bucket linked from the nuscenes.org download page,
+https://d36yt3mvayqw5m.cloudfront.net/public/v1.0/can_bus.zip -- 780,974,697 bytes (CAN
+bus expansion, last-modified 2024-01-30). Downloaded and unzipped to
+Alpamayo/nuscenes/can_bus/ (979 scenes x 8 message files).
+
+Source used: the 'pose' message (50 Hz): vel[0] (m/s), accel[0] (m/s^2),
+rotation_rate[2] (yaw rate, rad/s). Lookup = the LAST message with utime <= t0, with
+t0 = sample['timestamp']. Never the nearest message: the nearest can be up to 18.9 ms
+AFTER t0 on val. Unit test Alpamayo/code/w1/test_can_causal.py PASS (synthetic
+boundaries; every built record has t0 - utime >= 0).
+Offset t0 - utime on val: p50 9.96, p90 17.86, p99 20.59, max 38.26 ms.
+
+Coverage (Alpamayo/w1_can_coverage.log):
+
+    split     samples with CAN   scenes with NO CAN at all
+    train     21097/22213        15/650: scene-0161..0168, 0170..0176 (devkit blacklist)
+    holdout    1667/1717          0/50
+    val        4979/5119          0/150
+
+Every other missing sample is the FIRST sample of a scene: the scene's CAN log starts
+just after it (609 train / 50 holdout / 140 val scenes, exactly 1 sample each). Those
+samples also have no past pose, so the causal fallback (backward pose differences, per
+the amendment) has nothing to use: v0 = a = yaw rate = 0 there.
+(VAD's converter instead defaults to pose_list[0], a message AFTER t0; see
+amendment 2.)
+
+Official val, ALL 5,119 samples, LIDAR origin, same plan_metrics code as gate 3.
+KIN = kinematic reference rule: the measured accel and yaw rate act over the first
+0.5 s step, then speed and heading are held.
+
+                       L2 NoAvg 1/2/3s   L2 TemAvg 1/2/3s   Col% NoAvg     Col% TemAvg   L2@3s med/p95
+    CV  v0_fwd (side)  0.313 1.089 2.274 0.199 0.534 1.007  0.10 0.35 1.43 0.11 0.21 0.56 1.802/6.410
+    KIN v0_fwd (side)  0.418 1.084 2.195 0.314 0.602 1.032  0.08 0.18 1.27 0.08 0.13 0.40 1.744/6.100
+    CV  v0_back        0.668 1.706 3.127 0.485 0.953 1.552  0.14 0.63 2.83 0.14 0.29 0.95 2.308/8.205
+    KIN v0_back        0.685 1.682 3.071 0.512 0.959 1.540  0.10 0.43 2.11 0.09 0.20 0.69 2.161/8.732
+    CV  v0_back+.25a   0.677 1.710 3.128 0.494 0.960 1.558  0.14 0.55 2.60 0.14 0.27 0.88 2.291/8.602
+    KIN v0_back+.25a   0.781 1.813 3.238 0.592 1.061 1.660  0.14 0.53 2.15 0.11 0.25 0.75 2.117/10.09
+    CV  v0_can         0.539 1.461 2.779 0.390 0.797 1.340  0.12 0.55 2.27 0.12 0.27 0.81 1.947/7.489
+    KIN v0_can         0.379 1.057 2.187 0.302 0.579 1.012  0.04 0.31 1.33 0.05 0.15 0.47 1.458/5.651
+
+    (v0_back falls back to 0 on the 150 first-of-scene val samples; v0_can falls back to
+    v0_back on the 140 samples without CAN at/before t0.)
+
+### 1c. Default
+
+v0 = v0_can (CAN pose vel at the last message <= t0), with backward-pose fallback. Ego
+accel and yaw rate come from the same CAN message, with the same fallback. The
+kinematic reference rule for all later tables is KIN v0_can: TemAvg 0.302/0.579/1.012,
+NoAvg 0.379/1.057/2.187, collision TemAvg 0.05/0.15/0.47%. Evaluation covers all
+5,119 samples; no causal-subset filtering.
+Reference: VAD-Base TemAvg 0.41/0.70/1.05, col 0.07/0.17/0.41 (planner-verified). The
+causal kinematic rule, with no learning and no perception, is at VAD-Base's L2.
+
+## AMENDMENT 2 -- VAD converter ego status (tools/data_converter/vad_nuscenes_converter.py,
+## hustvl/VAD main, 1005 lines, fetched 2026-09-30)
+
+Verbatim, with line numbers:
+
+    L39  def locate_message(utimes, utime):
+    L40      i = np.searchsorted(utimes, utime)
+    L41      if i == len(utimes) or (i > 0 and utime - utimes[i-1] < utimes[i] - utime):
+    L42          i -= 1
+    L43      return i
+      -> NEAREST message: can be AFTER the sample time.
+
+    L170 def _get_can_bus_info(nusc, nusc_can_bus, sample):
+    ...  last_pose = pose_list[0]
+    L180     for i, pose in enumerate(pose_list):
+    L181         if pose['utime'] > sample_timestamp:
+    L182             break
+    L183         last_pose = pose
+    L184     _ = last_pose.pop('utime')  # useless
+    L185     pos = last_pose.pop('pos')
+    L186     rotation = last_pose.pop('orientation')
+    L187     can_bus.extend(pos)
+    L188     can_bus.extend(rotation)
+    L189     for key in last_pose.keys():
+    L190         can_bus.extend(pose[key])  # 16 elements
+      -> pos / orientation come from the last message <= t0, but L190 indexes `pose`,
+         the loop variable, which after the break is the FIRST MESSAGE AFTER t0. So
+         can_bus[7:16] (accel, rotation_rate, vel) are ~0-20 ms in the FUTURE. And
+         when the log starts after t0, last_pose = pose_list[0] is itself after t0.
+
+    L232-242  pose_record_prev from sample['prev'], pose_record_next from sample['next']
+    L473 if pose_record_prev is not None:
+    L474     ego_w = (ego_yaw - ego_yaw_prev) / 0.5
+    L475     ego_v = np.linalg.norm(ego_pos[:2] - ego_pos_prev[:2]) / 0.5
+    L477 else:
+    L478     ego_w = (ego_yaw_next - ego_yaw) / 0.5
+    L479     ego_v = np.linalg.norm(ego_pos_next[:2] - ego_pos[:2]) / 0.5
+      -> backward (causal) normally; FORWARD from the next keyframe (0.5 s future) on the
+         first sample of every scene.
+
+    L489 pose_index = locate_message(pose_uts, ref_utime)   (nearest, see L39)
+    L491 steer_index = locate_message(steer_uts, ref_utime)
+    L494 v0 = pose_data["vel"][0]
+    L496 steering = steer_data["value"]  ... L501 Kappa = 2 * steering / 2.588
+    L503 except:
+    L504     delta_x = ego_his_trajs[-1, 0] + ego_fut_trajs[0, 0]
+    L505     delta_y = ego_his_trajs[-1, 1] + ego_fut_trajs[0, 1]
+    L506     v0 = np.sqrt(delta_x**2 + delta_y**2)
+      -> v0 and Kappa from the NEAREST message (possibly future); the fallback reads
+         ego_fut_trajs[0], the first FUTURE step.
+
+    L508 ego_lcf_feat[:2] = np.array([ego_vx, ego_vy])
+    L509 ego_lcf_feat[2:4] = can_bus[7:9]     <- ax, ay from the post-t0 message (L190)
+    L510 ego_lcf_feat[4] = ego_w
+    L512 ego_lcf_feat[7] = v0
+    L513 ego_lcf_feat[8] = Kappa
+
+ANSWER: yes. VAD's ego status reads future information in four places, all small in
+time (<= ~20 ms for CAN; 0.5 s for the first-of-scene forward difference and the
+except-path v0). Magnitude unmeasured; flagged only.
