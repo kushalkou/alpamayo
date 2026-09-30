@@ -73,3 +73,10 @@ LIMITS, additions:
   - The decode seed v0 = |p1 - p0|/dt reads pose +1. It is shared with CV, so it is
     not a differential leak, but no deployed system can measure it (a CV with backward
     speed scores 3.538 vs 3.061).
+
+## UPDATE 2026-09-30 -- causal full-vision retrain (6b) landed
+
+FINDING 4 -- vision on turning: proposed WITHDRAWN. Leak-free, the full-vision blend
+equals the ego-only blend (ALL -0.000 [-0.012,+0.012]; TURNING -0.014 [-0.050,+0.021],
+p=0.44). The causal full-vision blend beats CV by 0.014 m [0.002,0.025], exactly like
+causal ego-only. Single seed.

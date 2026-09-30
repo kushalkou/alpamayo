@@ -431,3 +431,22 @@ beats the trained model by 0.17 m.
 6b (causal full-vision) started at 05:58 UTC in the same tmux session. It is about
 13 h of training, so it is NOT done by morning; dumps follow automatically, and
 causal_eval.py causal_full runs the same analysis.
+
+---
+
+## 6b. CAUSAL RETRAIN -- full vision (finished 18:29 UTC 2026-09-29, evaluated 2026-09-30)
+
+Same recipe as 6, vision on. Best checkpoint: epoch 7, selection median 3.714.
+Log: Alpamayo/overnight2_causal_full_eval.log. Test causal subset n=3358, CV 3.059.
+
+    causal_full V1s         4.154 (3.299)   vs CV +1.095 [+0.977,+1.222]
+    causal_full blend       alpha*=0.10  3.045 (2.397)  blend-CV -0.014 [-0.025,-0.002] p=0.018
+    y1_full blend (leaky)   alpha*=0.30  2.914          blend-CV -0.145 [-0.176,-0.115]
+    STRAIGHT  blend-CV -0.001 [-0.013,+0.012]    TURNING  blend-CV -0.076 [-0.103,-0.049]
+    blend[causal_full] - blend[causal_ego]:  ALL -0.000 [-0.012,+0.012]
+                                             TURNING -0.014 [-0.050,+0.021] p=0.44
+    nulls: all select alpha=0; forced-alpha cost -0.009 / -0.093 / -0.064;
+    corr(D,G-C) = +0.156, perm p=0.0005. Slot-1 accuracy 0.272 (leak gone).
+
+Finding 4 (vision helps on turning) is NOT supported leak-free: with causal features,
+full vision adds -0.014 m [-0.050,+0.021] on turning over ego-only (single seed).
