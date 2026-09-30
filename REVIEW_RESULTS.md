@@ -83,8 +83,15 @@ Input diagnostics on run 1 (commits c4fc454, 982d1ec): ego tokens have L2 norm 1
 0.87 for Cosmos text embeddings (22x); ego features unstandardised; mean pairwise cosine
 of ego tokens across samples 0.72 after the layer-0 RMSNorm; mean-share 0.62-0.73;
 no padding; slot 0 reads the last context token (cmd) under a full causal mask.
-Retry (LoRA dropout 0, constant LR) and fix run (standardised features, LayerNorm + gain
-to norm 0.87, ego-MLP LR x10): see T7 (pending).
+Same test, two follow-up runs (commits e0c6680 and this section's commit):
+
+    run                                         median ADE@6s   slot-0 acc   shuffled slot-0   gate
+    run 1 (Y1 recipe)                           1.058           0.488        --                FAIL
+    retry (LoRA dropout 0, constant LR)         0.447           0.598        0.047             FAIL (slot 0)
+    fix (standardised features, LayerNorm +     0.098           0.992        0.039             PASS
+         gain to text norm 0.87, ego-MLP LR x10)
+The fix reaches the tokenizer floor (0.092 median). The input pathway, not the
+decoder, was the bottleneck. Stage A uses the fix recipe.
 
 ## T6. Mini information ladder on a small Ego-MLP (a demonstration, not the VLA)
 

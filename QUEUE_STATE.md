@@ -7,11 +7,11 @@ step's outputs are files, so completed steps are skipped.
 - [done] w1: 3.5a retry -- GATE FAIL (slot-0 0.598; median 0.447; shuffle ok) (w1/run_retry.sh) -> Alpamayo/w1_overfit256_retry.log,
             dumps -> Alpamayo/w1_retry_dump.log (RETRY_QUEUE_DONE marker)
             resume: bash Alpamayo/code/w1/run_retry.sh (tmux w1)
-- [running] G1 fix run (started 15:29 UTC) + dumps + diagnostic-c probe: Alpamayo/code/w1/run_gq.sh (tmux fix),
+- [done] G1 fix run -- GATE PASS (median 0.098, slot-0 0.992, shuffle 0.039) + dumps + diagnostic-c probe: Alpamayo/code/w1/run_gq.sh (tmux fix),
             status Alpamayo/gq_status.log (GQ_DONE marker). No GPU was free alongside w1
             (8 x ~30/32 GB), so it waits for w1.
-- [pending] G2 gate (w1/gate35.py on retry_* and fix_* dumps) -> G3 recipe decision
-- [prepared] G4 Stage A: RECIPE=fix|retry bash Alpamayo/code/w1/run_stageA.sh (tmux stageA).
+- [done] G2 gates; G3 decision = FIX recipe
+- [running] G4 Stage A (launched 18:05 UTC, behind the probe): RECIPE=fix|retry bash Alpamayo/code/w1/run_stageA.sh (tmux stageA).
             Resumable: skips runs with results/STAGEA_<run>_TRAINED / _REPORTED markers.
             After each run it waits for results/STAGEA_<run>_REPORTED (touch after the
             report section is committed). Status: Alpamayo/stageA_status.log

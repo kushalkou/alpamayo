@@ -733,3 +733,25 @@ Alpamayo/w1_gate35_retry.log. 256 overfit samples; floor 0.426 mean / 0.092 medi
   (shuffling collapses slot 0 to 0.05 and the median ADE to 4.7 m), but the
   context -> first-token mapping still misses 40% of the 256 samples.
   The fix run (w1/fixrun.py) started 15:29 UTC; it is gated with the same rule.
+
+## QUEUE G2 (part 2) -- GATE 3.5a on the FIX RUN, and G3 recipe decision
+
+Fix = standardised ego features (train stats) + post-MLP LayerNorm + scalar gain (token
+norm 0.87 at init) + ego-MLP LR x10; otherwise run 1's recipe (LoRA dropout 0.1, cosine
+LR). Trained 15:29-18:00 UTC. Log Alpamayo/w1_overfit256_fix.log; gate log
+Alpamayo/w1_gate35_fix.log.
+
+    checkpoint                 epoch  AR median ADE@6s (mean)   slot-0 acc  exact 24-token seq
+    fix final                   150   0.098 (0.498)             0.992       0.965
+    fix final, INPUT-SHUFFLED   150   4.696 (5.971)             0.039       0.016
+    fix best                     97   0.095 (0.507)             0.984       0.957
+    floor on these 256                0.092 median / 0.426 mean
+    TF token accuracy (all 24 slots), epoch 150: 99.84%
+
+  median 0.098 <= 1.0: yes;  slot-0 0.992 >= 0.90: yes;  shuffle 0.992 -> 0.039: yes
+  FIX RUN: PASS. The median sits on the tokenizer floor, and shuffling the inputs
+  destroys it, so the model reads its ego + cmd inputs.
+
+G3 (pre-registered): fix passes -> Stage A uses the FIX recipe. Launched as
+`RECIPE=fix bash w1/run_stageA.sh` (tmux stageA). It starts when the diagnostic-c
+probe (tmux fix) ends, and runs A1, A2, A3, A0, pausing for each report.
