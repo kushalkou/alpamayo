@@ -87,21 +87,45 @@ def main():
             PER[f'{tag} {mode}' + (f' t{best}' if mode == 'hybrid' else '')] = E.per_sample(rva, P, occ)
             if mode == 'hybrid':
                 PRED[tag] = (P, preds(dh, rho, 'hybrid', best), best)
-    print(f'GATE A -- official val n={len(rva)} (ADE/FDE@6s: n_fut=12 subset n='
-          f'{int((~np.isnan(PER["CV"]["ade"])).sum())}); model = free-running AR, lidar frame')
-    print(E.HDR)
-    for k, p in PER.items():
-        print(E.row(k, p))
-
-    print('\nPAIRED SCENE-LEVEL BOOTSTRAP (negative => first better); models = hybrid decode')
     H = {tag: [k for k in PER if k.startswith(f'{tag} hybrid')][0] for tag in tags}
+    W, V0, _ = E.data()
+    ff = np.array([not V0[r['sample_token']]['can_ok'] and len(r['past_poses']) == 0 for r in rva])
+    for blk, m in (('ALL 5,119', np.ones(len(rva), bool)),
+                   (f'EXCL. FIRST FRAMES (n={int((~ff).sum())})', ~ff)):
+        sub = [r for r, k in zip(rva, m) if k]
+        cut = lambda p: {k: v[m] for k, v in p.items()}
+        print(f'\n===== GATE A -- official val, {blk} (ADE/FDE@6s on the n_fut=12 part); '
+              f'model = free-running AR, lidar frame =====')
+        print(E.HDR)
+        for k, p in PER.items():
+            print(E.row(k, cut(p)))
+        print('\nPAIRED SCENE-LEVEL BOOTSTRAP (negative => first better); models = hybrid decode')
+        for tag in tags:
+            for b in ('CV', 'KIN', 'egoMLP s42') + (('ORACLE-KIN',) if tag == 'A2' else ()):
+                print(E.compare(sub, cut(PER[H[tag]]), cut(PER[b]), f'{tag} - {b}'))
+            print(E.compare(sub, cut(PER[f'{tag} expect']), cut(PER[f'{tag} argmax']), f'{tag} expect - argmax'))
+        for a_, b_ in (('A2', 'A1'), ('A3', 'A1')):
+            if a_ in tags and b_ in tags:
+                print(E.compare(sub, cut(PER[H[a_]]), cut(PER[H[b_]]), f'{a_} - {b_}'))
+
+    print('\nSLOT-0 ACCURACY + INPUT-SHUFFLE TEST (val; ego + extra rows permuted across samples, '
+          'seed 99; hybrid decode, same tau)')
     for tag in tags:
-        for b in ('CV', 'KIN', 'ORACLE-KIN', 'egoMLP s42'):
-            print(E.compare(rva, PER[H[tag]], PER[b], f'{tag} - {b}'))
-        print(E.compare(rva, PER[f'{tag} expect'], PER[f'{tag} argmax'], f'{tag} expect - argmax'))
-    for a_, b_ in (('A2', 'A1'), ('A3', 'A1')):
-        if a_ in tags and b_ in tags:
-            print(E.compare(rva, PER[H[a_]], PER[H[b_]], f'{a_} - {b_}'))
+        dv = load(tag, 'val')
+        s0 = np.mean([dv['data'][r['sample_token']]['tok'][0] == dv['data'][r['sample_token']]['gt_tok'][0]
+                      for r in rva if r['n_fut'] == 12])
+        line = f'  {tag}: slot-0 acc {s0:.3f}  ADE6 {E.summary(PER[H[tag]])["ADE6"]:.3f}'
+        try:
+            ds = load(f'{tag}_shuf', 'val')
+            ps = E.per_sample(rva, preds(ds, rva, 'hybrid', PRED[tag][2]), occ)
+            s0s = np.mean([ds['data'][r['sample_token']]['tok'][0] == ds['data'][r['sample_token']]['gt_tok'][0]
+                           for r in rva if r['n_fut'] == 12])
+            a, b = E.summary(PER[H[tag]])['ADE6'], E.summary(ps)['ADE6']
+            line += (f'  | SHUFFLED: slot-0 acc {s0s:.3f}  ADE6 {b:.3f}  (x{b/a:.3f}; within 5% -> '
+                     f'{"FAILS shuffle test" if abs(b/a - 1) <= 0.05 else "passes"})')
+        except FileNotFoundError:
+            line += '  | shuffle dump missing'
+        print(line)
 
     print('\nBLEND alpha*model + (1-alpha)*CV, alpha fit on HOLDOUT (ADE@6s), + nulls')
     for tag in tags:
@@ -139,6 +163,7 @@ def main():
     if 'A2' in tags:
         print('\nA2 FLIP-RATE SWEEP (test-time meta-action flips, seed 777; model trained at 10%)')
         _, _, tau = PRED['A2']
+        curve = {}
         for f in (0.0, 0.1, 0.2, 0.4):
             try:
                 dv = load('A2', 'val', f)
@@ -148,6 +173,8 @@ def main():
             lab = [dv['data'][r['sample_token']]['shown'] for r in rva]
             ok = E.per_sample(rva, E.oracle_kin(rva, tab, [x['lon'] for x in lab], [x['lat'] for x in lab]), occ)
             s, so = E.summary(per), E.summary(ok)
+            curve[f] = s['ADE6']
+            pickle.dump(curve, open(f'{RES}/w1_a2_flip_ade.pkl', 'wb'))
             print(f'  flip {f:.1f}: A2 ADE6 {s["ADE6"]:.3f} L2@3s {s["L2_NoAvg_3s"]:.3f} L2T@3s '
                   f'{s["L2_TemAvg_3s"]:.3f} | ORACLE-KIN with the same flipped labels: ADE6 '
                   f'{so["ADE6"]:.3f} L2@3s {so["L2_NoAvg_3s"]:.3f}')
