@@ -490,3 +490,77 @@ Notes (not interpreted):
     step 1b converted a CAM-heading rollout. The difference is the lidar mount yaw.
   - The "stationary" stratum (v0_can < 0.5) includes the 140 first-of-scene samples
     whose v0 falls back to 0 while actually moving; that is why CV scores 2.75 there.
+
+===========================================================================================
+PLANNER RESPONSE AFTER STEP 3 (approved: v2 rename, median centres, plain CE, A2 tokens;
+holdout 1,417; the lidar-frame evaluator is authoritative).
+===========================================================================================
+
+## P4. Script hygiene -- why the old CTR script now reads a future yaw
+
+The shared function dataset.compute_ego_state was rewritten on 2026-07-14 (875d3a2, "W1
+FIX") from backward differences to forward differences that read future_positions[0],
+future_yaws[0] and future_speeds[1]. v2_characterize.py (CTR 3.014, 947dee4, 2026-07-13)
+imports it, so a rerun today silently uses the new, leaky version.
+Guard: Alpamayo/code/LEGACY_SCRIPTS_README.md lists all 11 scripts that import it and
+forbids rerunning them for new numbers; new work uses only the unit-tested causal
+features (32d990c).
+
+## P2. VAD-converter ego-status leak, quantified (CPU)
+
+Features (b) = VAD's gt_ego_lcf_feat (9-dim), rebuilt EXACTLY as
+vad_nuscenes_converter.py computes it (w1/vad_feats.py). Rebuilding it exposed one
+more quirk, beyond the four future reads listed earlier: quart_to_rpy (L32-37) unpacks
+(x,y,z,w), but nuScenes quaternions are (w,x,y,z). So for planar motion VAD's ego_yaw
+is ~0, ego_w ~ 0 (train sd 0.011 rad/s, |max| 0.10), and (vx,vy) ~ (0, v) (vx sd 0.14).
+Features (a) = ours (16 causal + CAN). Both get the one-hot command. The recipe is
+identical (w1/ego_mlp.py train_one, 512-512 MLP, L1, holdout selection), on CPU, 3
+seeds. KIN (VAD feats) = the kinematic rule with v0 = VAD v0, accel = VAD ax, yaw rate
+= VAD ego_w. Code: w1/egomlp_ab.py; log: Alpamayo/w1_egomlp_ab.log. Holdout ADE@6s:
+(a) 2.141/2.145/2.148, (b) 1.846/1.842/1.841.
+
+ALL 5,119:
+    method           L2 NoAvg 1/2/3s   L2 TemAvg 1/2/3s   Col% NoAvg      Col% TemAvg     ADE6 mean/med/p95   FDE6
+    CV               0.527 1.448 2.762 0.376 0.784 1.326  0.10 0.47 2.07  0.14 0.27 0.75  3.742/2.763/9.889 8.735
+    KIN (ours)       0.362 1.049 2.178 0.278 0.562 0.998  0.08 0.29 1.39  0.16 0.23 0.57  3.161/2.240/8.199 7.750
+    KIN (VAD feats)  0.292 0.923 1.998 0.221 0.478 0.887  0.18 0.39 1.21  0.24 0.33 0.60  2.895/2.290/7.861 7.299
+    MLP (a) s42      0.325 0.823 1.636 0.243 0.462 0.778  0.08 0.84 1.84  0.33 0.58 0.92  2.436/1.668/6.176 6.069
+    MLP (a) s123     0.336 0.829 1.639 0.250 0.470 0.785  0.59 0.68 1.33  0.53 0.57 0.82  2.444/1.708/6.067 6.088
+    MLP (a) s2024    0.329 0.833 1.646 0.245 0.469 0.786  0.59 0.74 1.78  0.54 0.65 0.95  2.442/1.694/6.159 6.071
+    MLP (b) s42      0.222 0.627 1.345 0.166 0.335 0.604  0.08 0.21 0.94  0.09 0.15 0.34  2.065/1.696/5.437 5.440
+    MLP (b) s123     0.245 0.624 1.346 0.177 0.340 0.608  0.10 0.18 0.98  0.16 0.26 0.44  2.068/1.695/5.411 5.452
+    MLP (b) s2024    0.223 0.622 1.344 0.163 0.333 0.602  0.08 0.70 1.00  0.14 0.31 0.46  2.067/1.715/5.439 5.452
+  (b)-(a), paired scene bootstrap, per seed (42 / 123 / 2024):
+    L2@3s   -0.291 [-0.351,-0.232] / -0.293 [-0.352,-0.234] / -0.302 [-0.360,-0.245]
+    L2T@3s  -0.174 [-0.208,-0.142] / -0.177 [-0.209,-0.146] / -0.184 [-0.216,-0.152]
+    ADE6    -0.371 [-0.453,-0.288] / -0.376 [-0.454,-0.296] / -0.375 [-0.453,-0.296]
+    Col TemAvg@3s  -0.576% [-1.485,-0.055] / -0.381% [-1.100,+0.052] / -0.498% [-1.443,+0.052]
+    Col NoAvg@3s   -0.899% [-2.210,-0.117] / -0.352% [-0.879,+0.059] / -0.781% [-2.130,+0.039]
+  KIN (VAD feats) - KIN (ours): L2@3s -0.180 [-0.245,-0.115], L2T@3s -0.112
+  [-0.149,-0.074], ADE6 -0.265 [-0.346,-0.183]
+
+EXCLUDING THE FIRST FRAME OF SCENE (n=4,979; drops the 140 samples with no causal speed):
+    method           L2 NoAvg 1/2/3s   L2 TemAvg 1/2/3s   Col% NoAvg      Col% TemAvg     ADE6 mean/med/p95   FDE6
+    CV               0.401 1.209 2.420 0.281 0.630 1.118  0.10 0.32 1.73  0.14 0.22 0.62  3.314/2.657/8.699 7.999
+    KIN (ours)       0.231 0.799 1.820 0.180 0.403 0.782  0.08 0.14 1.02  0.16 0.18 0.43  2.712/2.187/7.113 6.980
+    KIN (VAD feats)  0.291 0.923 1.997 0.220 0.477 0.886  0.18 0.40 1.25  0.25 0.34 0.61  2.893/2.290/7.851 7.291
+    MLP (a) s42      0.207 0.596 1.309 0.154 0.317 0.581  0.08 0.76 1.67  0.34 0.55 0.85  2.024/1.626/5.331 5.356
+    MLP (a) s123     0.218 0.603 1.312 0.162 0.326 0.588  0.60 0.60 1.14  0.54 0.55 0.75  2.032/1.654/5.313 5.375
+    MLP (a) s2024    0.211 0.607 1.320 0.156 0.324 0.590  0.60 0.66 1.61  0.54 0.62 0.88  2.030/1.655/5.381 5.359
+    MLP (b) s42      0.222 0.627 1.344 0.165 0.334 0.604  0.08 0.22 0.92  0.09 0.15 0.34  2.064/1.695/5.437 5.440
+    MLP (b) s123     0.244 0.625 1.347 0.177 0.340 0.608  0.10 0.18 0.98  0.16 0.27 0.44  2.069/1.695/5.422 5.456
+    MLP (b) s2024    0.223 0.622 1.343 0.163 0.333 0.602  0.08 0.68 1.00  0.14 0.31 0.46  2.066/1.712/5.441 5.453
+  (b)-(a), per seed (42 / 123 / 2024):
+    L2@3s   +0.035 [+0.007,+0.065] / +0.035 [+0.005,+0.065] / +0.023 [-0.005,+0.052]
+    L2T@3s  +0.022 [+0.009,+0.036] / +0.020 [+0.007,+0.033] / +0.012 [-0.001,+0.026]
+    ADE6    +0.040 [-0.003,+0.085] / +0.037 [-0.003,+0.080] / +0.036 [-0.006,+0.078]
+    Col TemAvg@3s  -0.505% [-1.431,+0.020] / -0.305% [-1.038,+0.134] / -0.425% [-1.393,+0.137]
+    Col NoAvg@3s   -0.743% [-2.070,+0.060] / -0.161% [-0.684,+0.241] / -0.603% [-1.971,+0.220]
+  KIN (VAD feats) - KIN (ours): L2@3s +0.177 [+0.140,+0.216], L2T@3s +0.104
+  [+0.083,+0.127], ADE6 +0.181 [+0.140,+0.227]
+
+## P3. First-frame stratum
+
+From here on every table reports ALL 5,119 and EXCLUDING the first frame of each scene
+without causal speed (n=140, v0 = 0 kept). The 140 = the first-of-scene samples with no
+CAN message <= t0 and no past pose. The other 10 first frames have CAN and stay in.
