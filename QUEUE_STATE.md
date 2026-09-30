@@ -17,6 +17,6 @@ step's outputs are files, so completed steps are skipped.
             report section is committed). Status: Alpamayo/stageA_status.log
 
 ## Track C (CPU)
-- [running] C1 mini ladder (w1/ladder.py, tmux ladder, log Alpamayo/w1_ladder.log); resume: rerun it
-- [partial] C2 figures: f1-f5 done (w1/figs.py); f6,f7 wait for C1 ladder (+A2)
-- [pending] C3 REVIEW_RESULTS.md
+- [done] C1 mini ladder (e0f7516)
+- [partial] C2 figures f1-f7 done (f7 without the A2 line; rerun `python w1/figs.py f5 f7` after gating/A2)
+- [partial] C3 REVIEW_RESULTS.md: T1-T6 written; T5 retry/fix and T7 Stage A pending
