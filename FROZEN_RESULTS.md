@@ -19,6 +19,23 @@ Every trained model with ego input received two ground-truth targets as input. C
 not. The trained models use this: slot-1 argmax accuracy is 0.774 (y1_ego) vs 0.305 at
 slot 2, and it falls to 0.283 once the leak is removed.
 
+## History -- origin of the leak (added 2026-09-30)
+
+On 2026-07-14, commit 875d3a2 ("W1 FIX: correct ego-state speed channel") rewrote the
+shared dataset.compute_ego_state from BACKWARD differences over past poses (causal) to
+FORWARD differences over [past..., current, future[0]], reading future_positions[0],
+future_yaws[0] and future_speeds[1]. That rewrite is the origin of the leak described
+above. It is also the origin of the reported "-36%" improvement (Alpamayo/
+RESULTS_OVERNIGHT.md: full live-vision test ADE@6s 6.610 -> 4.236 m, ego-only 4.488 ->
+3.820 m, "the model was never given the car's true speed"). That improvement was
+measured with inputs that contain the GT accel of slot 1, the GT curvature of slot 12,
+and a current-row "true speed" of |p1 - p0|/dt, which is itself a future
+displacement. It must NOT be read as the value of giving the model its speed. Every
+result dated after 2026-07-14 that used compute_ego_state inherits the leak. Scripts
+that import it now compute the leaky version even when their published numbers
+predate the rewrite (e.g. the causal CTR 3.014 of 2026-07-13); see
+Alpamayo/code/LEGACY_SCRIPTS_README.md.
+
 ## Evidence summary (test, causal subset n=3358 = samples with >= 2 past poses)
 
     predictor, blended with CV (alpha fit on val)        gain vs CV (m)     alpha*

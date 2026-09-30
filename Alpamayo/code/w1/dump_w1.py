@@ -37,6 +37,9 @@ def main():
     ap.add_argument('--splits', default='val,holdout')
     ap.add_argument('--flips', default='0')
     ap.add_argument('--limit', type=int, default=None)
+    ap.add_argument('--shuffle_inputs', action='store_true',
+                    help='INPUT-SHUFFLE test: permute w1_ego (ego + cmd/meta rows) across the '
+                         'dumped samples (seed 99); targets/GT stay with their own sample')
     ap.add_argument('--overfit', type=int, default=0,
                     help='dump the same N train samples finetune_w1 --overfit N trained on')
     a = ap.parse_args()
@@ -67,6 +70,12 @@ def main():
             if a.overfit:                      # identical selection to finetune_w1 --overfit
                 rs = np.random.RandomState(0)
                 R = [R[i] for i in sorted(rs.choice(len(R), a.overfit, replace=False))]
+            if a.shuffle_inputs:
+                perm = np.random.RandomState(99).permutation(len(R))
+                egos = [R[j]['w1_ego'] for j in perm]
+                R = [dict(t, w1_ego=e) for t, e in zip(R, egos)]
+                if m0: print(f'[dumpw1] INPUT-SHUFFLE: {int((perm != np.arange(len(R))).sum())}/{len(R)} '
+                             f'samples get another sample\'s ego+extra rows', flush=True)
             if a.limit: R = R[:a.limit]
             ds = NuScenesVLADataset(R, split=split, augment=False)
             my = list(range(len(R)))[lr::ws]
