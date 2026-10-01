@@ -151,6 +151,17 @@ turns, but it is still 0.26 m behind the small MLP.
     turning subset (n=638), L2@3s: KIN 3.412, A1 3.086, A3 2.580, Ego-MLP 1.868
     (commit 2137420)
 
+T7-A0. Removing the 1,536 zeroed visual tokens instead of feeding zeros makes training
+11x faster and leaves the blend with CV unchanged, but it worsens the standalone mean
+(the median improves).
+
+    custom-split test, causal subset n=3,358, ADE@6s; causal ego-only, old recipe
+                         standalone mean (median)   blend with CV   blend - CV
+    zeroed visual tokens 4.170 (3.469)              3.045           -0.014 [-0.025,-0.003]
+    removed (A0)         4.319 (3.195)              3.039           -0.020 [-0.026,-0.014]
+    removed - zeroed: standalone +0.149 [+0.020,+0.282]; blend -0.006 [-0.016,+0.004]
+    (commit A0HASH)
+
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 
 T8a. A classifier that predicts the longitudinal intent from ego status + command gets 68%

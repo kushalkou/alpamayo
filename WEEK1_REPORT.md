@@ -953,3 +953,30 @@ Blend a=0.70: - KIN -0.256 [-0.303,-0.210] L2@3s, -0.315 [-0.400,-0.233] ADE6.
 Slot-0 acc 0.211; INPUT-SHUFFLE: ADE6 2.896 -> 6.215 (x2.15), slot-0 0.211 -> 0.046: passes.
 Per-slot argmax accuracy: accel 0.21 0.18 0.17 0.16 0.16 0.15 0.15 0.14 0.14 0.14 0.14 0.14 |
   curv 0.24 0.21 0.19 0.18 0.17 0.16 0.16 0.15 0.15 0.14 0.14 0.14 (no spike); CE a1-11 5.540.
+
+## STAGE A -- A0: visual tokens REMOVED vs ZEROED (causal ego-only, custom split, OLD recipe)
+
+Run: leak/finetune_causal.py --no_vision (context = 4 ego tokens) with the Y1 ego recipe
+(turn-weighted, seed 42, 10 epochs), vs OVERNIGHT2's causal_ego (1,536 zeroed visual
+tokens). Selection by epoch (AR median ADE@6s, 400 custom-val samples):
+  removed: 10.51 7.55 3.88 5.03 3.68 4.01 3.77 3.73 4.15 3.80 -> best epoch 5, 3.681
+  zeroed:   4.05 3.81 3.86 3.92 3.87 3.56 3.69 3.59 3.67 3.66 -> best epoch 6, 3.565
+Cost: 0.42 s/step (zeroed: 4.59 s/step, 11x slower); train 02:09-03:14 UTC (8.7 GPU-h);
+dumps 23 min (3.1 GPU-h). Code: leak/a0_compare.py; log Alpamayo/w1_gateA_A0.txt.
+
+Custom-split test, causal subset n=3,358, CV 3.059, alpha fit on val:
+    model                 V1s ADE@6s mean (median)   alpha*   blend    blend - CV
+    zeroed (causal_ego)   4.170 (3.469)              0.10     3.045    -0.014 [-0.025,-0.003]
+    removed (A0)          4.319 (3.195)              0.05     3.039    -0.020 [-0.026,-0.014]
+    removed - zeroed:     standalone V1s +0.149 [+0.020,+0.282] p=0.022;  blend -0.006 [-0.016,+0.004] p=0.27
+
+PRE-REGISTERED RULE ("compare on AR val ADE and test blend; if within noise, adopt
+removal"):
+  test blend: -0.006 [-0.016,+0.004] -> within noise.
+  AR val ADE: 3.681 vs 3.565 (+0.116). A single seed on a 400-sample median, no CI;
+    the zeroed run's epoch-to-epoch spread alone is 0.36 m (3.56-3.92).
+  -> removal ADOPTED per the rule (A1-A3 already used it).
+FLAG, not covered by the rule: the standalone MEAN is worse with removal (+0.149, CI
+excludes 0) while the MEDIAN is better (3.195 vs 3.469), i.e. removal changes the tail.
+The blend absorbs it. Planner may want a second seed before relying on removal for
+standalone (non-blended) claims.
