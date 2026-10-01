@@ -171,18 +171,24 @@ def f6():
     rows = [('CV', PER['CV'], False, GREY), ('kinematic\nrule', PER['KIN'], False, GREY),
             ('L1 ego', [PER[('L1', s, 0.0)] for s in seeds], False, BLUE),
             ('L2b cmd\nonly', [PER[('L2b', s, 0.0)] for s in seeds], True, BLUE),
-            ('L2 ego\n+ cmd', [PER[('L2', s, 0.0)] for s in seeds], True, BLUE),
-            ('oracle\nkinematic', PER[('OKIN', 0.0)], True, AQUA),
+            ('L2 ego\n+ cmd', [PER[('L2', s, 0.0)] for s in seeds], True, BLUE)]
+    if os.path.exists(f'{RES}/w1_c7.pkl'):                 # QUEUE v2 C7, h1 hard
+        C7 = pickle.load(open(f'{RES}/w1_c7.pkl', 'rb'))['PER']
+        for src, lab, c in (('MLP', 'pred. intent\nMLP', VIOLET), ('V8a', 'pred. intent\nVLA', YELLOW),
+                            ('V8b', 'pred. intent\nVLA+cams', ORANGE)):
+            k = sorted(k for k in C7 if k[:4] == (src, 'pred', 'h1', 'hard'))
+            if len(k) == 3: rows.append((lab, [C7[x] for x in k], True, c))
+    rows += [('oracle\nkinematic', PER[('OKIN', 0.0)], True, AQUA),
             ('L5 ego\n+ oracle', [PER[('L5', s, 0.0)] for s in seeds], True, ORANGE)]
-    fig, ax = plt.subplots(figsize=(13, 5.5))
+    fig, ax = plt.subplots(figsize=(15, 5.5))
     for i, (lab, p, priv, c) in enumerate(rows):
         v = [np.nanmean(q['ade']) for q in (p if isinstance(p, list) else [p])]
         ax.bar(i, np.mean(v), color=c, hatch='//' if priv else None, edgecolor='white', width=0.7)
         if len(v) > 1: ax.scatter([i] * len(v), v, color=INK, s=16, zorder=3)
         ax.text(i, np.mean(v) + 0.25, f'{np.mean(v):.2f}', ha='center', color=INK)
-    ax.set_xticks(range(len(rows))); ax.set_xticklabels([r[0] for r in rows])
+    ax.set_xticks(range(len(rows))); ax.set_xticklabels([r[0] for r in rows], fontsize=12)
     ax.set_ylabel('ADE@6s (m), official val'); ax.set_title(
-        'Mini information ladder on a small Ego-MLP (hatched = privileged input)')
+        'Mini information ladder on a small Ego-MLP (hatched = privileged input; pred. intent = C7 head)')
     save(fig, 'f6_mini_ladder')
 
 
@@ -202,21 +208,34 @@ def f7():
                      for e in (10, 20, 40)]
         ax.plot([0, 10, 20, 40], yc, marker='D', ms=8, lw=2, ls='--', color=VIOLET,
                 label='Ego-MLP + oracle, confusion-shaped noise (lon only)')
-        acc = np.mean([(R3['PRED'][s] == R3['yva']).mean() for s in seeds])
-        yp = np.mean([np.nanmean(R3['PER'][('L5n', s, 'pred')]['ade']) for s in seeds])
-        ax.scatter([100 * (1 - acc)], [yp], s=160, marker='*', color=ORANGE, zorder=5,
-                   label=f'Ego-MLP + PREDICTED intent (classifier acc {acc:.0%})')
+    if os.path.exists(f'{RES}/w1_c7.pkl'):                 # QUEUE v2 C7: matched head, h1 hard
+        C7 = pickle.load(open(f'{RES}/w1_c7.pkl', 'rb')); yv = C7['info']['yva']
+        for src, nm, mk, c in (('MLP', 'MLP classifier', 'P', VIOLET), ('V8a', 'VLA, no cameras', '*', YELLOW),
+                               ('V8b', 'VLA + cameras', '*', ORANGE)):
+            k = sorted(k for k in C7['PER'] if k[:4] == (src, 'pred', 'h1', 'hard'))
+            if len(k) != 3: continue
+            cs = [x for x in C7['CLS'] if x[0] == src]
+            acc = np.mean([(C7['CLS'][x]['val'].argmax(1) == yv).mean() for x in cs])
+            ax.scatter([100 * (1 - acc)], [np.mean([np.nanmean(C7['PER'][x]['ade']) for x in k])], s=170,
+                       marker=mk, color=c, edgecolors=INK, zorder=5,
+                       label=f'predicted intent: {nm} (acc {acc:.0%}), matched head')
     y2 = np.mean([np.nanmean(PER[('L2', s, 0.0)]['ade']) for s in seeds])
     ax.axhline(y2, color=BLUE, ls=':', lw=1.2)
     ax.text(1, y2 - 0.13, 'Ego-MLP + cmd (no intent)', color=BLUE, ha='left', fontsize=12)
     a2 = [f'{RES}/w1_dump_A2_val_f{f}.pkl' for f in F]
     if all(os.path.exists(p) for p in a2) and os.path.exists(f'{RES}/w1_a2_flip_ade.pkl'):
         v = pickle.load(open(f'{RES}/w1_a2_flip_ade.pkl', 'rb'))
-        ax.plot([100 * f for f in F], [v[f] for f in F], marker='o', ms=8, lw=2, color=YELLOW, label='VLA A2')
+        ax.plot([100 * f for f in F], [v[f] for f in F], marker='o', ms=8, lw=2, color=YELLOW, label='VLA A2 (seed 42)')
+    if os.path.exists(f'{RES}/w1_q2_traj.pkl'):            # QUEUE v2 G6 (ii), 3 seeds
+        Q = pickle.load(open(f'{RES}/w1_q2_traj.pkl', 'rb'))
+        ks = [[(f'G6M_s{s}', f'G6M_s{s}', f) for s in seeds] for f in F]
+        if all(k in Q for kk in ks for k in kk):
+            ax.plot([100 * f for f in F], [np.mean([np.nanmean(Q[k]['ade']) for k in kk]) for kk in ks],
+                    marker='o', ms=8, lw=2, ls='--', color=YELLOW, label='VLA ego + oracle, 3 seeds (+ turn weighting)')
     ax.axhline(np.nanmean(PER['CV']['ade']), color=GREY, ls=':', lw=1.5)
     ax.text(40, np.nanmean(PER['CV']['ade']) + 0.03, 'CV', color=INK2, ha='right')
     ax.set_xticks([0, 10, 20, 30, 40]); ax.set_xlabel('meta-action label error rate at test (%)')
-    ax.set_ylabel('ADE@6s (m), official val'); ax.legend()
+    ax.set_ylabel('ADE@6s (m), official val'); ax.legend(fontsize=10, loc='upper left')
     ax.set_title('How much each model leans on the oracle meta-action')
     save(fig, 'f7_flip_rate')
 
@@ -246,10 +265,21 @@ def f8():
             ax.scatter([i + 0.22], [np.mean([np.nanmean(x['ade']) for x in q])], s=60, facecolors='white',
                        edgecolors=INK, zorder=4, label='soft input (class probabilities)' if i == 1 else None)
     ax.set_xticks(range(len(rows))); ax.set_xticklabels([r[0] for r in rows], fontsize=12)
-    ax.set_ylim(0, max(np.nanmean(LP[('L2', 42, 0.0)]['ade']) * 1.25, 1))
+    top = np.nanmean(LP[('L2', 42, 0.0)]['ade']) * 1.25
+    if os.path.exists(f'{RES}/w1_q2_traj.pkl'):            # end-to-end VLA references (no fixed head)
+        Q = pickle.load(open(f'{RES}/w1_q2_traj.pkl', 'rb'))
+        ref = [('VLA end-to-end, ego + cmd (3 seeds)', [('A3', 'A3', 0.0), ('G6C_s123', 'G6C_s123', 0.0),
+                                                         ('G6C_s2024', 'G6C_s2024', 0.0)], BLUE),
+               ('VLA end-to-end + 6 cameras (G7)', [('G7', 'G7', 0.0)], ORANGE)]
+        for nm, ks, c in ref:
+            if all(k in Q for k in ks):
+                y = np.mean([np.nanmean(Q[k]['ade']) for k in ks]); top = max(top, y * 1.12)
+                ax.axhline(y, color=c, ls='--', lw=1.5)
+                ax.text(-0.4, y + 0.04, f'{nm}: {y:.2f}', color=c, ha='left', fontsize=11)
+    ax.set_ylim(0, top)
     ax.set_ylabel('ADE@6s (m), official val')
     ax.set_title('Decision bottleneck: one fixed head, different meta-action sources (hatched = privileged)')
-    ax.legend(loc='upper right')
+    ax.legend(loc='lower right', framealpha=1, frameon=True)
     save(fig, 'f8_bottleneck_sources')
 
 
