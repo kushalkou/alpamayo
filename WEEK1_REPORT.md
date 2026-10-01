@@ -980,3 +980,41 @@ FLAG, not covered by the rule: the standalone MEAN is worse with removal (+0.149
 excludes 0) while the MEDIAN is better (3.195 vs 3.469), i.e. removal changes the tail.
 The blend absorbs it. Planner may want a second seed before relying on removal for
 standalone (non-blended) claims.
+
+## NEXT QUEUE v2 -- PRE-REGISTRATION (written 2026-10-01 ~05:30 UTC, before any v2 result)
+
+Terms: rung 3 = "decision bottleneck" (VLA predicts the meta-action; a FIXED small head
+drives). Labels = records.meta_lon (A2 rule), lat = cmd, frozen. Causal CAN ego in every
+arm. Code: w1/run_q2.sh (GPU queue), w1/q2_len.py, w1/q2_traj.py, w1/finetune_intent.py,
+w1/c7_bottleneck.py, w1/q2_g9.sh + w1/a0_seed2.py. Status: Alpamayo/q2_status.log.
+
+G5  length rule: best holdout selection median (AR ADE@6s, fixed 400 holdout samples) of a
+    30-epoch, patience-5 run of the A3 recipe (seed 42) vs A3's best (1.9403). >= 3%
+    better -> 30 epochs for all later VLA trajectory runs (G6, G7), else 10. G9 is a
+    replicate of A0 and keeps A0's 10 epochs.
+G6  (i) ego + cmd, A3 recipe, seeds 123 and 2024 (seed 42 = A3, or G5 if LEN = 30);
+    (ii) ego + oracle meta-action, A2 design (lat + lon tokens, 10% training flips) + turn
+    weighting, seeds 42, 123, 2024 -- seed 42 of (ii) does not exist yet (A2 had no turn
+    weighting), so it is run here. Test flips 0/10/20/40% (seed 777). Reported: 3-seed
+    mean +- sd of per-seed means; bootstrap on per-sample metrics averaged over seeds.
+G8  intent predictor: same backbone + FIX recipe + cmd token, new linear head (3584 -> 4)
+    on the hidden state at the last context position, in the x10 lr group (fresh module,
+    like the ego MLP). Plain CE, natural sampling, 10 epochs, patience 5, selection =
+    FULL-holdout macro-F1 (n_fut >= 6). V8a no cameras; V8b 6 cameras. Probabilities saved
+    for holdout and val.
+C7  one head (C1 L5 architecture), 3 head seeds. Sources: none (C1 L2), oracle (C1 L5),
+    oracle with 10/20/40% flips (head trained at the SAME flip rate), MLP classifier
+    (rung3 recipe but selection = holdout macro-F1, 3 seeds), V8a, V8b.
+    h1 = head trained on oracle lon replaced by the output of a random HOLDOUT sample of
+    the same true class (hard = its argmax, i.e. a draw from the holdout confusion row;
+    soft = its probability vector). h2 (MLP only) = 5-fold scene-grouped cross-fitted OOF
+    predictions. Head selection uses the predictor's own holdout outputs.
+    PRIMARY VARIANT = h1 HARD. Verdict "cameras add decision information" only if V8b
+    beats V8a with the 95% CI excluding 0 on L2@3s NoAvg or ADE@6s (per-sample metrics
+    averaged over the 3 head seeds, paired scene bootstrap). h1 soft reported alongside.
+    Classifier macro-F1 differences: scene bootstrap, 2,000 draws, MLP seed 42.
+G7  vision end-to-end: 6 cameras + ego + cmd, A3 recipe, length from G5, seed 42. Twin =
+    the no-camera run of the same recipe and seed (A3 or G5). CAMERA-SHUFFLE: each val
+    sample gets another sample's 6 images (permutation seed 99), ego + cmd kept; shuffled
+    ADE within 5% of unshuffled => the model does not use the cameras.
+G9  A0 seed 123 (removed visual tokens), compared with A0 s42 and zeroed s42.
