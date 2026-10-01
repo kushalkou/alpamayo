@@ -1,19 +1,18 @@
-# QUEUE_STATE -- long autonomous queue (started 2026-09-30 13:14 UTC; COMPLETE 2026-10-01 03:40 UTC)
+# QUEUE_STATE -- NEXT QUEUE v2 (started 2026-10-01 04:45 UTC)
 
-Resume rule after a reboot: tmux sessions die. Re-launch the incomplete step below; every
-step's outputs are files, so completed steps are skipped.
+Resume rule after a reboot: tmux sessions die. Relaunch `tmux new -s q2 'bash w1/run_q2.sh'`
+from Alpamayo/code; every step writes results/Q2_<step>_DONE (training: Q2_<tag>_TRAINED)
+and is skipped when present. Status: Alpamayo/q2_status.log. CPU C7:
+`python w1/c7_bottleneck.py` (cached in results/w1_c7.pkl, recomputes only what is missing).
+Previous queue: COMPLETE 2026-10-01 03:40 UTC (see git history, 32e40a5).
 
-## Track G (GPU)
-- [done] w1: 3.5a retry -- GATE FAIL (slot-0 0.598; median 0.447; shuffle ok) (w1/run_retry.sh) -> Alpamayo/w1_overfit256_retry.log,
-            dumps -> Alpamayo/w1_retry_dump.log (RETRY_QUEUE_DONE marker)
-            resume: bash Alpamayo/code/w1/run_retry.sh (tmux w1)
-- [done] G1 fix run -- GATE PASS (median 0.098, slot-0 0.992, shuffle 0.039) + dumps + diagnostic-c probe: Alpamayo/code/w1/run_gq.sh (tmux fix),
-            status Alpamayo/gq_status.log (GQ_DONE marker). No GPU was free alongside w1
-            (8 x ~30/32 GB), so it waits for w1.
-- [done] G2 gates; G3 decision = FIX recipe
-- [done] G4 Stage A: A1 fe97d9c, A2 3409c31, A3 2137420, A0 31faa75 (STAGE_A_DONE)
-## Track C (CPU)
-- [done] C1 mini ladder (e0f7516)
-- [partial] C2 figures f1-f7 done (f7 without the A2 line; rerun `python w1/figs.py f5 f7` after gating/A2)
-- [partial] C3 REVIEW_RESULTS.md: T1-T6 written; T5 retry/fix and T7 Stage A pending
-- [done] C4/C5 mini rung 3 (b1917e1), C6 REVIEW_RESULTS T8 (da1bbbe); f7 updated
+## GPU (tmux q2, w1/run_q2.sh), one 8-GPU job at a time
+- [running] G5 30 epochs, A3 recipe, seed 42 -> w1/q2_len.py writes results/Q2_LEN
+- [queued] G6 (i) G6C_s123, G6C_s2024; (ii) G6M_s42, G6M_s123, G6M_s2024 (A2 + turn weighting)
+- [queued] G8 V8a (no cameras), V8b (6 cameras): w1/finetune_intent.py
+- [queued] G7 vision end-to-end trajectory + camera-shuffle dump
+- [queued] G9 A0 seed 123 (w1/q2_g9.sh)
+## CPU
+- [running] C7 non-VLA parts (oracle flip heads, MLP classifier + OOF + heads); V8 parts
+            once results/w1_intent_V8{a,b}.pkl exist
+- [todo] T9/T10/T11 in REVIEW_RESULTS.md; f6/f7 rows; f8

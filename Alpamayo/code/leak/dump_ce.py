@@ -30,6 +30,7 @@ ALL = {
     'causal_ego':  (f'{CK}/_causal_ego_s42/alpamayo_best.pt', True, False, True),
     'causal_full': (f'{CK}/_causal_full_s42/alpamayo_best.pt', False, False, True),
     'A0_causal_ego_novis': (f'{CK}/_causal_A0_ego_novis_s42/alpamayo_best.pt', 'remove', False, True),
+    'A0_causal_ego_novis_s123': (f'{CK}/_causal_A0_ego_novis_s123/alpamayo_best.pt', 'remove', False, True),
 }
 
 

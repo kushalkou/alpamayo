@@ -41,6 +41,9 @@ def main():
     ap.add_argument('--shuffle_inputs', action='store_true',
                     help='INPUT-SHUFFLE test: permute w1_ego (ego + cmd/meta rows) across the '
                          'dumped samples (seed 99); targets/GT stay with their own sample')
+    ap.add_argument('--shuffle_cams', action='store_true',
+                    help='CAMERA-SHUFFLE test: each sample gets the 6 images of another sample '
+                         '(permutation seed 99); ego, cmd and GT stay with their own sample')
     ap.add_argument('--overfit', type=int, default=0,
                     help='dump the same N train samples finetune_w1 --overfit N trained on')
     a = ap.parse_args()
@@ -82,6 +85,11 @@ def main():
                              f'samples get another sample\'s ego+extra rows', flush=True)
             if a.limit: R = R[:a.limit]
             ds = NuScenesVLADataset(R, split=split, augment=False)
+            cperm = np.arange(len(R))
+            if a.shuffle_cams:
+                cperm = np.random.RandomState(99).permutation(len(R))
+                if m0: print(f'[dumpw1] CAMERA-SHUFFLE: {int((cperm != np.arange(len(R))).sum())}/{len(R)} '
+                             f'samples get another sample\'s images', flush=True)
             my = list(range(len(R)))[lr::ws]
             out = {}; t0 = time.time()
             for c, i in enumerate(my):
@@ -89,7 +97,7 @@ def main():
                 if a.no_vision:
                     vt = torch.zeros(1, 0, 3584, dtype=torch.float16, device=device)
                 else:
-                    vt = encode_live_one(visual, ds[i]['images'], device)
+                    vt = encode_live_one(visual, ds[int(cperm[i])]['images'], device)
                     if a.zero_vision: vt = torch.zeros_like(vt)
                 gt = [x for x, _ in t['w1_tokens']] + [k for _, k in t['w1_tokens']] \
                     if len(t['w1_tokens']) == 12 else None
