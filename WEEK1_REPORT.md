@@ -1018,3 +1018,27 @@ G7  vision end-to-end: 6 cameras + ego + cmd, A3 recipe, length from G5, seed 42
     sample gets another sample's 6 images (permutation seed 99), ego + cmd kept; shuffled
     ADE within 5% of unshuffled => the model does not use the cameras.
 G9  A0 seed 123 (removed visual tokens), compared with A0 s42 and zeroed s42.
+
+## QUEUE v2 G5 -- training length: 30 epochs does not help; LEN = 10
+
+Run: A3 recipe (ego + cmd, fix, turn-weighted, seed 42), --epochs 30 --patience 5 (the
+cosine schedule spans 30 epochs). Early-stopped after epoch 11 (best epoch 6).
+Train 04:45-06:01 UTC + dumps 50 min (8 GPUs; 10.1 + 6.7 GPU-h). Log
+Alpamayo/w1_q2_G5.log; eval Alpamayo/w1_q2_G5.txt (w1/q2_traj.py G5).
+Holdout selection median (AR ADE@6s, 400 fixed holdout samples) by epoch:
+  A3 (10 ep): 3.199 2.307 2.231 2.340 2.064 1.940 2.138 2.044 2.230 2.092
+  G5 (30 ep): 2.983 1.986 2.241 2.288 2.034 1.951 2.109 2.057 1.977 2.047 2.225 (stop)
+PRE-REGISTERED RULE: G5 best 1.9508 vs A3 best 1.9403 = -0.54% (needs >= +3%)
+  -> LEN = 10 epochs for G6 and G7. (A1's best-at-last-epoch flag is not borne out: with
+  a longer schedule the best epoch is again 6.)
+Official val (tau fit on holdout: A3 0.7, G5 0.9), paired scene bootstrap:
+                 L2@3s NoAvg  L2 TemAvg@3s  ADE6 mean/med/p95     Col% NoAvg/TemAvg 3s
+  A3 (10 ep)     1.894        0.877         2.896 / 2.003 / 7.853 1.64 / 0.64
+  G5 (30 ep)     1.906        0.880         2.890 / 1.893 / 7.855 1.45 / 0.54
+  G5 - A3 ALL:   L2@3s +0.012 [-0.022,+0.045]; L2T +0.003 [-0.008,+0.015]; ADE6 -0.006 [-0.063,+0.050]
+  G5 - A3 EXCL.: L2@3s +0.013 [-0.021,+0.047]; ADE6 +0.000 [-0.059,+0.058]
+  G5 - KIN -0.272 [-0.350,-0.196] L2@3s; G5 - Ego-MLP +0.273 [+0.218,+0.326].
+Input-shuffle: ADE6 2.890 -> 6.151 (x2.13), slot-0 0.207 -> 0.048: passes.
+Reading: indistinguishable from A3 on every metric (only the median ADE is lower, 1.89 vs
+2.00, with no matching change in the mean); the VLA trajectory gap to the Ego-MLP is not
+a training-length artefact.
