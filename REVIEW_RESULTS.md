@@ -137,7 +137,8 @@ rule as the labels get noisier.
     A2 - A1,             L2@3s: -0.429 [-0.489,-0.370]
     test flips 0/10/20/40%: A2 ADE6 2.454 / 2.580 / 2.676 / 3.000;
                             oracle-kinematic 2.671 / 3.626 / 4.447 / 6.082 (figure f7)
-    (commit 3409c31)
+    (commit 3409c31)  NOTE: single seed. Over 3 seeds (T9c) the ADE6 advantage over the
+    oracle-kinematic rule is not significant; the L2@3s advantage holds.
 
 T7-A3. Oversampling turning scenes improves the VLA by 0.19 m at 3 s over A1, mostly on
 turns, but it is still 0.26 m behind the small MLP.
