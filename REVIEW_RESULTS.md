@@ -160,7 +160,7 @@ T7-A0. Removing the 1,536 zeroed visual tokens instead of feeding zeros makes tr
     zeroed visual tokens 4.170 (3.469)              3.045           -0.014 [-0.025,-0.003]
     removed (A0)         4.319 (3.195)              3.039           -0.020 [-0.026,-0.014]
     removed - zeroed: standalone +0.149 [+0.020,+0.282]; blend -0.006 [-0.016,+0.004]
-    (commit A0HASH)
+    (commit 31faa75)
 
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 

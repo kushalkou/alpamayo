@@ -1,4 +1,4 @@
-# QUEUE_STATE -- long autonomous queue (started 2026-09-30 13:14 UTC)
+# QUEUE_STATE -- long autonomous queue (started 2026-09-30 13:14 UTC; COMPLETE 2026-10-01 03:40 UTC)
 
 Resume rule after a reboot: tmux sessions die. Re-launch the incomplete step below; every
 step's outputs are files, so completed steps are skipped.
@@ -11,11 +11,7 @@ step's outputs are files, so completed steps are skipped.
             status Alpamayo/gq_status.log (GQ_DONE marker). No GPU was free alongside w1
             (8 x ~30/32 GB), so it waits for w1.
 - [done] G2 gates; G3 decision = FIX recipe
-- [running] G4 Stage A: A1 reported (fe97d9c); A2 reported (3409c31); A3 reported (2137420); A0 running. Originally launched 18:05 UTC: RECIPE=fix|retry bash Alpamayo/code/w1/run_stageA.sh (tmux stageA).
-            Resumable: skips runs with results/STAGEA_<run>_TRAINED / _REPORTED markers.
-            After each run it waits for results/STAGEA_<run>_REPORTED (touch after the
-            report section is committed). Status: Alpamayo/stageA_status.log
-
+- [done] G4 Stage A: A1 fe97d9c, A2 3409c31, A3 2137420, A0 31faa75 (STAGE_A_DONE)
 ## Track C (CPU)
 - [done] C1 mini ladder (e0f7516)
 - [partial] C2 figures f1-f7 done (f7 without the A2 line; rerun `python w1/figs.py f5 f7` after gating/A2)
