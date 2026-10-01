@@ -1042,3 +1042,45 @@ Input-shuffle: ADE6 2.890 -> 6.151 (x2.13), slot-0 0.207 -> 0.048: passes.
 Reading: indistinguishable from A3 on every metric (only the median ADE is lower, 1.89 vs
 2.00, with no matching change in the mean); the VLA trajectory gap to the Ego-MLP is not
 a training-length artefact.
+
+## QUEUE v2 G6 -- seeds (ego-only VLA, 10 epochs)
+
+Runs (fix recipe, no visual tokens): (i) ego + cmd, A3 recipe: s42 = A3, s123, s2024;
+(ii) ego + oracle meta-action, A2 design (lat + lon tokens, 10% training flips) + turn
+weighting: s42, s123, s2024 (all new). 06:52-18:38 UTC, 5 runs (train ~65 min, dumps
+45 min (i) / 95 min (ii) each; ~75 GPU-h). Eval Alpamayo/w1_q2_T9.txt (w1/q2_traj.py T9).
+
+Official val, ALL 5,119. 3-seed mean +- sd of the per-seed values:
+                      ADE6 mean     ADE6 median   ADE6 p95      L2@3s NoAvg   L2 TemAvg@3s
+  (i) ego + cmd       2.930+-0.029  2.007+-0.055  7.919+-0.172  1.954+-0.044  0.909+-0.022
+  (ii) ego + meta     2.544+-0.030  1.671+-0.016  7.692+-0.168  1.690+-0.005  0.828+-0.007
+  Ego-MLP (3 seeds)   2.437         --            --            1.637         0.779
+  KIN / ORACLE-KIN    3.161 / 2.671                             2.178 / 1.955
+  per seed L2@3s: (i) 1.894 / 2.001 / 1.967 ; (ii) 1.691 / 1.695 / 1.683
+  EXCL. first frames: (i) ADE6 2.512+-0.036, L2@3s 1.618+-0.047; (ii) 2.201+-0.048, 1.414+-0.029.
+(ii) test-time flips (3-seed mean): 0/10/20/40% ADE6 2.544 / 2.702 / 2.842 / 3.171,
+  L2@3s 1.690 / 1.816 / 1.940 / 2.186; ORACLE-KIN with the same labels ADE6 2.671 / 3.626 /
+  4.447 / 6.082.
+Paired scene bootstrap on per-sample metrics averaged over the 3 seeds (ALL 5,119):
+  (i) - KIN               L2@3s -0.224 [-0.294,-0.154]  ADE6 -0.231 [-0.349,-0.112]
+  (i) - Ego-MLP           L2@3s +0.317 [+0.269,+0.368]  ADE6 +0.493 [+0.420,+0.570]
+  (ii) - (i)              L2@3s -0.264 [-0.312,-0.218]  ADE6 -0.386 [-0.457,-0.319]
+  (ii) - ORACLE-KIN       L2@3s -0.266 [-0.422,-0.137]  ADE6 -0.127 [-0.385,+0.080] p=0.28
+  (ii) - Ego-MLP          L2@3s +0.053 [-0.018,+0.123]  ADE6 +0.107 [+0.010,+0.204] p=0.03
+  (EXCL. first frames: (ii) - Ego-MLP L2@3s +0.103 [+0.035,+0.171], ADE6 +0.176 [+0.080,+0.271].)
+Strata L2@3s (3-seed avg): straight (i) 1.678 (ii) 1.449; turning 2.570 / 2.443;
+  stationary 2.529 / 2.051 (Ego-MLP 1.370 / 1.883 / 2.413).
+Input-shuffle: all 5 new runs pass (x2.10 to x2.48); slot-0 0.198-0.210, no spike.
+
+Reading:
+- A3 (seed 42) was the best of three seeds: the seed sd of L2@3s is 0.044 for (i); the
+  single-seed A1/A3 numbers in T7 should be read with +-0.05 m.
+- (ii) is very stable across seeds (sd 0.005 on L2@3s). Turn weighting does not help it:
+  (ii) s42 1.691 vs A2 (same seed, natural sampling) 1.651.
+- CORRECTION to the single-seed A2 claim: with 3 seeds (and turn weighting), the VLA +
+  oracle meta-action still beats ORACLE-KIN on L2@3s (-0.266, CI excludes 0) but NOT on
+  ADE@6s (-0.127 [-0.385,+0.080]). A2's ADE claim (-0.217) rests on one seed and the
+  natural-sampling recipe.
+- The VLA trajectory decoder stays behind the Ego-MLP with the same inputs: +0.32 m L2@3s
+  for ego + cmd. With the oracle meta-action, the L2@3s gap is not significant on all
+  5,119 (+0.053) but is significant excluding first frames (+0.103).

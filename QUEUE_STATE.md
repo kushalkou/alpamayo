@@ -8,8 +8,8 @@ Previous queue: COMPLETE 2026-10-01 03:40 UTC (see git history, 32e40a5).
 
 ## GPU (tmux q2, w1/run_q2.sh), one 8-GPU job at a time
 - [done] G5: LEN = 10 (G5 best -0.54% vs A3; G5 - A3 val n.s.)
-- [running] G6 (i) G6C_s123, G6C_s2024; (ii) G6M_s42, G6M_s123, G6M_s2024 (A2 + turn weighting)
-- [queued] G8 V8a (no cameras), V8b (6 cameras): w1/finetune_intent.py
+- [done] G6 (i) G6C_s123, G6C_s2024; (ii) G6M_s42, G6M_s123, G6M_s2024 (T9)
+- [running] G8 V8a (no cameras), V8b (6 cameras): w1/finetune_intent.py
 - [queued] G7 vision end-to-end trajectory + camera-shuffle dump
 - [queued] G9 A0 seed 123 (w1/q2_g9.sh)
 ## CPU
