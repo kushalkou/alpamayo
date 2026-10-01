@@ -221,8 +221,40 @@ def f7():
     save(fig, 'f7_flip_rate')
 
 
+def f8():
+    """C7 decision bottleneck: downstream ADE@6s of ONE fixed head (L5 architecture) by
+    meta-action source; 3 head seeds (dots), all 5,119; privileged bars hatched; primary
+    variant h1 hard (h1 soft shown as an open marker)."""
+    C = pickle.load(open(f'{RES}/w1_c7.pkl', 'rb')); L = pickle.load(open(f'{RES}/w1_ladder.pkl', 'rb'))
+    PER, LP, seeds = C['PER'], L['PER'], (42, 123, 2024)
+    get = lambda src, h, form: [PER[k] for k in sorted(k for k in PER if k[:4] == (src, 'pred', h, form))]
+    rows = [('none\n(ego + cmd)', [LP[('L2', s, 0.0)] for s in seeds], None, False, BLUE),
+            ('MLP\nclassifier', get('MLP', 'h1', 'hard'), get('MLP', 'h1', 'soft'), False, VIOLET),
+            ('VLA, no\ncameras (V8a)', get('V8a', 'h1', 'hard'), get('V8a', 'h1', 'soft'), False, YELLOW),
+            ('VLA + 6\ncameras (V8b)', get('V8b', 'h1', 'hard'), get('V8b', 'h1', 'soft'), False, ORANGE)]
+    for e in (40, 20, 10):
+        rows.append((f'oracle,\n{e}% flips', [PER[('oracle', f'f{e}', 'h1', 'hard', s)] for s in seeds], None, True, AQUA))
+    rows.append(('oracle', [LP[('L5', s, 0.0)] for s in seeds], None, True, AQUA))
+    rows = [r for r in rows if len(r[1]) == 3]
+    fig, ax = plt.subplots(figsize=(14, 5.8))
+    for i, (lab, p, q, priv, c) in enumerate(rows):
+        v = [np.nanmean(x['ade']) for x in p]
+        ax.bar(i, np.mean(v), color=c, hatch='//' if priv else None, edgecolor='white', width=0.7)
+        ax.scatter([i] * 3, v, color=INK, s=16, zorder=3)
+        ax.text(i, np.mean(v) + 0.06, f'{np.mean(v):.2f}', ha='center', color=INK)
+        if q and len(q) == 3:
+            ax.scatter([i + 0.22], [np.mean([np.nanmean(x['ade']) for x in q])], s=60, facecolors='white',
+                       edgecolors=INK, zorder=4, label='soft input (class probabilities)' if i == 1 else None)
+    ax.set_xticks(range(len(rows))); ax.set_xticklabels([r[0] for r in rows], fontsize=12)
+    ax.set_ylim(0, max(np.nanmean(LP[('L2', 42, 0.0)]['ade']) * 1.25, 1))
+    ax.set_ylabel('ADE@6s (m), official val')
+    ax.set_title('Decision bottleneck: one fixed head, different meta-action sources (hatched = privileged)')
+    ax.legend(loc='upper right')
+    save(fig, 'f8_bottleneck_sources')
+
+
 if __name__ == '__main__':
-    names = sys.argv[1:] or ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7']
+    names = sys.argv[1:] or ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8']
     for n in names:
         try:
             globals()[n]()
