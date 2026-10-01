@@ -139,6 +139,18 @@ rule as the labels get noisier.
                             oracle-kinematic 2.671 / 3.626 / 4.447 / 6.082 (figure f7)
     (commit 3409c31)
 
+T7-A3. Oversampling turning scenes improves the VLA by 0.19 m at 3 s over A1, mostly on
+turns, but it is still 0.26 m behind the small MLP.
+
+    all 5,119; A3 = A1 + turn-weighted sampling (turning 17% -> 40% of draws)
+                        L2 TemAvg 1/2/3 s    L2 NoAvg 3 s   Col% TemAvg 3 s   ADE@6s
+    A1                  0.274 0.555 0.967    2.080          0.57              3.082
+    A3                  0.254 0.504 0.877    1.894          0.64              2.896
+    A3 - A1, L2@3s: -0.186 [-0.230,-0.143];  A3 - KIN: -0.284 [-0.353,-0.215]
+    A3 - Ego-MLP + cmd, L2@3s: +0.261 [+0.213,+0.309]
+    turning subset (n=638), L2@3s: KIN 3.412, A1 3.086, A3 2.580, Ego-MLP 1.868
+    (commit A3HASH)
+
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 
 T8a. A classifier that predicts the longitudinal intent from ego status + command gets 68%
