@@ -188,3 +188,41 @@ helping (figure f7).
     L5-noise, ADE@6s at 10 / 20 / 40% error    confusion-shaped 2.005 / 2.210 / 2.553
                                                uniform flips    2.033 / 2.246 / 2.693
     classifier-predicted intent (about 32% error)               2.534
+
+## T9. Seeds: three seeds per VLA arm (commits d7e6afc, G5 54383f1)
+
+T9a. Training 3x longer does not help: a 30-epoch schedule again peaks at epoch 6 and
+ties the 10-epoch A3 on official val.
+
+    all 5,119; A3 recipe, seed 42      L2 NoAvg 3 s   L2 TemAvg 3 s   ADE@6s mean/med/p95
+    A3, 10 epochs                       1.894          0.877           2.896 / 2.003 / 7.853
+    G5, 30 epochs (stopped at 11)       1.906          0.880           2.890 / 1.893 / 7.855
+    G5 - A3, L2@3s: +0.012 [-0.022,+0.045]; ADE6 -0.006 [-0.063,+0.050]
+    pre-registered rule (>= 3% better on holdout): -0.54% -> keep 10 epochs
+
+T9b. Over three seeds the VLA with ego + command is 0.06 m worse than the single
+seed reported in T7 and stays 0.32 m behind the small MLP at 3 s.
+
+    all 5,119; 3-seed mean +- sd     L2 NoAvg 3 s    L2 TemAvg 3 s   ADE@6s          ADE@6s median
+    (i) VLA ego + cmd [P] (A3 rec.)  1.954 +- 0.044  0.909 +- 0.022  2.930 +- 0.029  2.007 +- 0.055
+    Ego-MLP + cmd [P], 3 seeds       1.637           0.779           2.437
+    kinematic rule                   2.178           0.998           3.161
+    per seed L2@3s: 1.894 (A3) / 2.001 / 1.967
+    (i) - KIN, L2@3s: -0.224 [-0.294,-0.154];  (i) - Ego-MLP: +0.317 [+0.269,+0.368]
+    (bootstrap on per-sample errors averaged over the 3 seeds)
+
+T9c. With the oracle meta-action the VLA is stable across seeds. It still beats the
+oracle-kinematic rule at 3 s, but its 6 s advantage is no longer significant (this
+corrects the single-seed A2 claim in T7-A2).
+
+    all 5,119; (ii) = A2 design + turn weighting, 3 seeds
+                                       L2 NoAvg 3 s    L2 TemAvg 3 s   ADE@6s
+    (ii) VLA ego + oracle meta [P]     1.690 +- 0.005  0.828 +- 0.007  2.544 +- 0.030
+    oracle-kinematic rule [P]          1.955           1.022           2.671
+    (ii) - oracle-kinematic: L2@3s -0.266 [-0.422,-0.137]; ADE6 -0.127 [-0.385,+0.080]
+    (ii) - (i):              L2@3s -0.264 [-0.312,-0.218]; ADE6 -0.386 [-0.457,-0.319]
+    (ii) - Ego-MLP + cmd:    L2@3s +0.053 [-0.018,+0.123]; ADE6 +0.107 [+0.010,+0.204]
+    test flips 0/10/20/40%, ADE6: (ii) 2.544 / 2.702 / 2.842 / 3.171
+                                  oracle-kinematic 2.671 / 3.626 / 4.447 / 6.082 (figure f7)
+    excl. first frames: (i) 1.618 +- 0.047, (ii) 1.414 +- 0.029 L2@3s
+    all 5 new runs pass the input-shuffle test (ADE x2.10 to x2.48)
