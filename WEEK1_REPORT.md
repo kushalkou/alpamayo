@@ -1084,3 +1084,13 @@ Reading:
 - The VLA trajectory decoder stays behind the Ego-MLP with the same inputs: +0.32 m L2@3s
   for ego + cmd. With the oracle meta-action, the L2@3s gap is not significant on all
   5,119 (+0.053) but is significant excluding first frames (+0.103).
+
+## QUEUE v2 G8 -- V8b cost estimate (reported before epoch 1 ends)
+
+V8b (6 cameras + ego + cmd, live-encoded 1,536 visual tokens, batch 3 x 8 V100):
+5.66 s/step (steps 50-100) x 763 steps/epoch = 1.20 h/epoch wall = 9.6 GPU-h/epoch;
+10 epochs max = 12.0 h wall, 96 GPU-h, + ~5 min holdout eval per epoch. Peak allocated
+21.4 GB/GPU. Started 19:25 UTC -> ends by ~08:00 UTC 2026-10-02 (earlier if patience 5
+triggers). For scale: V8a (no cameras) 0.37 s/step, 9 epochs in 47 min (~6 GPU-h).
+G7 (vision trajectory, same context + 24 trajectory tokens + AR selection with cameras)
+is expected at a similar ~13-15 h.
