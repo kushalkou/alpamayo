@@ -149,7 +149,7 @@ turns, but it is still 0.26 m behind the small MLP.
     A3 - A1, L2@3s: -0.186 [-0.230,-0.143];  A3 - KIN: -0.284 [-0.353,-0.215]
     A3 - Ego-MLP + cmd, L2@3s: +0.261 [+0.213,+0.309]
     turning subset (n=638), L2@3s: KIN 3.412, A1 3.086, A3 2.580, Ego-MLP 1.868
-    (commit A3HASH)
+    (commit 2137420)
 
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 
