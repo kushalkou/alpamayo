@@ -276,3 +276,35 @@ T10b. Near-threshold labels and per-class behaviour (amendment C8).
     agreement V8a/V8b 0.736; on the 1,351 disagreements: V8a correct 0.557, V8b
     correct 0.341, neither 0.101
   When the two disagree, V8a is right more often than V8b.
+
+## T11. Vision end to end: cameras make the trajectory VLA slightly worse (commit: G7)
+
+T11a. Adding the six cameras to the ego + command VLA raises L2 at 3 s by 0.15 m against
+its no-camera twin (0.09 m against the 3-seed no-camera mean).
+
+    official val, all 5,119; A3 recipe, 10 epochs, seed 42
+                                   L2 NoAvg 3 s   L2 TemAvg 3 s   Col% TemAvg 3 s   ADE@6s
+    Ego-MLP + cmd [P]              1.633          0.777           0.87              2.434
+    VLA ego + cmd [P], no cameras  1.894          0.877           0.64              2.896
+      (3-seed mean, T9b)           1.954          0.909           --                2.930
+    VLA + 6 cameras (G7) [P]       2.043          0.960           0.61              3.001
+    VLA + cameras, shuffled        2.115          1.009           0.75              3.047
+    G7 - no-camera twin: L2@3s +0.149 [+0.074,+0.231]; ADE6 +0.105 [+0.004,+0.212]
+    G7 - 3-seed no-camera mean: L2@3s +0.089 [+0.016,+0.170]; ADE6 +0.071 [-0.026,+0.176]
+
+T11b. Shuffling the camera images between samples barely changes the vision VLA (ADE x1.015),
+except in stationary scenes.
+
+    shuffled - G7, L2@3s: straight -0.027 [-0.087,+0.027]; turning +0.015 [-0.120,+0.153];
+    stationary +0.454 [+0.072,+0.811]
+
+T11c. End to end vs decision bottleneck (ADE@6s, all 5,119).
+
+    VLA end to end, ego + cmd (3 seeds)              2.930
+    VLA end to end, + cameras (G7)                   3.001
+    bottleneck: fixed head + V8a meta-action         2.458
+    bottleneck: fixed head + V8b meta-action         2.501
+    fixed head, no meta-action (ego + cmd)           2.439
+    fixed head + oracle meta-action [P]              1.750
+  The fixed-head routes beat both end-to-end VLAs by about 0.5 m, and none uses the cameras
+  to its benefit.

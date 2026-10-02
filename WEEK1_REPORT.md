@@ -1154,3 +1154,33 @@ Per-class recall V8b - V8a, paired scene bootstrap (2,000), ALL 5,119:
   maint 0.654 -> 0.601  -0.053 [-0.088,-0.018]  V8b worse
 Agreement V8a/V8b 0.736 (3,768 / 5,119); on the 1,351 disagreements V8a correct 0.557,
 V8b correct 0.341, neither 0.101; accuracy where they agree 0.711.
+
+## QUEUE v2 G7 -- vision end-to-end trajectory (6 cameras + ego + cmd)
+
+Run: A3 recipe (fix, cmd, turn weighting), 10 epochs (LEN rule), seed 42, live-encoded
+1,536 visual tokens. Train 07:00-19:55 UTC (5.6-5.8 s/step + AR selection with cameras;
+~104 GPU-h); dumps 19:55-21:00 (~9 GPU-h). Log Alpamayo/w1_q2_G7.log; eval
+Alpamayo/w1_q2_G7.txt (w1/q2_traj.py G7). Holdout selection median by epoch:
+  3.057 2.289 2.377 2.147 2.053 1.903 2.156 2.022 2.104 2.060 -> best epoch 6 (A3: 1.940)
+Official val, hybrid decode (tau 0.9 fit on holdout):
+                        L2@3s NoAvg   L2 TemAvg@3s   ADE6 mean/med/p95       Col% NoAvg/TemAvg 3s
+  no-cam twin A3        1.894         0.877          2.896 / 2.003 / 7.853   1.64 / 0.64
+  (i) 3-seed (T9b)      1.954         0.909          2.930
+  G7 cameras            2.043         0.960          3.001 / 2.100 / 7.955   1.47 / 0.61
+  G7 CAMERA-SHUFFLED    2.115         1.009          3.047 / 2.106 / 7.944   1.64 / 0.75
+  Ego-MLP + cmd         1.633         0.777          2.434
+Paired scene bootstrap, ALL 5,119:
+  G7 - A3 (twin)        L2@3s +0.149 [+0.074,+0.231]  ADE6 +0.105 [+0.004,+0.212]
+  G7 - (i) 3-seed avg   L2@3s +0.089 [+0.016,+0.170]  ADE6 +0.071 [-0.026,+0.176]
+  G7 - KIN              L2@3s -0.135 [-0.234,-0.030]  ADE6 -0.160 [-0.302,-0.010]
+  G7 - Ego-MLP          L2@3s +0.410 [+0.328,+0.498]  ADE6 +0.567 [+0.462,+0.680]
+  EXCL. first frames: G7 - A3 +0.175 [+0.101,+0.257]; G7 - (i) +0.114 [+0.042,+0.194].
+CAMERA-SHUFFLE (images of another val sample, seed 99): ADE6 3.001 -> 3.047 (x1.015),
+  slot-0 0.217 -> 0.187: within 5% -> the model barely uses the cameras.
+  shuffled - G7 by stratum, L2@3s: straight -0.027 [-0.087,+0.027]; turning +0.015
+  [-0.120,+0.153]; stationary +0.454 [+0.072,+0.811] (the only place the cameras matter).
+Reading: adding cameras end to end makes the trajectory VLA worse than its own no-camera
+twin (+0.15 m L2@3s; +0.09 m vs the 3-seed no-camera mean) and the model's use of the
+images is limited to stationary scenes. Together with C7 (cameras do not improve the
+predicted meta-action), neither the end-to-end nor the bottleneck route gets decision
+information out of the cameras in this setup.
