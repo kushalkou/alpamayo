@@ -277,7 +277,7 @@ T10b. Near-threshold labels and per-class behaviour (amendment C8).
     correct 0.341, neither 0.101
   When the two disagree, V8a is right more often than V8b.
 
-## T11. Vision end to end: cameras make the trajectory VLA slightly worse (commit: G7)
+## T11. Vision end to end: cameras make the trajectory VLA slightly worse (commit d75359f)
 
 T11a. Adding the six cameras to the ego + command VLA raises L2 at 3 s by 0.15 m against
 its no-camera twin (0.09 m against the 3-seed no-camera mean).
