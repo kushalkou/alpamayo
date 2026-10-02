@@ -1184,3 +1184,20 @@ twin (+0.15 m L2@3s; +0.09 m vs the 3-seed no-camera mean) and the model's use o
 images is limited to stationary scenes. Together with C7 (cameras do not improve the
 predicted meta-action), neither the end-to-end nor the bottleneck route gets decision
 information out of the cameras in this setup.
+
+## QUEUE v2 G9 -- A0 second seed (visual tokens REMOVED, seed 123)
+
+Run: identical to A0 except seed 123 (custom split, old recipe, causal ego, 10 epochs max).
+21:00-22:14 UTC incl. dumps (~10 GPU-h). Selection median by epoch: 4.964 3.768 3.553
+3.631 4.241 4.020 3.978 3.862 -> best epoch 3 (3.553), early stop after epoch 8.
+Code w1/q2_g9.sh, w1/a0_seed2.py; output Alpamayo/w1_q2_G9.txt.
+Custom-split test, causal subset n=3,358 (CV 3.059), alpha fit on val:
+                              V1s mean / median / p95     alpha*   blend    blend - CV
+  zeroed s42 (causal_ego)     4.170 / 3.469 / 11.022      0.10     3.045    -0.014 [-0.025,-0.003]
+  removed s42 (A0)            4.319 / 3.195 / 11.445      0.05     3.039    -0.020 [-0.026,-0.014]
+  removed s123 (G9)           3.868 / 3.136 /  9.698      0.05     3.040    -0.019 [-0.024,-0.015]
+  removed s123 - zeroed s42:  V1s -0.303 [-0.406,-0.197]; blend -0.006 [-0.016,+0.005]
+  removed s123 - removed s42: V1s -0.452 [-0.614,-0.298]; blend +0.000 [-0.006,+0.006]
+Reading: the A0 flag (standalone mean +0.149 with removal) is within seed variation: the
+two removal seeds differ by 0.45 m standalone, and the second seed is better than the
+zeroed run. The blend is identical across all three runs. Removal stands.

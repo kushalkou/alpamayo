@@ -162,6 +162,10 @@ T7-A0. Removing the 1,536 zeroed visual tokens instead of feeding zeros makes tr
     removed (A0)         4.319 (3.195)              3.039           -0.020 [-0.026,-0.014]
     removed - zeroed: standalone +0.149 [+0.020,+0.282]; blend -0.006 [-0.016,+0.004]
     (commit 31faa75)
+    second seed (G9, removed, seed 123): standalone 3.868 (3.136), blend 3.040;
+    removed s123 - zeroed: standalone -0.303 [-0.406,-0.197], blend -0.006 [-0.016,+0.005];
+    removed s123 - removed s42: standalone -0.452 [-0.614,-0.298] -> the +0.149 was seed
+    noise (commit: G9)
 
 ## T8. Mini ladder: predicted vs oracle intent (small Ego-MLP, a demonstration; commit b1917e1)
 

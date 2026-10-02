@@ -1,0 +1,10 @@
+causal test subset n=3358  CV 3.059
+  causal_ego                 V1s mean 4.170 med 3.469 p95 11.022  alpha* 0.10  blend 3.045  blend-CV -0.014 [-0.025,-0.003] p=0.0112
+  A0_causal_ego_novis        V1s mean 4.319 med 3.195 p95 11.445  alpha* 0.05  blend 3.039  blend-CV -0.020 [-0.026,-0.014] p=0.0000
+  A0_causal_ego_novis_s123   V1s mean 3.868 med 3.136 p95 9.698  alpha* 0.05  blend 3.040  blend-CV -0.019 [-0.024,-0.015] p=0.0000
+  V1s   A0_causal_ego_novis - causal_ego: +0.149 [+0.019,+0.283] p=0.0236
+  blend A0_causal_ego_novis - causal_ego: -0.006 [-0.016,+0.004] p=0.2650
+  V1s   A0_causal_ego_novis_s123 - causal_ego: -0.303 [-0.406,-0.197] p=0.0000
+  blend A0_causal_ego_novis_s123 - causal_ego: -0.006 [-0.016,+0.005] p=0.3046
+  V1s   A0_causal_ego_novis_s123 - A0_causal_ego_novis: -0.452 [-0.614,-0.298] p=0.0000
+  blend A0_causal_ego_novis_s123 - A0_causal_ego_novis: +0.000 [-0.006,+0.006] p=0.9178
