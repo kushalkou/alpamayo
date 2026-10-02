@@ -1094,3 +1094,63 @@ V8b (6 cameras + ego + cmd, live-encoded 1,536 visual tokens, batch 3 x 8 V100):
 triggers). For scale: V8a (no cameras) 0.37 s/step, 9 epochs in 47 min (~6 GPU-h).
 G7 (vision trajectory, same context + 24 trajectory tokens + AR selection with cameras)
 is expected at a similar ~13-15 h.
+
+## QUEUE v2 G8 + C7 -- decision bottleneck: VLA intent predictors and the fixed head
+
+G8 runs (seed 42, fix recipe + cmd token, lon head at the last context position):
+  V8a (no cameras): 18:38-19:25 UTC, 9 epochs (patience), best epoch 4, ~6 GPU-h.
+  V8b (6 cameras):  19:25-07:00 UTC, 9 epochs (patience), best epoch 4, 5.65 s/step,
+    ~92 GPU-h. Holdout macro-F1 by epoch 0.668 0.669 0.670 0.675 0.652 0.646 0.644 0.640
+    (train CE 1.07 -> 0.02: memorises the training scenes from epoch 5 on).
+  Reloaded best weights reproduce the selection metric exactly (V8a 0.6720, V8b 0.6748).
+Logs Alpamayo/w1_q2_V8{a,b}.log; C7 Alpamayo/w1_c7.txt (w1/c7_bottleneck.py).
+
+Classifiers, official val ALL 5,119 (holdout in brackets):
+                 acc            macro-F1       recall stop / accel / decel / maint
+  majority       0.392          0.141
+  MLP (3 seeds)  0.677+-0.003   0.669+-0.006   s42: 0.912 / 0.561 / 0.496 / 0.736
+  V8a            0.671 (0.680)  0.670 (0.672)  0.925 / 0.612 / 0.554 / 0.654
+  V8b            0.614 (0.676)  0.610 (0.675)  0.580 / 0.666 / 0.593 / 0.601
+  macro-F1, scene bootstrap: V8b - V8a -0.060 [-0.097,-0.024]; V8b - MLP -0.059
+  [-0.097,-0.021]; V8a - MLP +0.001 [-0.007,+0.009].
+V8b's val drop (0.675 holdout -> 0.610 val) is in the stop class (holdout recall 0.867,
+val 0.580; 300 of 853 true stops predicted "accelerate"). Bug checks done: every camera
+timestamp is within 0.03 s of its LIDAR frame on all splits; no val image is missing;
+the drop is present in both locations (n008 stop recall V8a 0.955 / V8b 0.598; n015
+0.853 / 0.538). It is a generalisation failure of the camera model, not a data error.
+
+Downstream, fixed head (C1 L5 architecture), 3 head seeds, ALL 5,119:
+                                  ADE6            L2@3s           gap closed (ADE | L2@3s)
+  none (ego + cmd)                2.439+-0.004    1.637+-0.002     0.000 |  0.000
+  MLP h1 hard / soft              2.463 / 2.448   1.654 / 1.649   -0.035 | -0.038 (hard)
+  MLP h2 hard / soft              2.441 / 2.447   1.640 / 1.644   -0.004 | -0.007 (hard)
+  V8a h1 hard / soft              2.458 / 2.439   1.649 / 1.639   -0.029 | -0.028 (hard)
+  V8b h1 hard / soft              2.501 / 2.516   1.694 / 1.715   -0.091 | -0.127 (hard)
+  oracle flips 40 / 20 / 10% [P]  2.468 / 2.205 / 2.038           -0.04 / +0.34 / +0.58
+  oracle [P]                      1.750+-0.005    1.193+-0.006     1.000 |  1.000
+h1 vs h2 (MLP): hard +0.022 [-0.004,+0.048] ADE6, soft +0.001 -> h1 is a fair proxy.
+PRE-REGISTERED VERDICT (h1 hard, ALL 5,119): V8b - V8a L2@3s +0.044 [-0.016,+0.113],
+  ADE6 +0.043 [-0.057,+0.159] -> cameras do NOT add decision information.
+  Excl. first frames V8b is significantly WORSE: L2@3s +0.093 [+0.037,+0.158], ADE6
+  +0.127 [+0.033,+0.236]. h1 soft: same direction (+0.076 / +0.076 n.s.; excl. +0.144 /
+  +0.181 significant).
+None of the three predictors (MLP, V8a, V8b) beats "none" (no meta-action) downstream.
+
+## QUEUE v2 C8 -- label ambiguity and V8b vs V8a per class (amendment)
+
+Code w1/c8_labels.py; output Alpamayo/w1_c8.txt. Band 0.3 m/s around each lon boundary.
+Near-threshold shares (train / val): accel |dv-1|<.3 0.092 / 0.100; decel |dv+1|<.3
+0.086 / 0.081; stop |v3-.5|<.3 0.027 / 0.030; union 0.202 / 0.207.
+Accuracy / macro-F1, ALL val (n=5,119) -> excl. near-threshold (n=4,057):
+  MLP (3-seed mean) 0.677 / 0.669 -> 0.718 / 0.711
+  V8a               0.671 / 0.670 -> 0.714 / 0.713
+  V8b               0.614 / 0.610 -> 0.652 / 0.648
+  (excl. first frames: 0.687/0.682 -> 0.731/0.727; 0.680/0.682 -> 0.727/0.729;
+   0.609/0.606 -> 0.647/0.644)
+Per-class recall V8b - V8a, paired scene bootstrap (2,000), ALL 5,119:
+  stop  0.925 -> 0.580  -0.345 [-0.487,-0.208]  V8b worse
+  accel 0.612 -> 0.666  +0.054 [+0.020,+0.089]  V8b better (excl. first frames +0.000 n.s.)
+  decel 0.554 -> 0.593  +0.038 [+0.003,+0.074]  V8b better (same excl. first frames)
+  maint 0.654 -> 0.601  -0.053 [-0.088,-0.018]  V8b worse
+Agreement V8a/V8b 0.736 (3,768 / 5,119); on the 1,351 disagreements V8a correct 0.557,
+V8b correct 0.341, neither 0.101; accuracy where they agree 0.711.

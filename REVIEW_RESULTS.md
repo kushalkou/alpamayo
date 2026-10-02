@@ -227,3 +227,52 @@ corrects the single-seed A2 claim in T7-A2).
                                   oracle-kinematic 2.671 / 3.626 / 4.447 / 6.082 (figure f7)
     excl. first frames: (i) 1.618 +- 0.047, (ii) 1.414 +- 0.029 L2@3s
     all 5 new runs pass the input-shuffle test (ADE x2.10 to x2.48)
+
+## T10. Decision bottleneck: VLA predicts the meta-action, a fixed small head drives
+
+T10a. A VLA that predicts the longitudinal meta-action does no better than a small MLP
+without cameras, worse with cameras, and no predicted meta-action helps the fixed head.
+
+    official val, all 5,119; lon meta-action (4 classes); head = C1 L5 architecture,
+    3 head seeds, h1 hard (pre-registered primary)
+                            acc     macro-F1   downstream ADE@6s   downstream L2@3s
+    none (ego + cmd) [P]    --      --         2.439               1.637
+    MLP classifier (3 s.)   0.677   0.669      2.463               1.654
+    VLA, no cameras (V8a)   0.671   0.670      2.458               1.649
+    VLA + 6 cameras (V8b)   0.614   0.610      2.501               1.694
+    oracle, 40% flips [P]   --      --         2.468               1.677
+    oracle [P]              --      --         1.750               1.193
+    V8b - V8a: macro-F1 -0.060 [-0.097,-0.024]; L2@3s +0.044 [-0.016,+0.113];
+               ADE6 +0.043 [-0.057,+0.159]  -> pre-registered: cameras add no decision
+               information (excl. first frames V8b is worse: L2@3s +0.093 [+0.037,+0.158])
+    V8a - MLP: macro-F1 +0.001 [-0.007,+0.009]; L2@3s -0.004 [-0.015,+0.006]
+    holdout macro-F1 (selection): MLP 0.672, V8a 0.672, V8b 0.675 (figure f8)
+    (commit: this section)
+
+T10b. Near-threshold labels and per-class behaviour (amendment C8).
+
+    val, all 5,119; near-threshold = within 0.3 m/s of a lon boundary (20.7% of val,
+    20.2% of train: accel 10.0%, decel 8.1%, stop 3.0% of val)
+                  acc / macro-F1 all     acc / macro-F1 excl. near (n=4,057)
+    MLP (3 s.)    0.677 / 0.669          0.718 / 0.711
+    V8a           0.671 / 0.670          0.714 / 0.713
+    V8b           0.614 / 0.610          0.652 / 0.648
+  Removing near-threshold samples raises every predictor by about 0.04 in both metrics.
+
+                  recall V8a   recall V8b   V8b - V8a [95% CI]
+    stop  (853)   0.925        0.580        -0.345 [-0.487,-0.208]
+    accel (1370)  0.612        0.666        +0.054 [+0.020,+0.089]
+    decel (891)   0.554        0.593        +0.038 [+0.003,+0.074]
+    maint (2005)  0.654        0.601        -0.053 [-0.088,-0.018]
+  V8b beats V8a on accelerate and decelerate recall and loses on stop and maintain.
+
+    confusion (rows true; cols stop accel decel maint)   V8a            | V8b
+    stop                                                 789  37  17  10 | 495 300  19  39
+    accel                                                220 838  37 275 |  89 912  62 307
+    decel                                                 41  30 494 326 |  44  43 528 276
+    maint                                                 89 318 286 1312|  62 303 434 1206
+  V8b predicts "accelerate" for 300 of 853 true stops.
+
+    agreement V8a/V8b 0.736; on the 1,351 disagreements: V8a correct 0.557, V8b
+    correct 0.341, neither 0.101
+  When the two disagree, V8a is right more often than V8b.

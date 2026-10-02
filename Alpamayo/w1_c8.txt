@@ -1,0 +1,46 @@
+C8a NEAR-THRESHOLD SHARES (band 0.3 m/s)
+  boundary             train     val
+  accel |dv-1|<.3      0.092   0.100
+  decel |dv+1|<.3      0.086   0.081
+  stop |v3-.5|<.3      0.027   0.030
+  union                0.202   0.207
+
+===== ALL 5,119 =====
+C8a accuracy / macro-F1, all val (n=5119) vs excl. near-threshold (n=4057); MLP = mean of 3 seeds
+  MLP   all: acc 0.677 F1 0.669 | excl. near: acc 0.718 F1 0.711
+  V8a   all: acc 0.671 F1 0.670 | excl. near: acc 0.714 F1 0.713
+  V8b   all: acc 0.614 F1 0.610 | excl. near: acc 0.652 F1 0.648
+
+C8b per-class recall, V8b - V8a, paired scene bootstrap (2,000)
+  stop   n=  853  V8a 0.925  V8b 0.580  diff -0.345 [-0.487,-0.208]  <-- V8b worse, CI excludes 0
+  accel  n= 1370  V8a 0.612  V8b 0.666  diff +0.054 [+0.020,+0.089]  <-- V8b better, CI excludes 0
+  decel  n=  891  V8a 0.554  V8b 0.593  diff +0.038 [+0.003,+0.074]  <-- V8b better, CI excludes 0
+  maint  n= 2005  V8a 0.654  V8b 0.601  diff -0.053 [-0.088,-0.018]  <-- V8b worse, CI excludes 0
+  confusion (rows true, cols pred: stop accel decel maint)     V8a | V8b
+    stop     789    37    17    10  |   495   300    19    39
+    accel    220   838    37   275  |    89   912    62   307
+    decel     41    30   494   326  |    44    43   528   276
+    maint     89   318   286  1312  |    62   303   434  1206
+
+C8c agreement V8a/V8b: 0.736 (3768 of 5119); on the 1351 disagreements: V8a correct 0.557, V8b correct 0.341, neither 0.101
+      accuracy where they agree: 0.711
+
+===== EXCL. FIRST FRAMES (4979) =====
+C8a accuracy / macro-F1, all val (n=4979) vs excl. near-threshold (n=3924); MLP = mean of 3 seeds
+  MLP   all: acc 0.687 F1 0.682 | excl. near: acc 0.731 F1 0.727
+  V8a   all: acc 0.680 F1 0.682 | excl. near: acc 0.727 F1 0.729
+  V8b   all: acc 0.609 F1 0.606 | excl. near: acc 0.647 F1 0.644
+
+C8b per-class recall, V8b - V8a, paired scene bootstrap (2,000)
+  stop   n=  827  V8a 0.923  V8b 0.582  diff -0.341 [-0.484,-0.203]  <-- V8b worse, CI excludes 0
+  accel  n= 1259  V8a 0.647  V8b 0.647  diff +0.000 [-0.035,+0.034]
+  decel  n=  891  V8a 0.554  V8b 0.593  diff +0.038 [+0.003,+0.074]  <-- V8b better, CI excludes 0
+  maint  n= 2002  V8a 0.655  V8b 0.602  diff -0.053 [-0.088,-0.018]  <-- V8b worse, CI excludes 0
+  confusion (rows true, cols pred: stop accel decel maint)     V8a | V8b
+    stop     763    37    17    10  |   481   289    19    38
+    accel    132   815    37   275  |    76   815    62   306
+    decel     41    30   494   326  |    44    43   528   276
+    maint     86   318   286  1312  |    61   301   434  1206
+
+C8c agreement V8a/V8b: 0.747 (3717 of 4979); on the 1262 disagreements: V8a correct 0.587, V8b correct 0.307, neither 0.106
+      accuracy where they agree: 0.711
