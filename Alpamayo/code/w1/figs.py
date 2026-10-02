@@ -271,11 +271,11 @@ def f8():
         ref = [('VLA end-to-end, ego + cmd (3 seeds)', [('A3', 'A3', 0.0), ('G6C_s123', 'G6C_s123', 0.0),
                                                          ('G6C_s2024', 'G6C_s2024', 0.0)], BLUE),
                ('VLA end-to-end + 6 cameras (G7)', [('G7', 'G7', 0.0)], ORANGE)]
-        for nm, ks, c in ref:
+        for j, (nm, ks, c) in enumerate(ref):
             if all(k in Q for k in ks):
                 y = np.mean([np.nanmean(Q[k]['ade']) for k in ks]); top = max(top, y * 1.12)
                 ax.axhline(y, color=c, ls='--', lw=1.5)
-                ax.text(-0.4, y + 0.04, f'{nm}: {y:.2f}', color=c, ha='left', fontsize=11)
+                ax.text(-0.4, y - 0.12 if j == 0 else y + 0.04, f'{nm}: {y:.2f}', color=c, ha='left', fontsize=11)
     ax.set_ylim(0, top)
     ax.set_ylabel('ADE@6s (m), official val')
     ax.set_title('Decision bottleneck: one fixed head, different meta-action sources (hatched = privileged)')
