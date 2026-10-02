@@ -247,7 +247,7 @@ without cameras, worse with cameras, and no predicted meta-action helps the fixe
                information (excl. first frames V8b is worse: L2@3s +0.093 [+0.037,+0.158])
     V8a - MLP: macro-F1 +0.001 [-0.007,+0.009]; L2@3s -0.004 [-0.015,+0.006]
     holdout macro-F1 (selection): MLP 0.672, V8a 0.672, V8b 0.675 (figure f8)
-    (commit: this section)
+    (commit c06c06f)
 
 T10b. Near-threshold labels and per-class behaviour (amendment C8).
 
