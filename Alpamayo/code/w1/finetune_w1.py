@@ -49,6 +49,7 @@ LORA_DROP = pop_flag('--lora_dropout', True, None)      # 3.5a retry: 0
 MIN_LR_RATIO = pop_flag('--min_lr_ratio', True, None)   # 3.5a retry: 1.0 = constant LR after warmup
 FIX = pop_flag('--fix', default=False)                  # 3.5a fix run: w1/fixrun.py
 PROBE = pop_flag('--probe_grad', default=False)         # diagnostic c: grad norms per group
+VCACHE = pop_flag('--vcache', True, None)               # R2.4: 't0' | 'hist' cached native-order tokens
 # A2 (--meta): the two meta-action tokens lat (= command, FLIPPABLE) and lon; no separate
 # (unflippable) cmd token, which would contradict a flipped lat label.
 EXTRA = ['lat', 'lon'] if META else (['cmd'] if CMD else [])
@@ -71,7 +72,9 @@ def build_split_w1(*a, **kw):
         ho = tr
         finetune.CFG['val_ade_k'] = OVERFIT
     print(f'[w1] train {len(tr)}  select(holdout) {len(ho)}  extra={EXTRA} flip={FLIP} '
-          f'no_vision={bool(NOVIS)} overfit={OVERFIT}', flush=True)
+          f'no_vision={bool(NOVIS)} overfit={OVERFIT} vcache={VCACHE}', flush=True)
+    if VCACHE:
+        tag_records(tr); tag_records(ho)
     return tr, ho, []
 
 
@@ -131,6 +134,13 @@ if NOVIS:
         images.shape[0], 0, 3584, dtype=torch.float16, device=device)
     ar_eval.encode_live_one = lambda visual, images, device, dtype=torch.float16: torch.zeros(
         1, 0, 3584, dtype=dtype, device=device)
+if VCACHE:
+    sys.path.insert(0, f'{CODE}/ar1')
+    import vc_patch
+    from vc_patch import tag_records
+    vc_patch.install(VCACHE, dataset)
+    finetune.encode_live = vc_patch.encode_live
+    ar_eval.encode_live_one = vc_patch.encode_live_one
 if LORA_DROP is not None:
     finetune.CFG['lora_dropout'] = float(LORA_DROP)
 if MIN_LR_RATIO is not None:

@@ -44,6 +44,7 @@ def main():
     ap.add_argument('--shuffle_cams', action='store_true',
                     help='CAMERA-SHUFFLE test: each sample gets the 6 images of another sample '
                          '(permutation seed 99); ego, cmd and GT stay with their own sample')
+    ap.add_argument('--vcache', default=None, help="R2.4: 't0' | 'hist' cached native-order tokens")
     ap.add_argument('--overfit', type=int, default=0,
                     help='dump the same N train samples finetune_w1 --overfit N trained on')
     a = ap.parse_args()
@@ -51,6 +52,12 @@ def main():
     dataset.compute_ego_state = lambda traj: traj['w1_ego']
     dataset.TrajectoryTokenizer = W1Tokenizer
 
+    global encode_live_one
+    if a.vcache:
+        sys.path.insert(0, f'{CODE}/ar1')
+        import vc_patch
+        vc_patch.install(a.vcache, dataset)
+        encode_live_one = vc_patch.encode_live_one
     dist.init_process_group(backend='nccl')
     lr = int(os.environ['LOCAL_RANK']); torch.cuda.set_device(lr)
     device = f'cuda:{lr}'; ws = dist.get_world_size(); m0 = lr == 0
@@ -84,6 +91,8 @@ def main():
                 if m0: print(f'[dumpw1] INPUT-SHUFFLE: {int((perm != np.arange(len(R))).sum())}/{len(R)} '
                              f'samples get another sample\'s ego+extra rows', flush=True)
             if a.limit: R = R[:a.limit]
+            if a.vcache:
+                vc_patch.tag_records(R)
             ds = NuScenesVLADataset(R, split=split, augment=False)
             cperm = np.arange(len(R))
             if a.shuffle_cams:
