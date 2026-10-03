@@ -1,7 +1,7 @@
 # AR1_R1_REPORT -- reproduction phase R1 (gate report)
 
 Written 2026-10-03. Goal: rebuild the Alpamayo-R1 method at small scale on nuScenes.
-No training was launched. Files: code in Alpamayo/code/ar1/, outputs in Alpamayo/ar1_*.txt.
+No training was launched. Code: Alpamayo/code/ar1/; outputs: Alpamayo/ar1_*.txt.
 R1.0 is DEVIATIONS.md.
 
 =========================================================================================
@@ -46,7 +46,7 @@ SIDE FINDING (affects the foundation section; nothing changed):
   Qwen2-VL native patch layout. It holds the same pixel values in a different order:
   raster patch order instead of 2x2 merge blocks, and a (T, C, 14, 14) flatten instead of
   (C, T, 14, 14). The max |diff| vs the processor is 3.47. On the frozen tower, week-1
-  layout vs native features for the same 448x448 image: token cosine mean 0.410, min 0.050.
+  layout vs native features, same 448x448 image: token cosine mean 0.410, min 0.050.
   So every week-1 / queue-v2 camera result (V8b, G7, C7 "cameras add no decision
   information") used visual features the encoder was not trained to produce. Those
   results stand as measured for that pipeline, but "cameras add nothing" may partly
@@ -102,14 +102,14 @@ Notes: strong accel / decel and reverse are rare (<= 0.4%). Reverse L / R never 
 R1.3 PLAN ONLY -- flow-matching action expert
 =========================================================================================
 Conditioning. The spec says "VLA hidden states (stop-grad), as in AR1". The paper says
-  the expert takes "the KV-cache from the sequence" with a stop-gradient on the VLM KV-cache.
+  the expert takes "the KV-cache from the sequence", with a stop-gradient on that cache.
   These differ:
-  (A) AR1-faithful. The expert has 28 layers (one per VLM layer). Each expert layer attends
+  (A) AR1-faithful. The expert has 28 layers (one per VLM layer). Each layer attends
       over [VLM K/V of that layer (stop-grad) | its own action tokens]. Same heads (28 q,
       4 kv) and head dim (128) as the VLM; smaller hidden / MLP width.
   (B) As specified. The expert reads the last-layer VLM hidden states (stop-grad) through
       cross-attention.
-  Recommendation: (A), because it is the paper's design and its extra cost is small (below).
+  Recommendation: (A): it is the paper's design and its extra cost is small (below).
   Planner to choose.
 Architecture (proposal).
   (A) 28 layers, hidden 512, MLP 1,536 (SwiGLU). The q/o projections go to the 3,584-wide
@@ -136,7 +136,7 @@ Training schedule. Stage 1b: train the expert on the frozen stage-1 VLM. AR1 tra
   stage-1 token run with the R1.1 inputs.
 Memory per GPU (estimate). VLM fp16 16.6 GB, no VLM backward in stage 1b. Context
   activations under no_grad about 1-2 GB at batch 4. Expert (A): fp32 weights + grads +
-  Adam = 16 B x 185M = 3.0 GB, plus activations (12 query tokens over 1,937 keys x 28 layers)
+  Adam = 16 B x 185M = 3.0 GB, plus activations (12 queries over 1,937 keys x 28 layers)
   under 1 GB. Total about 22 GB at batch 4: fits. (B) about 19 GB.
 GPU-h (estimate; pending the R1.1 benchmark). VLM forward-only is about 1/3 of a
   training step (no backward, no recompute), so about 1.5-2 s/step at batch 2. For
