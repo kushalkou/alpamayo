@@ -303,3 +303,11 @@ MEMORY ON OUR V100s (32 GB, fp16 only; estimates, not measured)
              realistic on 8 x V100 alongside the replicated activations.
            - GRPO RL needs several rollouts per prompt plus a reasoning critic (an LRM);
              UNVERIFIED cost, likely beyond 8 x V100 at full scale.
+
+NOTE 2026-10-03 (phase R1): re-reading the paper resolved two UNVERIFIED items:
+  3.3  the action expert takes the VLM KV-cache (stop-gradient applied to it) plus the
+       embedded noisy control; same heads / head dim as the VLM, smaller hidden and MLP
+       width; Euler dt = 0.1 at inference.
+  5.2  Table 5: lon gentle / strong accelerate, gentle / strong decelerate, maintain
+       speed, stop, reverse; lat steer left / right, sharp steer left / right, reverse
+       left / right, go straight. Labelled automatically at 10 Hz. No thresholds given.
