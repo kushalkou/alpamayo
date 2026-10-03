@@ -1,0 +1,50 @@
+loading sample_data / ego_pose ...
+
+source cross-check (CAN vs pose-derived, every 10th tick where both exist, n=187640): lon agree 0.835, lat agree 0.990
+train    records  22213  ticks  1354993: CAN 0.927  pose 0.022  none 0.052
+holdout  records   1717  ticks   104737: CAN 0.948  pose 0.000  none 0.052
+val      records   5119  ticks   312259: CAN 0.948  pose 0.000  none 0.052
+
+LON class counts, all valid 10 Hz ticks in [t0, t0+6.0 s] (share):
+  class                  train          holdout              val
+  gentle_acc    206898 (0.161)    16149 (0.163)    55221 (0.186)
+  strong_acc      1031 (0.001)      174 (0.002)      627 (0.002)
+  gentle_dec    212006 (0.165)    14130 (0.142)    47845 (0.162)
+  strong_dec      4747 (0.004)      377 (0.004)     1309 (0.004)
+  maintain      630997 (0.491)    46935 (0.473)   147119 (0.497)
+  stop          228481 (0.178)    21534 (0.217)    43735 (0.148)
+  reverse          785 (0.001)        0 (0.000)      264 (0.001)
+
+LON at the t0 tick only (one per keyframe):
+  gentle_acc      3450 (0.164)      297 (0.184)      910 (0.188)
+  strong_acc        22 (0.001)        4 (0.002)       16 (0.003)
+  gentle_dec      3487 (0.166)      217 (0.134)      781 (0.161)
+  strong_dec        72 (0.003)        5 (0.003)       22 (0.005)
+  maintain       10265 (0.489)      743 (0.459)     2374 (0.490)
+  stop            3672 (0.175)      352 (0.218)      736 (0.152)
+  reverse           13 (0.001)        0 (0.000)        4 (0.001)
+
+LAT class counts, all valid 10 Hz ticks in [t0, t0+6.0 s] (share):
+  class                  train          holdout              val
+  steer_L        98788 (0.077)     8600 (0.087)    21480 (0.073)
+  steer_R       107707 (0.084)     6419 (0.065)    25803 (0.087)
+  sharp_L         7768 (0.006)      306 (0.003)     2399 (0.008)
+  sharp_R         7754 (0.006)      552 (0.006)     1957 (0.007)
+  reverse_L          0 (0.000)        0 (0.000)        0 (0.000)
+  reverse_R          0 (0.000)        0 (0.000)        0 (0.000)
+  straight     1062928 (0.827)    83422 (0.840)   244481 (0.826)
+
+LAT at the t0 tick only (one per keyframe):
+  steer_L         1613 (0.077)      140 (0.087)      370 (0.076)
+  steer_R         1765 (0.084)      101 (0.062)      438 (0.090)
+  sharp_L          134 (0.006)        5 (0.003)       36 (0.007)
+  sharp_R          139 (0.007)        7 (0.004)       34 (0.007)
+  reverse_L          0 (0.000)        0 (0.000)        0 (0.000)
+  reverse_R          0 (0.000)        0 (0.000)        0 (0.000)
+  straight       17330 (0.826)     1365 (0.844)     3965 (0.819)
+
+sign check, val: share of LEFT-type vs RIGHT-type lat labels over [t0, t0+6 s] by command
+  cmd LEFT      n_ticks   16220  left 0.555  right 0.025  straight 0.420
+  cmd RIGHT     n_ticks   23258  left 0.024  right 0.524  straight 0.452
+  cmd STRAIGHT  n_ticks  256642  left 0.056  right 0.059  straight 0.885
+91.04 s 6848432 KB
