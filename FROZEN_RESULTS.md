@@ -6,6 +6,16 @@ v1 claim changes in light of the ego-state leak found in OVERNIGHT2 item 1.
 Evidence: OVERNIGHT2_REPORT.md sections 1, 6 and 6b. All numbers are on the old custom
 split and are NOT comparable to the nuScenes planning literature (see WEEK1_REPORT.md).
 
+## PATCH-ORDER QUARANTINE (added 2026-10-03, phase R2.0; numbers kept, not deleted)
+
+Every camera result in this file used vision_live.patchify / the old precompute cache,
+which feed the Qwen2.5-VL vision tower patches in a non-native layout (raster order and
+a (T,C,14,14) flatten instead of 2x2 merge blocks and (C,T,14,14)). Its features have
+token cosine 0.33-0.52 to the native features (Alpamayo/ar1_r20_patch.txt). Results
+that used camera features are marked INVALID (patch order). Results with zeroed or
+removed visual tokens do not depend on the layout and stand. Full list:
+PATCH_ORDER_QUARANTINE.md.
+
 ## The defect
 
 dataset.compute_ego_state builds its current (t) row from future poses:
@@ -73,7 +83,8 @@ FINDING 3 -- correction vs replacement, r=+0.34: WITHDRAWN AS STATED.
   same subset. A positive correlation survives, but the frozen r=+0.34 and the MSE/bias
   numbers were measured on models that were handed a target slot.
 
-FINDING 4 -- vision helps on turning (+0.122 m): WITHDRAWN.
+FINDING 4 -- vision helps on turning (+0.122 m): WITHDRAWN.  INVALID (patch order)
+  (both the leaky analysis and the causal full-vision retrain used the old layout)
   Every checkpoint in that analysis (full and ego, all seeds) had the leak. The
   leak-free full-vision retrain (OVERNIGHT2 6b) blends to exactly the ego-only result:
   full - ego = -0.000 [-0.012,+0.012] overall and -0.014 [-0.050,+0.021] on TURNING

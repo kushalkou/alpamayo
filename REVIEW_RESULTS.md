@@ -5,6 +5,11 @@ it. [P] = privileged input (derived from the ground-truth future: the navigation
 or the oracle meta-action). "measured" = computed here; "reported" = copied from a paper.
 Figures: Alpamayo/viz/review/ (f1-f7, png + pdf).
 
+PATCH-ORDER QUARANTINE (2026-10-03, R2.0): every row that used camera features was
+computed with a non-native patch layout (vision_live.patchify; cosine 0.33-0.52 to the
+native features). Those rows are marked INVALID (patch order); the numbers are kept.
+Rows with zeroed or removed visual tokens stand. List: PATCH_ORDER_QUARANTINE.md.
+
 ---------------------------------------------------------------------------------------
 ## T1. The ego-state input contained two ground-truth targets (commit 495cb86)
 
@@ -32,8 +37,10 @@ paired bootstrap 95% CI (figure f2).
     leaky ego-only (frozen headline)           +0.164 [+0.137,+0.191]    0.25    495cb86
     causal ego-only (retrained)                +0.014 [+0.003,+0.024]    0.10    7f0e24e
     causal full vision (retrained)             +0.014 [+0.002,+0.025]    0.10    2e45c04
+      ^ INVALID (patch order)
     zero-input model                           +0.008 [+0.006,+0.010]    0.05    495cb86
     causal full - causal ego, TURNING subset   -0.014 [-0.050,+0.021] (vision adds nothing)
+      ^ INVALID (patch order)
 Status per claim: FROZEN_RESULTS.md v2 (commit fc22e97).
 
 ## T3. Our causal, perception-free baselines sit at published planner L2 (figure f3)
@@ -244,13 +251,16 @@ without cameras, worse with cameras, and no predicted meta-action helps the fixe
     MLP classifier (3 s.)   0.677   0.669      2.463               1.654
     VLA, no cameras (V8a)   0.671   0.670      2.458               1.649
     VLA + 6 cameras (V8b)   0.614   0.610      2.501               1.694
+      ^ INVALID (patch order)
     oracle, 40% flips [P]   --      --         2.468               1.677
     oracle [P]              --      --         1.750               1.193
     V8b - V8a: macro-F1 -0.060 [-0.097,-0.024]; L2@3s +0.044 [-0.016,+0.113];
                ADE6 +0.043 [-0.057,+0.159]  -> pre-registered: cameras add no decision
                information (excl. first frames V8b is worse: L2@3s +0.093 [+0.037,+0.158])
+      ^ V8b - V8a and the verdict: INVALID (patch order)
     V8a - MLP: macro-F1 +0.001 [-0.007,+0.009]; L2@3s -0.004 [-0.015,+0.006]
     holdout macro-F1 (selection): MLP 0.672, V8a 0.672, V8b 0.675 (figure f8)
+      ^ V8b: INVALID (patch order); figure f8 V8b bar and f6 / f7 V8b markers likewise
     (commit c06c06f)
 
 T10b. Near-threshold labels and per-class behaviour (amendment C8).
@@ -260,7 +270,7 @@ T10b. Near-threshold labels and per-class behaviour (amendment C8).
                   acc / macro-F1 all     acc / macro-F1 excl. near (n=4,057)
     MLP (3 s.)    0.677 / 0.669          0.718 / 0.711
     V8a           0.671 / 0.670          0.714 / 0.713
-    V8b           0.614 / 0.610          0.652 / 0.648
+    V8b           0.614 / 0.610          0.652 / 0.648   INVALID (patch order)
   Removing near-threshold samples raises every predictor by about 0.04 in both metrics.
 
                   recall V8a   recall V8b   V8b - V8a [95% CI]
@@ -269,6 +279,7 @@ T10b. Near-threshold labels and per-class behaviour (amendment C8).
     decel (891)   0.554        0.593        +0.038 [+0.003,+0.074]
     maint (2005)  0.654        0.601        -0.053 [-0.088,-0.018]
   V8b beats V8a on accelerate and decelerate recall and loses on stop and maintain.
+      ^ recall table: V8b column and V8b - V8a INVALID (patch order)
 
     confusion (rows true; cols stop accel decel maint)   V8a            | V8b
     stop                                                 789  37  17  10 | 495 300  19  39
@@ -276,12 +287,14 @@ T10b. Near-threshold labels and per-class behaviour (amendment C8).
     decel                                                 41  30 494 326 |  44  43 528 276
     maint                                                 89 318 286 1312|  62 303 434 1206
   V8b predicts "accelerate" for 300 of 853 true stops.
+      ^ confusion: V8b block INVALID (patch order)
 
     agreement V8a/V8b 0.736; on the 1,351 disagreements: V8a correct 0.557, V8b
     correct 0.341, neither 0.101
-  When the two disagree, V8a is right more often than V8b.
+  When the two disagree, V8a is right more often than V8b.  INVALID (patch order)
 
 ## T11. Vision end to end: cameras make the trajectory VLA slightly worse (commit d75359f)
+## T11 (all of T11a-c that involves G7 or V8b): INVALID (patch order)
 
 T11a. Adding the six cameras to the ego + command VLA raises L2 at 3 s by 0.15 m against
 its no-camera twin (0.09 m against the 3-seed no-camera mean).
@@ -292,9 +305,12 @@ its no-camera twin (0.09 m against the 3-seed no-camera mean).
     VLA ego + cmd [P], no cameras  1.894          0.877           0.64              2.896
       (3-seed mean, T9b)           1.954          0.909           --                2.930
     VLA + 6 cameras (G7) [P]       2.043          0.960           0.61              3.001
+      ^ INVALID (patch order)
     VLA + cameras, shuffled        2.115          1.009           0.75              3.047
+      ^ INVALID (patch order)
     G7 - no-camera twin: L2@3s +0.149 [+0.074,+0.231]; ADE6 +0.105 [+0.004,+0.212]
     G7 - 3-seed no-camera mean: L2@3s +0.089 [+0.016,+0.170]; ADE6 +0.071 [-0.026,+0.176]
+      ^ both G7 differences INVALID (patch order)
 
 T11b. Shuffling the camera images between samples barely changes the vision VLA (ADE x1.015),
 except in stationary scenes.
@@ -305,9 +321,9 @@ except in stationary scenes.
 T11c. End to end vs decision bottleneck (ADE@6s, all 5,119).
 
     VLA end to end, ego + cmd (3 seeds)              2.930
-    VLA end to end, + cameras (G7)                   3.001
+    VLA end to end, + cameras (G7)                   3.001   INVALID (patch order)
     bottleneck: fixed head + V8a meta-action         2.458
-    bottleneck: fixed head + V8b meta-action         2.501
+    bottleneck: fixed head + V8b meta-action         2.501   INVALID (patch order)
     fixed head, no meta-action (ego + cmd)           2.439
     fixed head + oracle meta-action [P]              1.750
   The fixed-head routes beat both end-to-end VLAs by about 0.5 m, and none uses the cameras
