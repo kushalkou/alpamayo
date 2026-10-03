@@ -1,0 +1,11 @@
+[expert] train 18313  mu [ 0.01549316 -0.00222609]  sd [1.1446118  0.05150366]; holdout 1717 val 5119
+[expert] params 184,193,026; 71 steps/epoch; max 100 epochs
+[epoch   5] fm_loss 1.0435 | SELECT holdout ADE@6s median 2.8436 (mean 3.5397) * | 184s
+[epoch  10] fm_loss 0.9431 | SELECT holdout ADE@6s median 2.9069 (mean 3.6608) | 368s
+[epoch  15] fm_loss 0.9005 | SELECT holdout ADE@6s median 2.7438 (mean 3.5446) * | 552s
+[epoch  20] fm_loss 0.8906 | SELECT holdout ADE@6s median 2.2685 (mean 3.0878) * | 737s
+[epoch  25] fm_loss 0.8789 | SELECT holdout ADE@6s median 2.4001 (mean 3.1352) | 921s
+[epoch  30] fm_loss 0.8669 | SELECT holdout ADE@6s median 2.4155 (mean 3.1280) | 1104s
+[epoch  35] fm_loss 0.8506 | SELECT holdout ADE@6s median 2.3054 (mean 3.1906) | 1288s
+[epoch  40] fm_loss 0.8472 | SELECT holdout ADE@6s median 2.3029 (mean 3.0566) | 1472s
+[expert] best epoch 20 holdout median ADE@6s 2.2685; train 0.41 GPU-h, 6-sample inference holdout+val 4.0 GPU-min; saved /home/dgx1user/Alpamayo-Kushal/Alpamayo/results/ar1_expert_A3.pkl

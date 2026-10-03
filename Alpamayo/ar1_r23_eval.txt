@@ -1,0 +1,45 @@
+  minade['A3 + expert, 1 sample [P]'] = (e3.min(1), np.nanmin(e6, 1))
+  minade['A3 + expert, mean of 6 [P]'] = (e3.min(1), np.nanmin(e6, 1))
+consistency: expert sample-0 ADE@3s from trajectories vs plan_metrics L2 max |diff| 2.03e-06
+
+===== ALL 5,119 =====
+  method                 L2 NoAvg 1/2/3s   | L2 TemAvg 1/2/3s  | Col% NoAvg     | Col% TemAvg    | ADE6 mean/med/p95 FDE6 | L2@3s med/p95 | ADE@3s | minADE6 @3s @6s
+  KIN                    0.362 1.049 2.178 | 0.278 0.562 0.998 | 0.08 0.29 1.39 | 0.16 0.23 0.57 | 3.161 2.240 8.199 7.750 | 1.449 5.636 | 0.998 | 0.998 3.161  (= ADE, 1 sample)
+  Ego-MLP + cmd s42 [P]  0.324 0.822 1.633 | 0.241 0.461 0.777 | 0.08 0.82 1.78 | 0.29 0.56 0.87 | 2.434 1.675 6.178 6.067 | 1.033 4.166 | 0.777 | 0.777 2.434  (= ADE, 1 sample)
+  Ego-MLP + cmd 3-seed [P] 0.326 0.825 1.637 | 0.243 0.463 0.779 | 0.42 0.62 1.80 | 0.45 0.53 0.87 | 2.437 1.679 6.112 6.072 | 1.054 4.116 | 0.779 | 0.779 2.437  (= ADE, 1 sample)
+  A3 token decoder [P]   0.344 0.919 1.894 | 0.254 0.504 0.877 | 0.04 0.31 1.64 | 0.10 0.23 0.64 | 2.896 2.003 7.853 7.420 | 1.207 5.108 | 0.877 | 0.877 2.896  (= ADE, 1 sample)
+  A3 + expert, 1 sample [P] 0.441 1.125 2.257 | 0.329 0.629 1.067 | 0.45 0.84 2.40 | 0.41 0.61 1.09 | 3.336 2.522 8.102 8.367 | 1.599 5.745 | 1.067 | 0.576 1.714
+  A3 + expert, mean of 6 [P] 0.374 0.948 1.875 | 0.280 0.532 0.895 | 0.43 0.72 1.50 | 0.40 0.55 0.82 | 2.760 2.002 6.571 6.868 | 1.295 4.559 | 0.895 | 0.576 1.714
+  paired scene bootstrap (95% CI):
+  A3 + expert, 1 sample [P] - token  L2@3s +0.362 [+0.306,+0.418] p=0.0000 | L2T@3s +0.190 [+0.165,+0.215] p=0.0000 | ADE6 +0.440 [+0.353,+0.526] p=0.0000
+  A3 + expert, mean of 6 [P] - token L2@3s -0.019 [-0.075,+0.038] p=0.5028 | L2T@3s +0.017 [-0.007,+0.043] p=0.1672 | ADE6 -0.136 [-0.221,-0.048] p=0.0022
+  expert 1 sample - Ego-MLP s42      L2@3s +0.624 [+0.570,+0.675] p=0.0000 | L2T@3s +0.291 [+0.266,+0.315] p=0.0000 | ADE6 +0.902 [+0.820,+0.983] p=0.0000
+  expert 1 sample - KIN              L2@3s +0.078 [-0.005,+0.160] p=0.0638 | L2T@3s +0.069 [+0.038,+0.101] p=0.0000 | ADE6 +0.176 [+0.046,+0.303] p=0.0098
+  expert minADE_6@6s - token ADE@6s  -1.182 [-1.281,-1.080] p=0.0000
+  strata, L2@3s NoAvg mean (n): straight (3488): token 1.591 / expert 2.009 / MLP 1.367; turning (638): token 2.580 / expert 2.656 / MLP 1.868; stationary (993): token 2.518 / expert 2.870 / MLP 2.416
+
+===== EXCL. FIRST FRAMES (n=4979) =====
+  method                 L2 NoAvg 1/2/3s   | L2 TemAvg 1/2/3s  | Col% NoAvg     | Col% TemAvg    | ADE6 mean/med/p95 FDE6 | L2@3s med/p95 | ADE@3s | minADE6 @3s @6s
+  KIN                    0.231 0.799 1.820 | 0.180 0.403 0.782 | 0.08 0.14 1.02 | 0.16 0.18 0.43 | 2.712 2.187 7.113 6.980 | 1.413 5.022 | 0.782 | 0.782 2.712  (= ADE, 1 sample)
+  Ego-MLP + cmd s42 [P]  0.206 0.595 1.306 | 0.153 0.316 0.580 | 0.08 0.74 1.61 | 0.30 0.53 0.80 | 2.022 1.626 5.319 5.355 | 1.007 3.679 | 0.580 | 0.580 2.022  (= ADE, 1 sample)
+  Ego-MLP + cmd 3-seed [P] 0.209 0.599 1.310 | 0.154 0.319 0.583 | 0.42 0.54 1.63 | 0.46 0.50 0.79 | 2.025 1.644 5.337 5.360 | 1.030 3.679 | 0.583 | 0.583 2.025  (= ADE, 1 sample)
+  A3 token decoder [P]   0.222 0.685 1.558 | 0.162 0.354 0.674 | 0.04 0.22 1.41 | 0.10 0.18 0.54 | 2.477 1.959 6.752 6.711 | 1.178 4.460 | 0.674 | 0.674 2.477  (= ADE, 1 sample)
+  A3 + expert, 1 sample [P] 0.325 0.904 1.944 | 0.241 0.488 0.876 | 0.46 0.72 2.19 | 0.42 0.57 1.01 | 2.951 2.457 7.286 7.727 | 1.569 5.103 | 0.876 | 0.403 1.361
+  A3 + expert, mean of 6 [P] 0.256 0.724 1.554 | 0.191 0.388 0.700 | 0.44 0.60 1.33 | 0.41 0.51 0.74 | 2.361 1.959 5.651 6.197 | 1.265 3.941 | 0.700 | 0.403 1.361
+  paired scene bootstrap (95% CI):
+  A3 + expert, 1 sample [P] - token  L2@3s +0.386 [+0.328,+0.445] p=0.0000 | L2T@3s +0.203 [+0.177,+0.228] p=0.0000 | ADE6 +0.474 [+0.384,+0.565] p=0.0000
+  A3 + expert, mean of 6 [P] - token L2@3s -0.004 [-0.061,+0.054] p=0.8880 | L2T@3s +0.026 [+0.001,+0.051] p=0.0386 | ADE6 -0.116 [-0.203,-0.027] p=0.0094
+  expert 1 sample - Ego-MLP s42      L2@3s +0.638 [+0.584,+0.690] p=0.0000 | L2T@3s +0.296 [+0.272,+0.320] p=0.0000 | ADE6 +0.929 [+0.847,+1.010] p=0.0000
+  expert 1 sample - KIN              L2@3s +0.124 [+0.041,+0.207] p=0.0040 | L2T@3s +0.095 [+0.063,+0.126] p=0.0000 | ADE6 +0.239 [+0.105,+0.371] p=0.0004
+  expert minADE_6@6s - token ADE@6s  -1.116 [-1.217,-1.013] p=0.0000
+  strata, L2@3s NoAvg mean (n): straight (3488): token 1.591 / expert 2.009 / MLP 1.367; turning (638): token 2.580 / expert 2.656 / MLP 1.868; stationary (853): token 0.655 / expert 1.146 / MLP 0.637
+
+expert: params 184,193,026; best epoch 20 (holdout median ADE@6s 2.2685); train 0.41 GPU-h; 6-sample inference holdout + val 4.0 GPU-min
+  epoch   5 fm_loss 1.0435 holdout ADE@6s median 2.8436 mean 3.5397
+  epoch  10 fm_loss 0.9431 holdout ADE@6s median 2.9069 mean 3.6608
+  epoch  15 fm_loss 0.9005 holdout ADE@6s median 2.7438 mean 3.5446
+  epoch  20 fm_loss 0.8906 holdout ADE@6s median 2.2685 mean 3.0878
+  epoch  25 fm_loss 0.8789 holdout ADE@6s median 2.4001 mean 3.1352
+  epoch  30 fm_loss 0.8669 holdout ADE@6s median 2.4155 mean 3.1280
+  epoch  35 fm_loss 0.8506 holdout ADE@6s median 2.3054 mean 3.1906
+  epoch  40 fm_loss 0.8472 holdout ADE@6s median 2.3029 mean 3.0566
