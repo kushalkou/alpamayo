@@ -1,0 +1,9 @@
+PASS: 29049 samples, 348588 image slots, max(ts - t0) = -0.0245 s
+(1) 448x280 native: grid [[1, 20, 32]] vs processor [[1, 20, 32]] | shape (640, 1176) (640, 1176) | max |diff| 2.384185791015625e-07
+    tokens per image after 2x2 merge: 160
+(2) week-1 448x448 recipe vs processor: max |diff| 3.470123291015625 | native layout vs processor: 2.384185791015625e-07
+    same multiset of patch values (order-only difference): True
+(3) [GPU 0, run 2026-10-03, python ar1/test_vision.py --gpu]
+    12 images -> (1920, 3584) = 160 tokens per image; finite True; encoder peak 17.0 GB
+    (incl. the full 8.3B fp16 model)
+    448x448 features, week-1 layout vs native: token cos mean 0.410 min 0.050
