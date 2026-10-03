@@ -1,0 +1,9 @@
+  step 10 loss 2.840 5.16s
+  step 20 loss 2.745 5.30s
+  step 30 loss 2.189 5.28s
+  step 40 loss 4.282 5.31s
+  step 50 loss 4.165 5.29s
+  step 60 loss 2.181 5.17s
+[bench] visual tokens/sample 1920; context 1925 (+23 traj in) = 1948 LM tokens/sample; batch 2 x 8 GPUs
+[bench] peak allocated 21.4 GB, reserved 32.8 GB (max over ranks)
+[bench] s/step mean 5.26 median 5.28 (steps 11..60); steps/epoch 1145; 10 epochs = 16.7 h wall = 134 GPU-h (training only)

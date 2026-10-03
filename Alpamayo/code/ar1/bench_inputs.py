@@ -1,6 +1,6 @@
 """ar1/bench_inputs.py -- R1.1 cost benchmark (NOT training; no checkpoint, no eval).
 
-NOT YET RUN (launch needs user approval; see AR1_R1_REPORT.md).
+Run 2026-10-03 (R2.1): Alpamayo/ar1_r21_bench.txt.
 
 Stage-1 trajectory-token step (finetune_w1 --fix --cmd recipe: LoRA r16 q/v/o, fix ego
 MLP x10 lr, cmd token, plain CE in fp32, GradScaler, grad checkpointing) with the AR1-
