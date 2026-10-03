@@ -1,0 +1,15 @@
+loading sample_annotation.json ...
+
+train (n_fut = 12, n = 18313) decision distribution:
+  Set speed tracking 11877 (0.649); Stop for static constraints 2798 (0.153); Lead obstacle following 2437 (0.133); Yield (agent right-of-way) 798 (0.044); Speed adaptation (road events) 403 (0.022)
+  Lane keeping & centering 12246 (0.669); None 2664 (0.145); Turn right 1222 (0.067); Turn left 1021 (0.056); Lane change right 694 (0.038); Lane change left 466 (0.025)
+
+holdout (n_fut = 12, n = 1417) decision distribution:
+  Set speed tracking 873 (0.616); Lead obstacle following 226 (0.159); Stop for static constraints 203 (0.143); Yield (agent right-of-way) 99 (0.070); Speed adaptation (road events) 16 (0.011)
+  Lane keeping & centering 945 (0.667); None 268 (0.189); Turn left 58 (0.041); Lane change left 58 (0.041); Turn right 47 (0.033); Lane change right 41 (0.029)
+
+val (n_fut = 12, n = 4219) decision distribution:
+  Set speed tracking 2427 (0.575); Lead obstacle following 1133 (0.269); Stop for static constraints 461 (0.109); Yield (agent right-of-way) 129 (0.031); Speed adaptation (road events) 69 (0.016)
+  Lane keeping & centering 2942 (0.697); None 494 (0.117); Turn right 276 (0.065); Turn left 230 (0.055); Lane change right 142 (0.034); Lane change left 135 (0.032)
+
+wrote /home/dgx1user/Alpamayo-Kushal/AR1_COC_EXAMPLES.txt (20 traces)
