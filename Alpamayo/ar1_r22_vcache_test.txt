@@ -1,0 +1,4 @@
+(a) files missing 0 of 87147; 3 build batches (48 images) recomputed: bit-exact True
+(b) 50 random images, single-image live vs cache: per-image mean cos min 0.99960 median 0.99997; per-token min cos min 0.9495 median 0.9990
+    scale: fp32 tower vs cache (fp16), 10 images: per-image mean cos min 0.9959 median 0.9999; per-token min 0.665
+PASS

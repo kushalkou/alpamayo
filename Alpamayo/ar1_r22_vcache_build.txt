@@ -1,0 +1,4 @@
+[vcache] unique images 87147; rank 0 todo 10894
+[vcache] done in 457s (rank 0 encode loop)
+WALL 479.69 s
+disk: 99,967,944,064 bytes (94 GiB), 87,147 files (29,049 per camera), 1,147,136 B each
