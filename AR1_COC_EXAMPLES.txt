@@ -1,40 +1,46 @@
-AR1_COC_EXAMPLES -- 20 template CoC traces for human review (phase R1.4)
-Generator: Alpamayo/code/ar1/coc_template.py (rules in its header). Train split,
-stratified by decision, seed 0. Inputs = history window only (t0-2 s .. t0);
-the DECISION is labelled from the future 6 s; [future] lines are shown only so a
-reviewer can check the decision and are not part of the trace. Ego frame: x forward,
-y left. Routing is the VAD command = PRIVILEGED (from the GT future).
-Review questions per trace: decision correct? cause correct? anything missing?
+AR1_COC_EXAMPLES v2 -- 20 template CoC traces for human review (phase R2.6)
+Generator: Alpamayo/code/ar1/coc_template.py v2 (map-aware; rules in its header).
+The SAME 20 train samples as v1 (commit 62d63cc), same numbering. Components use
+the history window (t0-1 s .. t0) and the static map only; the DECISION is
+labelled from the future 6 s; [future] lines are for the reviewer and are not
+part of the trace. Ego frame: x forward, y left. Routing = VAD command [P].
+Changes vs v1: AR1_R2_REPORT.md, R2.6 (one line per example).
 
 -----------------------------------------------------------------------------------------
 #01  scene-1081  sample 155184db48344bc7834de40cee4f3cbb
      CAM_FRONT t0: n015-2018-11-21-19-38-26+0800__CAM_FRONT__1542800459862460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 4.2 m/s now, 5.8 m/s 1 s ago; turn signal off
-     lead in path: car 10 m ahead, +0.9 m lateral, moving the same way (3.5 m/s)
+     lane: mapped; 4 lane(s) in the ego direction; in an intersection
+     stop line ahead: none within 40 m
+     crosswalk ahead: none within 25 m
+     lead in path: car 10 m ahead, +0.9 m lat., moving the same way (3.5 m/s)
      yield cand.: none within 25 m
-     nearby: car 14 m ahead, +6.5 m lateral, moving the same way (13.2 m/s)
-     nearby: car 15 m ahead, -9.0 m lateral, oncoming (10.5 m/s)
+     nearby: car 14 m ahead, +6.5 m lat., moving the same way (13.2 m/s)
+     nearby: car 15 m ahead, -9.0 m lat., oncoming (10.5 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Lead obstacle following; lat = Lane keeping & centering
   trace: Keep a safe gap, keeping the lane because the car 10 m ahead in the ego path is
          moving the same way.
-  [future] min / end speed 0.0 / 0.0 m/s, heading +3 deg, end x 6 m y +0.1 m
+  [future] min / end speed 0.0 / 0.0 m/s, heading +3 deg, end x 6 m y +0.1 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #02  scene-1109  sample 34e14c18e08943068c1b216977483bb6
      CAM_FRONT t0: n015-2018-11-21-19-58-31+0800__CAM_FRONT__1542801696362460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 0.0 m/s now, 0.0 m/s 1 s ago; turn signal right
-     lead in path: car 7 m ahead, +0.1 m lateral, stationary (0.0 m/s)
+     lane: mapped; 3 lane(s) in the ego direction; not in an intersection
+     stop line ahead: turn line 25 m ahead
+     crosswalk ahead: 24 m
+     lead in path: car 7 m ahead, +0.1 m lat., stationary (0.0 m/s)
      yield cand.: none within 25 m
-     nearby: car 8 m ahead, +3.7 m lateral, moving the same way (10.0 m/s)
-     nearby: car 4 m ahead, -8.2 m lateral, oncoming (6.5 m/s)
+     nearby: car 8 m ahead, +3.7 m lat., moving the same way (10.0 m/s)
+     nearby: car 4 m ahead, -8.2 m lat., oncoming (6.5 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Lead obstacle following; lat = None
   trace: Stay stopped because the car 7 m ahead in the ego path is stationary.
   [future] min / end speed 0.0 / 0.0 m/s, heading -0 deg, end x -0 m y -0.0 m
@@ -42,33 +48,38 @@ Review questions per trace: decision correct? cause correct? anything missing?
 -----------------------------------------------------------------------------------------
 #03  scene-0306  sample 1396cf32edd14118bcdb950a6c4fd985
      CAM_FRONT t0: n008-2018-08-31-11-19-57-0400__CAM_FRONT__1535729557412404.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 6.7 m/s now, 6.7 m/s 1 s ago; turn signal off
-     lead in path: car 38 m ahead, +2.6 m lateral, moving the same way (8.6 m/s)
+     lane: mapped; 4 lane(s) in the ego direction; not in an intersection
+     stop line ahead: traffic-light line 6 m ahead
+     crosswalk ahead: 13 m
+     lead in path: none within 40 m
      yield cand.: none within 25 m
-     nearby: pedestrian 8 m ahead, -9.5 m lateral, stationary (0.2 m/s)
-     nearby: pedestrian 9 m ahead, -10.8 m lateral, stationary (0.2 m/s)
-     nearby: bicycle 21 m ahead, +7.4 m lateral, stationary (0.0 m/s)
+     nearby: pedestrian 8 m ahead, -9.5 m lat., stationary (0.2 m/s)
+     nearby: pedestrian 9 m ahead, -10.8 m lat., stationary (0.2 m/s)
+     nearby: bicycle 21 m ahead, +7.4 m lat., stationary (0.0 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Lead obstacle following; lat = Lane keeping & centering
-  trace: Keep a safe gap, keeping the lane because the car 38 m ahead in the ego path is
-         moving the same way.
-  [future] min / end speed 6.7 / 6.8 m/s, heading +1 deg, end x 42 m y -0.2 m
+     not observable: traffic-light state
+  driving decision: lon = Set speed tracking; lat = Lane keeping & centering
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 6.7 / 6.8 m/s, heading +1 deg, end x 42 m y -0.2 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #04  scene-1108  sample d07b019548c74f2491647edabc1a5da3
      CAM_FRONT t0: n015-2018-11-21-19-58-31+0800__CAM_FRONT__1542801664662460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 2.1 m/s now, 0.7 m/s 1 s ago; turn signal right
-     lead in path: car 10 m ahead, +0.0 m lateral, moving the same way (0.7 m/s)
+     lane: mapped; 4 lane(s) in the ego direction; not in an intersection
+     stop line ahead: turn line 36 m ahead
+     crosswalk ahead: none within 25 m
+     lead in path: car 10 m ahead, +0.0 m lat., moving the same way (0.7 m/s)
      yield cand.: none within 25 m
-     nearby: car 4 m ahead, -6.1 m lateral, oncoming (11.7 m/s)
-     nearby: car 7 m ahead, +6.0 m lateral, moving the same way (13.3 m/s)
+     nearby: car 4 m ahead, -6.1 m lat., oncoming (11.7 m/s)
+     nearby: car 7 m ahead, +6.0 m lat., moving the same way (13.3 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Lead obstacle following; lat = Lane keeping & centering
   trace: Keep a safe gap, keeping the lane because the car 10 m ahead in the ego path is
          moving the same way.
@@ -77,261 +88,306 @@ Review questions per trace: decision correct? cause correct? anything missing?
 -----------------------------------------------------------------------------------------
 #05  scene-0453  sample 6cedfbbb63124f19bb3bcb381ce8b0c1
      CAM_FRONT t0: n008-2018-09-18-12-07-26-0400__CAM_FRONT__1537287290912404.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 4.2 m/s now, 4.9 m/s 1 s ago; turn signal off
+     lane: mapped; 7 lane(s) in the ego direction; not in an intersection
+     stop line ahead: crosswalk line 8 m ahead
+     crosswalk ahead: 14 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
-     nearby: car 3 m ahead, -10.8 m lateral, stationary (0.0 m/s)
-     nearby: car 11 m ahead, -10.4 m lateral, stationary (0.0 m/s)
-     nearby: car 14 m ahead, -10.6 m lateral, stationary (0.0 m/s)
+     nearby: car 3 m ahead, -10.8 m lat., stationary (0.0 m/s)
+     nearby: car 11 m ahead, -10.4 m lat., stationary (0.0 m/s)
+     nearby: car 14 m ahead, -10.6 m lat., stationary (0.0 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Stop for static constraints; lat = Lane keeping & centering
-  trace: Stop and hold, keeping the lane with no lead vehicle in the path; the reason
-         (signal, sign or queue) is not in the annotations.
+  trace: Stop, keeping the lane at the crosswalk stop line 8 m ahead.
   [future] min / end speed 0.0 / 0.0 m/s, heading +0 deg, end x 7 m y -0.1 m
 
 -----------------------------------------------------------------------------------------
 #06  scene-0225  sample 1d6cf946762c42bcabdee5ba23d50e27
      CAM_FRONT t0: n008-2018-07-27-12-07-38-0400__CAM_FRONT__1532707968412404.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 0.0 m/s now, 0.0 m/s 1 s ago; turn signal off
+     lane: mapped; 6 lane(s) in the ego direction; not in an intersection
+     stop line ahead: turn line 0 m ahead
+     crosswalk ahead: 10 m
      lead in path: none within 40 m
-     yield cand.: none within 25 m
-     nearby: car 4 m ahead, +4.3 m lateral, stationary (0.0 m/s)
-     nearby: pedestrian 16 m ahead, -7.0 m lateral, oncoming (2.0 m/s)
-     nearby: pedestrian 19 m ahead, -5.5 m lateral, oncoming (1.6 m/s)
+     yield cand.: pedestrian 16 m ahead, -7.0 m lat., oncoming (2.0 m/s)
+     nearby: car 4 m ahead, +4.3 m lat., stationary (0.0 m/s)
+     nearby: pedestrian 19 m ahead, -5.5 m lat., oncoming (1.6 m/s)
      construction zone: yes
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Stop for static constraints; lat = None
-  trace: Stop and hold with no lead vehicle in the path; the reason (signal, sign or
-         queue) is not in the annotations.
+     not observable: traffic-light state
+  driving decision: lon = Yield (agent right-of-way); lat = None
+  trace: Slow down and yield, then proceed because the pedestrian 16 m ahead in the ego
+         path is oncoming and has right of way.
   [future] min / end speed 0.0 / 2.4 m/s, heading -1 deg, end x 2 m y -0.0 m
 
 -----------------------------------------------------------------------------------------
 #07  scene-0736  sample a5fda092639244aaac1002ce5ece0993
      CAM_FRONT t0: n008-2018-08-29-16-04-13-0400__CAM_FRONT__1535574068612404.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 0.5 m/s now, 0.5 m/s 1 s ago; turn signal off
+     lane: mapped; 4 lane(s) in the ego direction; in an intersection
+     stop line ahead: stop-sign line 2 m ahead
+     crosswalk ahead: 6 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
-     nearby: car 1 m ahead, -10.7 m lateral, stationary (0.0 m/s)
-     nearby: pedestrian 7 m ahead, +10.0 m lateral, crossing to the left (1.0 m/s)
-     nearby: pedestrian 11 m ahead, -9.5 m lateral, stationary (0.1 m/s)
+     nearby: car 1 m ahead, -10.7 m lat., stationary (0.0 m/s)
+     nearby: pedestrian 7 m ahead, +10.0 m lat., crossing to the left (1.0 m/s)
+     nearby: pedestrian 11 m ahead, -9.5 m lat., stationary (0.1 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Stop for static constraints; lat = Lane keeping & centering
-  trace: Stop and hold, keeping the lane with no lead vehicle in the path; the reason
-         (signal, sign or queue) is not in the annotations.
-  [future] min / end speed 0.0 / 5.6 m/s, heading +29 deg, end x 14 m y +2.8 m
+     not observable: traffic-light state
+  driving decision: lon = Stop for static constraints; lat = Turn left
+  trace: Stop, then proceed, turning left at the stop-sign stop line 2 m ahead.
+  [future] min / end speed 0.0 / 5.6 m/s, heading +29 deg, end x 14 m y +2.8 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #08  scene-0536  sample af3104d17d2d4b4b967cdf09594376b8
      CAM_FRONT t0: n008-2018-08-30-15-52-26-0400__CAM_FRONT__1535659271112404.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 0.0 m/s now, 0.0 m/s 1 s ago; turn signal off
+     lane: mapped; 6 lane(s) in the ego direction; not in an intersection
+     stop line ahead: traffic-light line 4 m ahead
+     crosswalk ahead: 9 m
      lead in path: none within 40 m
-     yield cand.: car 21 m ahead, -1.1 m lateral, crossing to the left (6.6 m/s)
-     nearby: car 34 m ahead, +7.4 m lateral, stationary (0.0 m/s)
+     yield cand.: none within 25 m
+     nearby: car 21 m ahead, -1.1 m lat., crossing to the left (6.6 m/s)
+     nearby: car 34 m ahead, +7.4 m lat., stationary (0.0 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Yield (agent right-of-way); lat = None
-  trace: Slow down and yield because the car 21 m ahead in the ego path is crossing to
-         the left and has right of way.
+     not observable: traffic-light state
+  driving decision: lon = Stop for static constraints; lat = None
+  trace: Stay stopped, then proceed at the traffic-light stop line 4 m ahead (light state
+         not annotated).
   [future] min / end speed 0.0 / 2.9 m/s, heading -2 deg, end x 3 m y -0.1 m
 
 -----------------------------------------------------------------------------------------
 #09  scene-0427  sample 5ebfb62d1fb24e1bb76d351d2f91aac7
      CAM_FRONT t0: n015-2018-10-08-15-52-24+0800__CAM_FRONT__1538985293762460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 3.9 m/s now, 4.9 m/s 1 s ago; turn signal off
-     lead in path: none within 40 m
-     yield cand.: pedestrian 19 m ahead, +3.0 m lateral, stationary (0.0 m/s)
-     nearby: pedestrian 1 m ahead, -9.3 m lateral, oncoming (1.1 m/s)
-     nearby: pedestrian 4 m ahead, -10.2 m lateral, oncoming (1.0 m/s)
-     nearby: pedestrian 15 m ahead, +3.9 m lateral, stationary (0.0 m/s)
+     lane: mapped; 2 lane(s) in the ego direction; not in an intersection
+     stop line ahead: crosswalk line 8 m ahead
+     crosswalk ahead: 16 m
+     lead in path: car 39 m ahead, -2.2 m lat., moving the same way (1.1 m/s)
+     yield cand.: none within 25 m
+     nearby: pedestrian 1 m ahead, -9.3 m lat., oncoming (1.1 m/s)
+     nearby: pedestrian 4 m ahead, -10.2 m lat., oncoming (1.0 m/s)
+     nearby: pedestrian 15 m ahead, +3.9 m lat., stationary (0.0 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Yield (agent right-of-way); lat = Lane keeping & centering
-  trace: Slow down and yield, keeping the lane because the pedestrian 19 m ahead in the
-         ego path is stationary and has right of way.
+     not observable: traffic-light state
+  driving decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  trace: Keep a safe gap, keeping the lane because the car 39 m ahead in the ego path is
+         moving the same way.
   [future] min / end speed 2.5 / 3.2 m/s, heading -3 deg, end x 17 m y -0.2 m
 
 -----------------------------------------------------------------------------------------
 #10  scene-0297  sample 335420fac77b4caa94f47b58e82cb8cc
      CAM_FRONT t0: n008-2018-08-31-11-19-57-0400__CAM_FRONT__1535729246012404.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 0.0 m/s now, 0.0 m/s 1 s ago; turn signal off
-     lead in path: car 17 m ahead, +0.4 m lateral, stationary (0.5 m/s)
-     yield cand.: pedestrian 7 m ahead, -0.5 m lateral, crossing to the right (1.5 m/s)
-     nearby: pedestrian 8 m ahead, +0.7 m lateral, crossing to the right (1.6 m/s)
-     nearby: pedestrian 8 m ahead, +5.7 m lateral, crossing to the left (1.6 m/s)
+     lane: mapped; 2 lane(s) in the ego direction; in an intersection
+     stop line ahead: traffic-light line 15 m ahead
+     crosswalk ahead: 8 m
+     lead in path: none within 40 m
+     yield cand.: pedestrian 7 m ahead, -0.5 m lat., crossing to the right (1.5 m/s)
+     nearby: pedestrian 8 m ahead, +0.7 m lat., crossing to the right (1.6 m/s)
+     nearby: pedestrian 8 m ahead, +5.7 m lat., crossing to the left (1.6 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Yield (agent right-of-way); lat = None
-  trace: Slow down and yield because the pedestrian 7 m ahead in the ego path is crossing
-         to the right and has right of way.
-  [future] min / end speed 0.0 / 2.6 m/s, heading -18 deg, end x 4 m y -0.8 m
+  trace: Slow down and yield, then proceed because the pedestrian 7 m ahead in the ego
+         path is crossing to the right and has right of way.
+  [future] min / end speed 0.0 / 2.6 m/s, heading -18 deg, end x 4 m y -0.8 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #11  scene-0032  sample c7ef305389fd4fa2b19ab0f7447d9206
      CAM_FRONT t0: n015-2018-07-18-11-50-34+0800__CAM_FRONT__1531886246012465.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 3.9 m/s now, 4.7 m/s 1 s ago; turn signal left
+     lane: mapped; 2 lane(s) in the ego direction; not in an intersection
+     stop line ahead: crosswalk line 1 m ahead
+     crosswalk ahead: 9 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
      construction zone: no
      routing [privileged]: turn left
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Speed adaptation (road events); lat = Turn left
-  trace: Slow down, turning left for the upcoming left turn.
-  [future] min / end speed 2.8 / 3.7 m/s, heading +75 deg, end x 13 m y +10.1 m
+  trace: Slow down, turning left for the left turn at the intersection.
+  [future] min / end speed 2.8 / 3.7 m/s, heading +75 deg, end x 13 m y +10.1 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #12  scene-0863  sample ceb656519e244f16968c55c6c822df72
      CAM_FRONT t0: n015-2018-10-08-16-03-24+0800__CAM_FRONT__1538986219262460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 3.9 m/s now, 3.9 m/s 1 s ago; turn signal right
+     lane: mapped; 3 lane(s) in the ego direction; not in an intersection
+     stop line ahead: turn line 6 m ahead
+     crosswalk ahead: none within 25 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
-     nearby: pedestrian 21 m ahead, +11.9 m lateral, crossing to the left (1.6 m/s)
+     nearby: pedestrian 21 m ahead, +11.9 m lat., crossing to the left (1.6 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Speed adaptation (road events); lat = Turn right
-  trace: Slow down, turning right for the upcoming right turn.
-  [future] min / end speed 3.0 / 4.4 m/s, heading -93 deg, end x 13 m y -9.4 m
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 3.0 / 4.4 m/s, heading -93 deg, end x 13 m y -9.4 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #13  scene-0064  sample af1fe4ae71c441d1a4744097f622c449
      CAM_FRONT t0: n008-2018-08-01-15-52-19-0400__CAM_FRONT__1533153302662404.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 6.7 m/s now, 6.7 m/s 1 s ago; turn signal off
+     lane: mapped; 1 lane(s) in the ego direction; not in an intersection
+     stop line ahead: crosswalk line 28 m ahead
+     crosswalk ahead: none within 25 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
-     nearby: car 4 m ahead, +3.5 m lateral, oncoming (5.6 m/s)
-     nearby: car 3 m ahead, -6.9 m lateral, stationary (0.1 m/s)
-     nearby: truck 6 m ahead, -7.0 m lateral, stationary (0.1 m/s)
+     nearby: car 4 m ahead, +3.5 m lat., oncoming (5.6 m/s)
+     nearby: car 3 m ahead, -6.9 m lat., stationary (0.1 m/s)
+     nearby: truck 6 m ahead, -7.0 m lat., stationary (0.1 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Set speed tracking; lat = Lane keeping & centering
-  trace: Proceed at the target speed, keeping the lane because the path ahead is clear.
-  [future] min / end speed 5.6 / 6.2 m/s, heading -1 deg, end x 36 m y -0.6 m
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 5.6 / 6.2 m/s, heading -1 deg, end x 36 m y -0.6 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #14  scene-0429  sample 6c787afb6d1e45198046de684fac9f4a
      CAM_FRONT t0: n015-2018-10-08-15-52-24+0800__CAM_FRONT__1538985446662460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 7.5 m/s now, 7.5 m/s 1 s ago; turn signal off
+     lane: mapped; 1 lane(s) in the ego direction; not in an intersection
+     stop line ahead: none within 40 m
+     crosswalk ahead: none within 25 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
-     nearby: car 4 m ahead, +7.4 m lateral, stationary (0.1 m/s)
-     nearby: car 7 m ahead, +7.6 m lateral, stationary (0.0 m/s)
-     nearby: truck 9 m ahead, +6.9 m lateral, stationary (0.0 m/s)
+     nearby: car 4 m ahead, +7.4 m lat., stationary (0.1 m/s)
+     nearby: car 7 m ahead, +7.6 m lat., stationary (0.0 m/s)
+     nearby: truck 9 m ahead, +6.9 m lat., stationary (0.0 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Set speed tracking; lat = Lane keeping & centering
-  trace: Proceed at the target speed, keeping the lane because the path ahead is clear.
-  [future] min / end speed 5.6 / 6.0 m/s, heading -26 deg, end x 40 m y -2.7 m
+     not observable: traffic-light state
+  driving decision: lon = Set speed tracking; lat = Turn right
+  trace: Keep the current speed, turning right because the lane ahead is clear.
+  [future] min / end speed 5.6 / 6.0 m/s, heading -26 deg, end x 40 m y -2.7 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #15  scene-0675  sample e24db7f9089b4618b43dbd3c05b88bf7
      CAM_FRONT t0: n008-2018-08-28-16-16-48-0400__CAM_FRONT__1535487949012404.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 2.1 m/s now, 2.1 m/s 1 s ago; turn signal left
-     lead in path: none within 40 m
-     yield cand.: pedestrian 13 m ahead, -1.7 m lateral, moving the same way (2.1 m/s)
-     nearby: construction vehicle 2 m ahead, -3.7 m lateral, stationary (0.0 m/s)
-     nearby: car 9 m ahead, +3.1 m lateral, moving the same way (10.0 m/s)
+     lane: mapped; 2 lane(s) in the ego direction; not in an intersection
+     stop line ahead: none within 40 m
+     crosswalk ahead: none within 25 m
+     lead in path: pedestrian 13 m ahead, -1.7 m lat., moving the same way (2.1 m/s)
+     yield cand.: none within 25 m
+     nearby: construction vehicle 2 m ahead, -3.7 m lat., stationary (0.0 m/s)
+     nearby: car 9 m ahead, +3.1 m lat., moving the same way (10.0 m/s)
      construction zone: yes
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Set speed tracking; lat = Lane keeping & centering
-  trace: Proceed at the target speed, keeping the lane, passing the construction zone.
+     not observable: traffic-light state
+  driving decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  trace: Keep a safe gap, keeping the lane because the pedestrian 13 m ahead in the ego
+         path is moving the same way.
   [future] min / end speed 2.0 / 2.2 m/s, heading +0 deg, end x 13 m y -0.2 m
 
 -----------------------------------------------------------------------------------------
 #16  scene-0021  sample c0cc6b799a424a3cbad4bcf8a6920359
      CAM_FRONT t0: n015-2018-07-18-11-50-34+0800__CAM_FRONT__1531885991012460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 1.5 m/s now, 0.5 m/s 1 s ago; turn signal off
+     lane: mapped; 2 lane(s) in the ego direction; in an intersection
+     stop line ahead: turn line 7 m ahead
+     crosswalk ahead: none within 25 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
-     nearby: pedestrian 0 m ahead, -11.3 m lateral, oncoming (1.1 m/s)
-     nearby: pedestrian 27 m ahead, -7.7 m lateral, crossing to the right (1.1 m/s)
-     nearby: pedestrian 27 m ahead, -8.6 m lateral, crossing to the right (1.3 m/s)
+     nearby: pedestrian 0 m ahead, -11.3 m lat., oncoming (1.1 m/s)
+     nearby: pedestrian 27 m ahead, -7.7 m lat., crossing to the right (1.1 m/s)
+     nearby: pedestrian 27 m ahead, -8.6 m lat., crossing to the right (1.3 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Set speed tracking; lat = Turn right
-  trace: Proceed at the target speed, turning right because the path ahead is clear.
-  [future] min / end speed 1.5 / 4.7 m/s, heading -61 deg, end x 13 m y -5.6 m
+  trace: Keep the current speed, turning right because the lane ahead is clear.
+  [future] min / end speed 1.6 / 4.7 m/s, heading -61 deg, end x 13 m y -5.6 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #17  scene-0847  sample 38daaf6bed0a48f992cd33a5c6d1c834
      CAM_FRONT t0: n015-2018-10-08-16-03-24+0800__CAM_FRONT__1538985822362460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 8.9 m/s now, 9.3 m/s 1 s ago; turn signal off
+     lane: mapped; 1 lane(s) in the ego direction; not in an intersection
+     stop line ahead: none within 40 m
+     crosswalk ahead: none within 25 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
      construction zone: no
      routing [privileged]: turn right
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Set speed tracking; lat = Turn right
-  trace: Proceed at the target speed, turning right because the path ahead is clear.
+  trace: Keep the current speed, turning right because the lane ahead is clear.
   [future] min / end speed 8.9 / 9.6 m/s, heading -59 deg, end x 48 m y -26.3 m
 
 -----------------------------------------------------------------------------------------
 #18  scene-0027  sample e343351ade314036874d6097258ba8a3
      CAM_FRONT t0: n015-2018-07-18-11-50-34+0800__CAM_FRONT__1531886127412468.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 5.1 m/s now, 5.2 m/s 1 s ago; turn signal right
+     lane: mapped; 2 lane(s) in the ego direction; in an intersection
+     stop line ahead: none within 40 m
+     crosswalk ahead: 1 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
      construction zone: no
      routing [privileged]: turn right
-     not observable: traffic-light state, signs, lane lines
+     not observable: traffic-light state
   driving decision: lon = Set speed tracking; lat = Turn right
-  trace: Proceed at the target speed, turning right because the path ahead is clear.
-  [future] min / end speed 5.1 / 8.1 m/s, heading -31 deg, end x 38 m y -19.8 m
+  trace: Keep the current speed, turning right because the lane ahead is clear.
+  [future] min / end speed 5.1 / 8.1 m/s, heading -31 deg, end x 38 m y -19.8 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #19  scene-1055  sample 1ed620c1010e421ba50d795704a6473d
      CAM_FRONT t0: n015-2018-11-21-19-11-29+0800__CAM_FRONT__1542799041412460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 7.3 m/s now, 6.4 m/s 1 s ago; turn signal off
+     lane: mapped; 2 lane(s) in the ego direction; in an intersection
+     stop line ahead: none within 40 m
+     crosswalk ahead: none within 25 m
      lead in path: none within 40 m
      yield cand.: none within 25 m
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Set speed tracking; lat = Lane change right
-  trace: Proceed at the target speed, changing lanes to the right because the path ahead
-         is clear.
-  [future] min / end speed 7.3 / 8.6 m/s, heading -4 deg, end x 50 m y -3.0 m
+     not observable: traffic-light state
+  driving decision: lon = Set speed tracking; lat = Lane keeping & centering
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 7.4 / 8.6 m/s, heading -4 deg, end x 50 m y -3.0 m, via intersection
 
 -----------------------------------------------------------------------------------------
 #20  scene-0382  sample fa7c4477ddd24540aadb92c7be7e5a1d
      CAM_FRONT t0: n015-2018-08-03-15-00-36+0800__CAM_FRONT__1533279703862460.jpg
-  critical components (history only):
+  critical components (history + static map):
      ego: 5.0 m/s now, 5.1 m/s 1 s ago; turn signal off
-     lead in path: car 31 m ahead, +1.2 m lateral, stationary (0.0 m/s)
+     lane: mapped; 1 lane(s) in the ego direction; not in an intersection
+     stop line ahead: none within 40 m
+     crosswalk ahead: none within 25 m
+     lead in path: none within 40 m
      yield cand.: none within 25 m
-     nearby: pedestrian 4 m ahead, +3.2 m lateral, oncoming (1.5 m/s)
-     nearby: car 2 m ahead, +5.9 m lateral, stationary (0.0 m/s)
-     nearby: car 4 m ahead, +6.1 m lateral, stationary (0.0 m/s)
+     nearby: pedestrian 4 m ahead, +3.2 m lat., oncoming (1.5 m/s)
+     nearby: car 2 m ahead, +5.9 m lat., stationary (0.0 m/s)
+     nearby: car 4 m ahead, +6.1 m lat., stationary (0.0 m/s)
      construction zone: no
      routing [privileged]: go straight
-     not observable: traffic-light state, signs, lane lines
-  driving decision: lon = Set speed tracking; lat = Lane change right
-  trace: Proceed at the target speed, changing lanes to the right because the path ahead
-         is clear.
-  [future] min / end speed 4.5 / 4.5 m/s, heading -11 deg, end x 30 m y -2.9 m
+     not observable: traffic-light state
+  driving decision: lon = Set speed tracking; lat = Lane keeping & centering
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 4.5 / 4.5 m/s, heading -11 deg, end x 30 m y -2.9 m, via intersection

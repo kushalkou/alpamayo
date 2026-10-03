@@ -55,8 +55,8 @@ R2.3 FLOW-MATCHING EXPERT on frozen A3 (our Table 12 analog; Alpamayo/ar1_r23_ev
 =========================================================================================
 Build (ar1/expert.py, kv_a3.py, train_expert.py). Option A as AR1: 28 expert layers, one
   per VLM layer. Each layer attends over [frozen A3 per-layer KV-cache (stop-grad) |
-  its 12 action tokens]. 28 q / 4 kv heads, head dim 128, hidden 512, SwiGLU 1,536, RoPE at
-  positions ctx_len + i (verified against the cached keys: layer-0 max |diff| 5.3e-3 on
+  its 12 action tokens]. 28 q / 4 kv heads, head dim 128, hidden 512, SwiGLU 1,536, RoPE
+  at positions ctx_len + i (verified against the cached keys: layer-0 max |diff| 5.3e-3 on
   |k| <= 171). 184.2M params, fp32. Conditional flow matching on the Gaussian OT path,
   t ~ U(0,1). Inference: 10 Euler steps (dt = 0.1); unicycle rollout from v0_can (the
   token decoder's rollout).
@@ -72,7 +72,7 @@ Cost actuals: KV precompute 67 s on 1 GPU; training 0.41 GPU-h (1 V100); 6-sampl
   inference for holdout + val 4.0 GPU-min. In total about 0.5 GPU-h, vs about 6-9 GPU-h
   for a no-camera token run (V8a 6 GPU-h, A0 8.7 GPU-h).
 Official val, ALL 5,119 (EXCL. first frames n=4,979 in the txt). L2 in m, Col in %:
-                        L2@3s NoAvg  L2@3s TemAvg  Col% 3s No/Tem  ADE@6s mean med p95  FDE6
+                        L2@3s NoAvg L2@3s TemAvg Col% 3s No/Tem ADE@6s mean med p95 FDE6
   KIN                       2.178      0.998     1.39 / 0.57   3.161 2.240 8.199  7.750
   Ego-MLP + cmd s42 [P]     1.633      0.777     1.78 / 0.87   2.434 1.675 6.178  6.067
   A3 token decoder [P]      1.894      0.877     1.64 / 0.64   2.896 2.003 7.853  7.420
@@ -132,4 +132,55 @@ Added to the CoC template plan (implemented in v2, R2.6):
 =========================================================================================
 R2.6 CoC TEMPLATES v2 (map-aware) -- AR1_COC_EXAMPLES.txt, same 20 samples as v1
 =========================================================================================
-PENDING
+Generator ar1/coc_template.py v2 (rules in its header). New map components: ego lane, lane
+count, intersection, stop line ahead with type, crosswalk ahead. In-path now uses the
+lane graph. Leads may be pedestrians or cyclists moving the same way. A pedestrian on the
+crosswalk ahead can be a yield candidate. Lane change = the final lane is not reachable
+in the lane graph. Turn = more than 30 deg, or more than 20 deg through an intersection.
+Passing = lane change around a slower or stationary lead. Multi-phase: "..., then
+proceed".
+The four flagged examples:
+  #07  FIXED. v1 "stop and hold, keeping the lane" -> v2 "Stop, then proceed, turning
+       left at the stop-sign stop line 2 m ahead" (29 deg through an intersection is now
+       a turn; the stop is explained by the mapped stop sign).
+  #09  FIXED. The stationary pedestrian 3.9 m to the left is no longer in path (not on
+       the ego's lanes). v2 = lead following behind the car 39 m ahead that is moving
+       1.1 m/s.
+  #15  FIXED. The pedestrian 13 m ahead, moving the same way, is now the lead: "Keep a
+       safe gap ... because the pedestrian ... is moving the same way" (construction
+       zone still listed).
+  #20  CHANGED, NEEDS AN IMAGE CHECK. The map puts the stationary car 31 m ahead off the
+       ego's lanes, and the -2.9 m end offset follows the lane graph through the
+       intersection. So v2 says lane keeping at set speed, not "lane change to pass". If
+       the image shows a real pass, the lane-graph test is wrong here.
+The other 16 (one line each; "same" = same decision and cause as v1):
+  #01  same decision; now notes "in an intersection", 4 lanes.
+  #02  same (stay stopped behind the stationary car); now lists the turn stop line and
+       crosswalk.
+  #03  v1 lead = car 38 m at +2.6 m lateral -> v2 no lead (off the ego lanes); set
+       speed. The traffic-light line 6 m ahead is listed.
+  #04  same (lead following).
+  #05  same decision; the stop is now explained: crosswalk stop line 8 m ahead.
+  #06  CHANGED, DOUBTFUL: v1 "stay stopped, cause unknown" -> v2 "yield, then proceed"
+       to an oncoming pedestrian 16 m ahead at -7.0 m lateral. That pedestrian is
+       within 1.6 m of a successor lane (probably a turn connector), so it counts as in
+       path.
+  #07  see above.
+  #08  v1 yield to a crossing car 21 m ahead -> v2 "stay stopped, then proceed at the
+       traffic-light stop line 4 m ahead". The crossing car is no longer on the ego
+       lanes; a red light is the likely cause, but its state is not annotated.
+  #10  same (yield to the crossing pedestrian); adds "then proceed".
+  #11  same; adds "at the intersection".
+  #12  same; adds "at the intersection".
+  #13  same.
+  #14  CHANGED, DOUBTFUL: v1 lane keeping -> v2 "turning right" (-26 deg via an
+       intersection, 40 m forward). This may be a bend, not a turn; the 20 deg
+       intersection rule may be too loose.
+  #16  same (turn right).
+  #17  same.
+  #18  same.
+  #19  v1 lane change right -> v2 lane keeping: the -3.0 m offset stays in the lane graph
+       through the intersection (as #20).
+Count: 3 of 4 flagged fixed, #20 needs a human image check. Two new doubtful labels
+(#06, #14) come from the successor-lane in-path test and the 20 deg intersection rule.
+Decision distribution on all splits: see Alpamayo/ar1_r26_coc_all.txt (CPU job).

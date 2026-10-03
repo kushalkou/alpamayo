@@ -1,47 +1,57 @@
-"""ar1/coc_template.py -- R1.4 PROTOTYPE: template Chain-of-Causation (CoC) traces (CPU).
+"""ar1/coc_template.py -- R2.6: template Chain-of-Causation (CoC) traces, v2 (map-aware).
 
-Follows AR1 Tables 1-3 in structure: (1) driving decision, closed set (Table 1),
-labelled from the FUTURE (as AR1 labels the decision from the realised behaviour);
-(2) critical components (Table 2) from the HISTORY WINDOW ONLY (keyframe annotations at
-t0 .. t0-2.0 s, CAN <= t0); (3) a composed one-sentence trace linking them.
-Only for human review in phase R1 -- no training data is written.
+v1 (R1.4, commit 62d63cc) had no map. v2 adds the nuScenes map expansion v1.3 (lanes,
+lane connectors, stop lines with their type, crosswalks, intersection road segments).
+Structure follows AR1 Tables 1-3: (1) driving decision, closed set (Table 1), labelled
+from the FUTURE 6 s; (2) critical components (Table 2) from the HISTORY WINDOW ONLY
+(keyframe annotations t0 .. t0-1 s, CAN <= t0) plus the static map (a prior, not
+future information); (3) one composed trace. For human review only; writes no training
+data.
 
-Critical components (all causal):
-  ego        speed now (CAN <= t0) and 1.0 s ago (2 Hz poses; records.ego_state_w1),
-             turn-signal state (CAN vehicle_monitor, last message <= t0)
-  objects    annotations at t0 with visibility >= 40% and >= 1 lidar point; position in
-             the t0 ego frame (x forward, y left); velocity = displacement from the same
-             instance's annotation 1.0 s earlier (0.5 s if that is missing); motion
-             status moving / stationary (0.5 m/s). nuScenes attribute labels
-             (moving / parked) are NOT used: they are annotated with the whole clip in
-             view.
-  in-path    corridor along the ego's CURRENT curvature (CAN yaw rate / speed at t0):
-             0 < x < 50 m, |y - k x^2 / 2| - w_obj / 2 < 1.5 m; nearest = lead.
-  construction  >= 3 cones / barriers within 30 m ahead, |y| < 6 m
-  routing    VAD command (left / right / straight) -- PRIVILEGED (derived from the GT
-             future); kept only as a placeholder for a non-privileged route.
-  NOT AVAILABLE in nuScenes (left out, see R1.4 plan): traffic-light state, stop /
-  yield signs and lines, lane count / line types / lane membership (the map expansion
-  is not on disk), road grade / speed bumps, weather from sensors.
-Driving decision (future, 6 s; meta-actions from ar1/meta_actions.py at 10 Hz):
-  lon  Yield               decel or stop ahead AND a VRU in path within 25 m (or a
-                           crossing / oncoming vehicle in path within 25 m)
-       Lead following      in-path vehicle (stationary or same direction) < 40 m AND (decel / stop ahead, or the
-                           lead is moving with |dv| < 2 m/s, or both are stationary)
-       Stop (static)       ego stops ahead, or stays stopped, with no in-path lead
-       Speed adaptation    decel ahead and heading change > 30 deg (slowing for a turn)
-       Set speed tracking  otherwise
-       (gap-searching, acceleration for passing: not derivable without lanes; never
-       emitted)
-  lat  Turn L/R            heading change > 30 deg over the available future
-       Lane change L/R     final lateral offset 2.5-5 m, heading change < 15 deg
-       None                ego stationary for the whole window
-       Lane keeping        otherwise
-       (merge / split, nudges, pull-over, abort: need lane geometry; never emitted)
-Output: AR1_COC_EXAMPLES.txt (20 traces, train split, stratified, seed 0) and the
-decision distribution per split to stdout.
+Map helpers (all at t0 from the ego pose):
+  ego lane    lane / lane connector within 3 m whose arcline heading is within 45 deg
+              of the ego heading, nearest by lateral distance
+  path lanes  ego lane + successors (outgoing graph) to depth 3 = every branch the ego
+              could take (the chosen branch would need the route, which is privileged)
+  in path     object ahead (0 < x < 50 m) within 1.6 m + half its width of the arcline
+              of a path lane. Replaces v1's curvature corridor.
+  lanes here  lanes / connectors within 8 m, heading within 30 deg of the ego
+  stop line   nearest stop line ahead (0 < x < 40 m, |y| < 6 m) with its type
+              (STOP_SIGN, TRAFFIC_LIGHT, PED_CROSSING, YIELD, TURN_STOP)
+  crosswalk   nearest crosswalk centroid ahead (0 < x < 25 m, |y| < 8 m)
+  intersection  the ego, or a point on its future path, lies on an intersection road
+              segment (future use is only for the decision, never for the components)
+Objects: annotations at t0, visibility >= 40%, >= 1 lidar point; velocity from the same
+  instance 1.0 s (else 0.5 s) earlier; moving if speed > 0.5 m/s; relative motion from
+  the velocity angle in the ego frame. nuScenes moving / parked attributes are NOT used.
+Leads / yield candidates:
+  lead     nearest in-path object that is stationary (vehicles only) or moving the same
+           way (any class, so a pedestrian or cyclist ahead in the lane can be a lead)
+  yield    nearest in-path pedestrian / cyclist that is crossing, oncoming or
+           stationary, or in-path vehicle that is crossing / oncoming, within 25 m;
+           else a pedestrian standing on the crosswalk ahead within 25 m
+Decision (future; meta-actions from ar1/meta_actions.py):
+  lat  Turn L/R        heading change > 30 deg, or > 20 deg through an intersection
+       Lane change L/R final lane not reachable from the ego lane (depth 4), heading
+                       change < 30 deg, lateral offset > 2 m
+       None            ego stationary for the whole window
+       Lane keeping    otherwise
+  lon  Yield           decel / stop ahead and a yield candidate
+       Passing         lane change with a slower or stationary in-path lead
+                       (Acceleration for passing / overtaking if the ego speeds up,
+                       else set speed with the lead as the stated cause of the change)
+       Lead following  lead within 40 m and (decel / stop ahead, |dv| < 2 m/s, or both
+                       stationary)
+       Stop (static)   ego stops ahead or stays stopped; cause = stop line type /
+                       crosswalk / unknown
+       Speed adaptation decel ahead and a turn
+       Set speed       otherwise
+  Multi-phase: if the ego stops and later moves above 1 m/s, the trace says
+  "..., then proceed".
+Output: AR1_COC_EXAMPLES.txt -- the SAME 20 samples as v1 (tokens from commit 62d63cc)
+for a direct comparison. --all also prints the decision distribution per split.
 """
-import sys, json, math, pickle, bisect, collections, textwrap
+import sys, json, math, pickle, bisect, collections, textwrap, subprocess
 import numpy as np
 sys.path.insert(0, '/home/dgx1user/Alpamayo-Kushal/Alpamayo/code')
 sys.path.insert(0, '/home/dgx1user/Alpamayo-Kushal/Alpamayo/code/w1')
@@ -51,6 +61,13 @@ ROOT = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/nuscenes'
 DATA = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/data'
 OUT = '/home/dgx1user/Alpamayo-Kushal/AR1_COC_EXAMPLES.txt'
 CMD = {0: 'turn right', 1: 'turn left', 2: 'go straight'}
+STOP_T = {'STOP_SIGN': 'stop-sign', 'TRAFFIC_LIGHT': 'traffic-light', 'PED_CROSSING': 'crosswalk',
+          'YIELD': 'yield', 'TURN_STOP': 'turn'}
+VRU = ('pedestrian', 'bicycle')
+
+
+def wrap(a):
+    return math.atan2(math.sin(a), math.cos(a))
 
 
 def yaw_of(q):
@@ -59,7 +76,6 @@ def yaw_of(q):
 
 
 def to_ego(p, e):
-    """global xy -> t0 ego frame (x forward, y left); e = (x, y, yaw)."""
     dx, dy = p[0] - e[0], p[1] - e[1]
     c, s = math.cos(e[2]), math.sin(e[2])
     return dx * c + dy * s, -dx * s + dy * c
@@ -74,24 +90,81 @@ def kind(cat):
     return None
 
 
+class Map:
+    def __init__(self, name):
+        from nuscenes.map_expansion.map_api import NuScenesMap
+        from nuscenes.map_expansion import arcline_path_utils as ap
+        self.m = NuScenesMap(dataroot=ROOT, map_name=name); self.ap = ap; self._arc = {}
+        self.inter = {r['token'] for r in self.m.road_segment if r['is_intersection']}
+
+    def arc(self, tok):
+        if tok not in self._arc:
+            self._arc[tok] = self.m.get_arcline_path(tok)
+        return self._arc[tok]
+
+    def proj(self, tok, x, y):
+        """(lateral distance, lane heading at the projection)."""
+        p, _ = self.ap.project_pose_to_lane((x, y, 0.0), self.arc(tok))
+        return math.hypot(p[0] - x, p[1] - y), p[2]
+
+    def lane_at(self, x, y, yaw, r=3.0, dh=math.pi / 4):
+        best = None
+        for tok in sum(self.m.get_records_in_radius(x, y, r, ['lane', 'lane_connector']).values(), []):
+            d, h = self.proj(tok, x, y)
+            if abs(wrap(h - yaw)) < dh and (best is None or d < best[0]):
+                best = (d, tok)
+        return best[1] if best else None
+
+    def succ(self, tok, depth):
+        out, front = {tok}, [tok]
+        for _ in range(depth):
+            front = [o for t in front for o in self.m.get_outgoing_lane_ids(t) if o not in out]
+            out.update(front)
+        return out
+
+    def lanes_here(self, x, y, yaw):
+        n = 0
+        for tok in sum(self.m.get_records_in_radius(x, y, 8, ['lane', 'lane_connector']).values(), []):
+            d, h = self.proj(tok, x, y)
+            n += int(d < 8 and abs(wrap(h - yaw)) < math.pi / 6)
+        return n
+
+    def on_intersection(self, x, y):
+        return self.m.record_on_point(x, y, 'road_segment') in self.inter
+
+    def ahead(self, layer, e, xmax, ymax):
+        best = None
+        for tok in self.m.get_records_in_radius(e[0], e[1], xmax + 10, [layer])[layer]:
+            rec = self.m.get(layer, tok)
+            poly = self.m.extract_polygon(rec['polygon_token'])
+            x, y = to_ego((poly.centroid.x, poly.centroid.y), e)
+            if 0 < x < xmax and abs(y) < ymax and (best is None or x < best[0]):
+                best = (x, y, rec, poly)
+        return best
+
+
 def load():
     J = lambda n: json.load(open(f'{ROOT}/v1.0-trainval/{n}.json'))
     cat = {c['token']: c['name'] for c in J('category')}
     inst = {i['token']: cat[i['category_token']] for i in J('instance')}
     S = {s['token']: s['timestamp'] for s in J('sample')}
+    logs = {l['token']: l['location'] for l in J('log')}
+    loc = {s['name']: logs[s['log_token']] for s in J('scene')}
     print('loading sample_annotation.json ...', flush=True)
     A = {a['token']: a for a in J('sample_annotation')}
     by_s = collections.defaultdict(list)
     for a in A.values():
         by_s[a['sample_token']].append(a['token'])
-    return inst, S, A, by_s
+    return inst, S, A, by_s, loc
 
 
-def objects(r, inst, S, A, by_s, k_path):
-    e = (r['lidar_ep0']['translation'][0], r['lidar_ep0']['translation'][1],
-         yaw_of(r['lidar_ep0']['rotation']))
-    t0 = S[r['sample_token']]
-    out = []
+def ego_pose(r):
+    return (r['lidar_ep0']['translation'][0], r['lidar_ep0']['translation'][1],
+            yaw_of(r['lidar_ep0']['rotation']))
+
+
+def objects(r, inst, S, A, by_s, M, path):
+    e = ego_pose(r); t0 = S[r['sample_token']]; out = []
     for tok in by_s[r['sample_token']]:
         a = A[tok]
         kd = kind(inst[a['instance_token']])
@@ -99,26 +172,26 @@ def objects(r, inst, S, A, by_s, k_path):
             continue
         x, y = to_ego(a['translation'], e)
         prev, p = None, a
-        for _ in range(2):                      # walk back up to 1.0 s
+        for _ in range(2):
             if not p['prev']:
                 break
             p = A[p['prev']]
             if (t0 - S[p['sample_token']]) / 1e6 <= 1.05:
                 prev = p
-        vx = vy = None
+        sp = vl = None
         if prev is not None:
             dt = (t0 - S[prev['sample_token']]) / 1e6
             vx = (a['translation'][0] - prev['translation'][0]) / dt
             vy = (a['translation'][1] - prev['translation'][1]) / dt
-        sp = math.hypot(vx, vy) if vx is not None else None
-        vl = None
-        if sp is not None:                      # velocity in the ego frame
-            c, s = math.cos(e[2]), math.sin(e[2])
+            sp = math.hypot(vx, vy); c, s = math.cos(e[2]), math.sin(e[2])
             vl = (vx * c + vy * s, -vx * s + vy * c)
-        yc = k_path * x * x / 2
-        inp = 0 < x < 50 and abs(y - yc) - a['size'][0] / 2 < 1.5
+        inp = False
+        if 0 < x < 50 and path:
+            gx, gy = a['translation'][:2]
+            near = sum(M.m.get_records_in_radius(gx, gy, 4, ['lane', 'lane_connector']).values(), [])
+            inp = any(M.proj(t, gx, gy)[0] < 1.6 + a['size'][0] / 2 for t in near if t in path)
         out.append({'kind': kd, 'x': x, 'y': y, 'speed': sp, 'vel': vl, 'in_path': inp,
-                    'moving': sp is not None and sp > 0.5})
+                    'moving': sp is not None and sp > 0.5, 'g': a['translation'][:2]})
     return out
 
 
@@ -131,111 +204,132 @@ def rel_dir(o):
     return 'crossing ' + ('to the left' if ang > 0 else 'to the right')
 
 
-def future(r, M):
-    """decision features from the GT future and the 10 Hz meta-actions."""
-    e = (r['lidar_ep0']['translation'][0], r['lidar_ep0']['translation'][1],
-         yaw_of(r['lidar_ep0']['rotation']))
-    fp = np.asarray(r['future_positions'])
+def future(r, Mt, M, lane0):
+    e = ego_pose(r)
+    fp = np.asarray(r['future_positions']); fy = np.asarray(r['future_yaws'])
     xf, yf = to_ego(fp[-1], e)
-    dpsi = math.degrees(math.atan2(math.sin(r['future_yaws'][-1] - e[2]),
-                                   math.cos(r['future_yaws'][-1] - e[2])))
-    lon = M['lon'][1:]; ok = lon >= 0
-    dec = np.isin(lon[:30], (2, 3)).mean() >= 0.3 if ok[:30].any() else False
+    dpsi = math.degrees(wrap(fy[-1] - e[2]))
+    lon = Mt['lon'][1:]; ok = lon >= 0; v = Mt['v'][1:]
+    dec = bool(np.isin(lon[:30], (2, 3)).mean() >= 0.3) if ok[:30].any() else False
     stop_f = bool((lon == 5).any())
     stay = bool((lon[ok] == 5).mean() > 0.5) if ok.any() else False
-    vmin = float(np.nanmin(M['v'])) if np.isfinite(M['v']).any() else float('nan')
-    vend = float(M['v'][np.where(np.isfinite(M['v']))[0][-1]]) if np.isfinite(M['v']).any() else float('nan')
+    go_after = False
+    if stop_f:
+        j = int(np.argmax(lon == 5))
+        go_after = bool(np.nanmax(np.r_[v[j:], -1]) > 1.0)
+    fin = v[np.isfinite(v)]
+    lane_f = M.lane_at(fp[-1][0], fp[-1][1], fy[-1]) if lane0 else None
+    lc = (lane0 is not None and lane_f is not None and lane_f not in M.succ(lane0, 4)
+          and abs(dpsi) < 30 and abs(yf) > 2.0)
+    inter = any(M.on_intersection(p[0], p[1]) for p in fp)
     return {'dpsi': dpsi, 'y_end': yf, 'x_end': xf, 'dec': dec, 'stop': stop_f, 'stay': stay,
-            'vmin': vmin, 'vend': vend, 'n_fut': len(fp)}
+            'go_after': go_after, 'vmin': float(fin.min()) if len(fin) else float('nan'),
+            'vend': float(fin[-1]) if len(fin) else float('nan'), 'lc': lc, 'inter': inter,
+            'speed_up': bool(len(fin) and fin[-1] > Mt['v'][0] + 0.5)}
 
 
-def decide(ego, objs, F):
+def decide(ego, objs, F, xw):
+    from shapely.geometry import Point
     v0 = ego['v0']
-    veh = [o for o in objs if o['in_path'] and o['kind'] not in ('pedestrian', 'bicycle', 'cone/barrier')
-           and o['x'] < 40]
-    lead = min((o for o in veh if rel_dir(o) in ('stationary', 'moving the same way')),
+    lead = min((o for o in objs if o['in_path'] and o['x'] < 40 and o['kind'] != 'cone/barrier' and
+                ((o['kind'] not in VRU and not o['moving']) or rel_dir(o) == 'moving the same way')),
                key=lambda o: o['x'], default=None)
-    vru = min((o for o in objs if o['in_path'] and o['kind'] in ('pedestrian', 'bicycle') and o['x'] < 25),
-              key=lambda o: o['x'], default=None)
-    if vru is None:                         # crossing / oncoming vehicle in the path
-        vru = min((o for o in veh if o is not lead and o['x'] < 25 and
-                   rel_dir(o) not in ('stationary', 'moving the same way')),
-                  key=lambda o: o['x'], default=None)
+    yc = min((o for o in objs if o['in_path'] and o['x'] < 25 and o is not lead and o['kind'] != 'cone/barrier'
+              and (o['kind'] in VRU or rel_dir(o) not in ('stationary', 'moving the same way'))),
+             key=lambda o: o['x'], default=None)
+    if yc is None and xw is not None:                       # pedestrian on the crosswalk ahead
+        yc = min((o for o in objs if o['kind'] == 'pedestrian' and 0 < o['x'] < 25 and
+                  xw[3].contains(Point(*o['g']))), key=lambda o: o['x'], default=None)
     slow = F['dec'] or F['stop']
-    if slow and vru is not None:
-        lon, cause = 'Yield (agent right-of-way)', vru
-    elif lead is not None and (slow or (lead['moving'] and lead['speed'] is not None
-                                        and abs(lead['speed'] - v0) < 2) or (v0 < 0.2 and not lead['moving'])):
-        lon, cause = 'Lead obstacle following', lead
-    elif F['stop'] or (v0 < 0.2 and F['stay']):
-        lon, cause = 'Stop for static constraints', None
-    elif F['dec'] and abs(F['dpsi']) > 30:
-        lon, cause = 'Speed adaptation (road events)', None
-    else:
-        lon, cause = 'Set speed tracking', None
-    if abs(F['dpsi']) > 30:
+    if abs(F['dpsi']) > 30 or (abs(F['dpsi']) > 20 and F['inter']):
         lat = 'Turn ' + ('left' if F['dpsi'] > 0 else 'right')
-    elif 2.5 <= abs(F['y_end']) <= 5 and abs(F['dpsi']) < 15:
+    elif F['lc']:
         lat = 'Lane change ' + ('left' if F['y_end'] > 0 else 'right')
     elif v0 < 0.2 and F['stay']:
         lat = 'None'
     else:
         lat = 'Lane keeping & centering'
-    return lon, lat, cause, lead, vru
+    slower = lead is not None and (not lead['moving'] or (lead['speed'] or 0) < v0 - 0.5)
+    if slow and yc is not None:
+        lon, cause = 'Yield (agent right-of-way)', yc
+    elif lat.startswith('Lane change') and slower:
+        lon = 'Acceleration for passing/overtaking' if F['speed_up'] else 'Set speed tracking'
+        cause = lead
+    elif lead is not None and (slow or (lead['moving'] and lead['speed'] is not None and abs(lead['speed'] - v0) < 2)
+                               or (v0 < 0.2 and not lead['moving'])):
+        lon, cause = 'Lead obstacle following', lead
+    elif F['stop'] or (v0 < 0.2 and F['stay']):
+        lon, cause = 'Stop for static constraints', None
+    elif F['dec'] and lat.startswith('Turn'):
+        lon, cause = 'Speed adaptation (road events)', None
+    else:
+        lon, cause = 'Set speed tracking', None
+    return lon, lat, cause, lead, yc
 
 
 def describe(o):
-    sp = f'{o["speed"]:.1f} m/s' if o['speed'] is not None else 'speed unknown (first frame)'
-    return f'{o["kind"]} {o["x"]:.0f} m ahead, {o["y"]:+.1f} m lateral, {rel_dir(o)} ({sp})'
+    sp = f'{o["speed"]:.1f} m/s' if o['speed'] is not None else 'speed unknown'
+    return f'{o["kind"]} {o["x"]:.0f} m ahead, {o["y"]:+.1f} m lat., {rel_dir(o)} ({sp})'
 
 
-def compose(lon, lat, cause, ego, objs, F, cmd, cons):
-    act = {'Yield (agent right-of-way)': 'slow down and yield',
-           'Lead obstacle following': 'keep a safe gap',
-           'Stop for static constraints': 'stop and hold',
-           'Speed adaptation (road events)': 'slow down',
-           'Set speed tracking': 'proceed at the target speed'}[lon]
-    if lon.startswith('Lead') and cause is not None and not cause['moving']:
-        act = 'stay stopped' if v0_of(ego) < 0.2 else ('stop behind it' if F['stop'] else 'slow down')
-    why = ''
-    if cause is not None:
+def compose(lon, lat, cause, ego, F, sl, xw, cons):
+    if lon.startswith('Yield'):
+        act = 'slow down and yield'
+    elif lon.startswith('Acceleration'):
+        act = 'speed up'
+    elif lon.startswith('Lead'):
+        act = ('stay stopped' if ego['v0'] < 0.2 else 'stop behind it' if F['stop'] else 'slow down') \
+            if not cause['moving'] else 'keep a safe gap'
+    elif lon.startswith('Stop'):
+        act = 'stay stopped' if ego['v0'] < 0.2 else 'stop'
+    elif lon.startswith('Speed'):
+        act = 'slow down'
+    else:
+        act = 'keep the current speed'
+    if F['stop'] and F['go_after'] and lon.startswith(('Stop', 'Yield', 'Lead')):
+        act += ', then proceed'
+    d = lat.split()[-1]
+    lt = {'None': '', 'Lane keeping & centering': ', keeping the lane'}.get(
+        lat, f', turning {d}' if lat.startswith('Turn') else f', changing lanes to the {d}')
+    if cause is not None and lat.startswith('Lane change') and not lon.startswith(('Yield', 'Lead')):
+        why = f' to pass the {cause["kind"]} {cause["x"]:.0f} m ahead, which is {rel_dir(cause)}'
+    elif cause is not None:
         why = f' because the {cause["kind"]} {cause["x"]:.0f} m ahead in the ego path is {rel_dir(cause)}'
         if lon.startswith('Yield'):
             why += ' and has right of way'
     elif lon.startswith('Stop'):
-        why = (' with no lead vehicle in the path; the reason (signal, sign or queue) is '
-               'not in the annotations')
+        if sl is not None:
+            why = f' at the {STOP_T.get(sl[2]["stop_line_type"], "marked")} stop line {sl[0]:.0f} m ahead'
+            if sl[2]['stop_line_type'] == 'TRAFFIC_LIGHT':
+                why += ' (light state not annotated)'
+        elif xw is not None:
+            why = f' before the crosswalk {xw[0]:.0f} m ahead'
+        else:
+            why = '; no lead, stop line or crosswalk explains it in the map or annotations'
     elif lon.startswith('Speed'):
-        why = f' for the upcoming {"left" if F["dpsi"] > 0 else "right"} turn'
+        why = f' for the {d} turn' + (' at the intersection' if F['inter'] else '')
     elif cons:
-        why = ', passing the construction zone'
+        why = ' through the construction zone'
     else:
-        why = ' because the path ahead is clear'
-    lt = {'None': '', 'Lane keeping & centering': ', keeping the lane'}.get(lat)
-    if lt is None:
-        d = lat.split()[-1]
-        lt = f', turning {d}' if lat.startswith('Turn') else f', changing lanes to the {d}'
+        why = ' because the lane ahead is clear'
     return f'{act[0].upper()}{act[1:]}{lt}{why}.'
 
 
-def v0_of(ego):
-    return ego['v0']
-
-
-def main():
-    inst, S, A, by_s = load()
-    M = pickle.load(open(f'{DATA}/ar1_meta.pkl', 'rb'))
+def build_rows(want=None):
+    inst, S, A, by_s, loc = load()
+    Mt = pickle.load(open(f'{DATA}/ar1_meta.pkl', 'rb'))
     W = {r['sample_token']: r for r in pickle.load(open(f'{DATA}/w1_data.pkl', 'rb'))['records']}
     V0 = pickle.load(open(f'{DATA}/w1_v0.pkl', 'rb'))
-    H = pickle.load(open(f'{DATA}/ar1_hist.pkl', 'rb'))
-    sig = {}
     from nuscenes.can_bus.can_bus_api import NuScenesCanBus
     can = NuScenesCanBus(dataroot=ROOT)
-    rows = {}
+    maps, sig, rows = {}, {}, {}
     for st, r in W.items():
-        if r['n_fut'] < 12:
+        if r['n_fut'] < 12 or (want is not None and st not in want):
             continue
-        sc = r['scene_name']
+        sc = r['scene_name']; mn = loc[sc]
+        if mn not in maps:
+            maps[mn] = Map(mn)
+        M = maps[mn]
         if sc not in sig:
             try:
                 m = can.get_messages(sc, 'vehicle_monitor')
@@ -246,65 +340,78 @@ def main():
         ts = 'unknown (no CAN)' if i < 0 else ('left' if m[i]['left_signal'] else
                                                'right' if m[i]['right_signal'] else 'off')
         e4 = records.ego_state_w1(r['past_poses'], r['current_pose'], V0[st])
-        v0 = float(V0[st]['v0_can']); yr = float(V0[st]['yr_can'])
-        ego = {'v0': v0, 'v_1s': float(e4[1, 0]), 'signal': ts,
-               'k': yr / v0 if v0 >= 1.0 else 0.0}
-        objs = objects(r, inst, S, A, by_s, ego['k'])
-        F = future(r, M[st])
-        lon, lat, cause, lead, vru = decide(ego, objs, F)
+        ego = {'v0': float(V0[st]['v0_can']), 'v_1s': float(e4[1, 0]), 'signal': ts}
+        e = ego_pose(r)
+        lane0 = M.lane_at(e[0], e[1], e[2])
+        path = M.succ(lane0, 3) if lane0 else set()
+        objs = objects(r, inst, S, A, by_s, M, path)
+        sl = M.ahead('stop_line', e, 40, 6)
+        xw = M.ahead('ped_crossing', e, 25, 8)
+        F = future(r, Mt[st], M, lane0)
+        lon, lat, cause, lead, yc = decide(ego, objs, F, xw)
         cons = sum(o['kind'] == 'cone/barrier' and 0 < o['x'] < 30 and abs(o['y']) < 6 for o in objs) >= 3
-        rows[st] = dict(r=r, ego=ego, objs=objs, F=F, lon=lon, lat=lat, cause=cause, lead=lead,
-                        vru=vru, cons=cons, split=r['split'])
-    for s in ('train', 'holdout', 'val'):
-        R = [x for x in rows.values() if x['split'] == s]
-        print(f'\n{s} (n_fut = 12, n = {len(R)}) decision distribution:')
-        for k in ('lon', 'lat'):
-            c = collections.Counter(x[k] for x in R)
-            print('  ' + '; '.join(f'{n} {v} ({v / len(R):.3f})' for n, v in c.most_common()))
-    # 20 examples: train, stratified by lon decision, then lat turn / lane change, seed 0
-    rs = np.random.RandomState(0)
-    tr = [st for st, x in rows.items() if x['split'] == 'train']
-    quota = [('Lead obstacle following', None, 4), ('Stop for static constraints', None, 3),
-             ('Yield (agent right-of-way)', None, 3), ('Speed adaptation (road events)', None, 2),
-             ('Set speed tracking', 'Lane keeping & centering', 3), (None, 'Turn', 3),
-             (None, 'Lane change', 2)]
-    pick = []
-    for lo, la, n in quota:
-        pool = [st for st in tr if (lo is None or rows[st]['lon'] == lo)
-                and (la is None or rows[st]['lat'].startswith(la)) and st not in pick]
-        pick += list(rs.choice(pool, min(n, len(pool)), replace=False))
+        rows[st] = dict(r=r, ego=ego, objs=objs, F=F, lon=lon, lat=lat, cause=cause, lead=lead, yc=yc,
+                        cons=cons, split=r['split'], sl=sl, xw=xw, lane0=lane0,
+                        nl=M.lanes_here(e[0], e[1], e[2]), inter0=M.on_intersection(e[0], e[1]))
+    return rows
+
+
+def write_examples(rows, picks):
+    H = pickle.load(open(f'{DATA}/ar1_hist.pkl', 'rb'))
     with open(OUT, 'w') as f:
-        f.write('AR1_COC_EXAMPLES -- 20 template CoC traces for human review (phase R1.4)\n'
-                'Generator: Alpamayo/code/ar1/coc_template.py (rules in its header). Train split,\n'
-                'stratified by decision, seed 0. Inputs = history window only (t0-2 s .. t0);\n'
-                'the DECISION is labelled from the future 6 s; [future] lines are shown only so a\n'
-                'reviewer can check the decision and are not part of the trace. Ego frame: x forward,\n'
-                'y left. Routing is the VAD command = PRIVILEGED (from the GT future).\n'
-                'Review questions per trace: decision correct? cause correct? anything missing?\n')
-        for n, st in enumerate(pick, 1):
+        f.write('AR1_COC_EXAMPLES v2 -- 20 template CoC traces for human review (phase R2.6)\n'
+                'Generator: Alpamayo/code/ar1/coc_template.py v2 (map-aware; rules in its header).\n'
+                'The SAME 20 train samples as v1 (commit 62d63cc), same numbering. Components use\n'
+                'the history window (t0-1 s .. t0) and the static map only; the DECISION is\n'
+                'labelled from the future 6 s; [future] lines are for the reviewer and are not\n'
+                'part of the trace. Ego frame: x forward, y left. Routing = VAD command [P].\n'
+                'Changes vs v1: AR1_R2_REPORT.md, R2.6 (one line per example).\n')
+        for n, st in picks:
             x = rows[st]; r = x['r']; e = x['ego']; F = x['F']
             near = sorted([o for o in x['objs'] if o['kind'] != 'cone/barrier' and 0 < o['x'] < 40
                            and abs(o['y']) < 12], key=lambda o: math.hypot(o['x'], o['y']))[:3]
             f.write('\n' + '-' * 89 + '\n')
-            f.write(f'#{n:02d}  {r["scene_name"]}  sample {st}\n')
+            f.write(f'#{n}  {r["scene_name"]}  sample {st}\n')
             f.write(f'     CAM_FRONT t0: {H[st]["cams"]["CAM_FRONT"][-1][0].split("/")[-1]}\n')
-            f.write(f'  critical components (history only):\n')
+            f.write('  critical components (history + static map):\n')
             f.write(f'     ego: {e["v0"]:.1f} m/s now, {e["v_1s"]:.1f} m/s 1 s ago; turn signal {e["signal"]}\n')
+            f.write(f'     lane: {"mapped" if x["lane0"] else "none within 3 m"}; {x["nl"]} lane(s) in the '
+                    f'ego direction; {"in" if x["inter0"] else "not in"} an intersection\n')
+            sl = x['sl']
+            f.write('     stop line ahead: ' + (f'{STOP_T.get(sl[2]["stop_line_type"], sl[2]["stop_line_type"])} '
+                                                f'line {sl[0]:.0f} m ahead' if sl else 'none within 40 m') + '\n')
+            f.write('     crosswalk ahead: ' + (f'{x["xw"][0]:.0f} m' if x['xw'] else 'none within 25 m') + '\n')
             f.write(f'     lead in path: {describe(x["lead"]) if x["lead"] else "none within 40 m"}\n')
-            f.write(f'     yield cand.: {describe(x["vru"]) if x["vru"] else "none within 25 m"}\n')
+            f.write(f'     yield cand.: {describe(x["yc"]) if x["yc"] else "none within 25 m"}\n')
             for o in near:
-                if o is not x['lead'] and o is not x['vru']:
+                if o is not x['lead'] and o is not x['yc']:
                     f.write(f'     nearby: {describe(o)}\n')
             f.write(f'     construction zone: {"yes" if x["cons"] else "no"}\n')
             f.write(f'     routing [privileged]: {CMD[r["command"]]}\n')
-            f.write(f'     not observable: traffic-light state, signs, lane lines\n')
+            f.write('     not observable: traffic-light state\n')
             f.write(f'  driving decision: lon = {x["lon"]}; lat = {x["lat"]}\n')
-            f.write(textwrap.fill(compose(x['lon'], x['lat'], x['cause'], e, x['objs'], F,
-                                          CMD[r['command']], x['cons']), 89,
-                                  initial_indent='  trace: ', subsequent_indent='         ') + '\n')
+            f.write(textwrap.fill(compose(x['lon'], x['lat'], x['cause'], e, F, x['sl'], x['xw'], x['cons']),
+                                  89, initial_indent='  trace: ', subsequent_indent='         ') + '\n')
             f.write(f'  [future] min / end speed {F["vmin"]:.1f} / {F["vend"]:.1f} m/s, heading '
-                    f'{F["dpsi"]:+.0f} deg, end x {F["x_end"]:.0f} m y {F["y_end"]:+.1f} m\n')
-    print(f'\nwrote {OUT} ({len(pick)} traces)')
+                    f'{F["dpsi"]:+.0f} deg, end x {F["x_end"]:.0f} m y {F["y_end"]:+.1f} m'
+                    f'{", via intersection" if F["inter"] else ""}\n')
+
+
+def main():
+    v1 = subprocess.run(['git', '-C', '/home/dgx1user/Alpamayo-Kushal', 'show', '62d63cc:AR1_COC_EXAMPLES.txt'],
+                        capture_output=True, text=True, check=True).stdout
+    picks = [(l.split()[0][1:], l.split()[3]) for l in v1.splitlines() if l.startswith('#')]
+    full = '--all' in sys.argv
+    rows = build_rows(None if full else {st for _, st in picks})
+    if full:
+        for s in ('train', 'holdout', 'val'):
+            R = [x for x in rows.values() if x['split'] == s]
+            print(f'\n{s} (n_fut = 12, n = {len(R)}) decision distribution:')
+            for k in ('lon', 'lat'):
+                c = collections.Counter(x[k] for x in R)
+                print('  ' + '; '.join(f'{n} {v} ({v / len(R):.3f})' for n, v in c.most_common()))
+    write_examples(rows, picks)
+    print(f'wrote {OUT}')
 
 
 if __name__ == '__main__':
