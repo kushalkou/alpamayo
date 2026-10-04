@@ -1,7 +1,8 @@
 # AR1_R3_REPORT -- reproduction phase R3 (gate report)
 
-Written 2026-10-04. Code: Alpamayo/code/ar1/; outputs: Alpamayo/ar1_r3*.txt. Pre-registered
-rules applied without the planner. [P] = privileged input (VAD command, from GT future).
+Written 2026-10-04. Code: Alpamayo/code/ar1/; outputs: Alpamayo/ar1_r3*.txt.
+Pre-registered rules applied without the planner.
+[P] = privileged input (VAD command, from the GT future).
 
 =========================================================================================
 R3.0 CAMERA-HARM DIAGNOSIS (CPU, existing dumps; ar1/r30_diag.py)
@@ -9,7 +10,7 @@ R3.0 CAMERA-HARM DIAGNOSIS (CPU, existing dumps; ar1/r30_diag.py)
 a. Stationary val samples (v0_can < 0.5 m/s). Thresholds fixed before looking, first 3 s:
    GT stopped = max displacement < 0.5 m, GT moves = > 1.0 m; false-go = P(pred > 1.0 m |
    GT stopped); false-stop = P(pred < 0.5 m | GT moves). Alpamayo/ar1_r30a.txt.
-                         ALL (993: 676 stopped, 283 move)  EXCL. first frames (853: 653 / 168)
+                       ALL (993: 676 stop, 283 move)  EXCL. first frames (853: 653 / 168)
    model                 false-go   false-stop             false-go   false-stop
    no cam s42 (A3)        0.016      0.625                  0.017      0.506
    no cam s123            0.012      0.629                  0.012      0.512
@@ -19,7 +20,7 @@ a. Stationary val samples (v0_can < 0.5 m/s). Thresholds fixed before looking, f
    B2 3 cams x 4 kf       0.320      0.371                  0.319      0.417
    The camera models start moving in about 30% of the samples where the car stays
    stopped, against about 2% without cameras.
-b. AR ADE@6s on a fixed 1,000-sample train subset (n_fut = 12, seed 0) vs val (n_fut = 12),
+b. AR ADE@6s, fixed 1,000-sample train subset (n_fut = 12, seed 0) vs val (n_fut = 12),
    hybrid decode with the holdout tau. Alpamayo/ar1_r30b.txt.
    model                 train mean / med   val mean / med   gap val - train (mean / med)
    no cam s42 (A3)        2.708 / 1.970      2.896 / 2.003    +0.188 / +0.033
@@ -30,7 +31,8 @@ b. AR ADE@6s on a fixed 1,000-sample train subset (n_fut = 12, seed 0) vs val (n
 =========================================================================================
 R3.1 COST WITH THE CACHE (B1, 480 visual tokens; Alpamayo/ar1_r24_B1.log)
 =========================================================================================
-  1.18 s/step mean (152 logged intervals), batch 3 x 8 V100, peak 17.8 GB, 763 steps/epoch.
+  1.18 s/step mean (152 logged intervals), batch 3 x 8 V100, peak 17.8 GB,
+  763 steps/epoch.
   10 epochs training only: 2.50 h wall = 20.0 GPU-h. With per-epoch AR selection (400
   holdout samples): 2.82 h wall (08:06-10:55 UTC) = 22.6 GPU-h. Holdout + val dumps
   about 0.5 h wall (4 GPU-h). One B1 run end to end: about 27 GPU-h.
@@ -43,8 +45,9 @@ R3.3 META-ACTION + TRAJ ARM (M1) -- PENDING (GPU queue)
 =========================================================================================
 R3.4 CoC DATASET (ar1/coc_template.py v3; 4b4ebc7; Alpamayo/ar1_r34_coc_all.txt)
 =========================================================================================
-a. Stall cause (cProfile, 40 val samples: 216 s): 172 s of it were 545 calls to the devkit's
-   NuScenesMap.get_records_in_radius (0.32 s each), which scan EVERY record of the layer and
+a. Stall cause (cProfile, 40 val samples: 216 s): 172 s of it were 545 calls to the
+   devkit's NuScenesMap.get_records_in_radius (0.32 s each), which scan EVERY record of
+   the layer and
    rebuild each shapely polygon from its nodes on every call (1.18M polygon tests, 2.5M
    Polygon constructions); record_on_point has the same linear scan (16 s). About 5 s per
    sample = about 33 h for the 24k samples, single-threaded. The job was not hung, only
