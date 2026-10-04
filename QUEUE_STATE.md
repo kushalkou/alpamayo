@@ -1,13 +1,14 @@
-# QUEUE_STATE -- REPRODUCTION PHASE R2 (2026-10-03 07:00 UTC -- COMPLETE 2026-10-04 02:49 UTC)
+# QUEUE_STATE -- REPRODUCTION PHASE R3 (started 2026-10-04 05:13 UTC)
 
-Resume rule: nothing to resume. GPUs idle. Status log Alpamayo/r24_status.log
-(R24_GPU_DONE 10-04 02:49); markers results/R24_{B1,B2}_DONE.
+Resume rule after a reboot: `cd Alpamayo/code && tmux new -d -s r3 "bash ar1/run_r3.sh"`.
+It is resumable through results/R3_*_{TRAINED,DONE} and results/R33_*_{DONE,TRAINED,DUMPED,
+EXPERT}; it calls ar1/run_r33.sh at the end. A training interrupted mid-run restarts from
+scratch. Status log: Alpamayo/r3_status.log.
 
-## Done
-- R2.0 patch-order confirm + quarantine (c75c7af)
-- R2.1 benchmark (c9dd833)
-- R2.2 vision cache, 94 GiB, unit test PASS (b8bc570)
-- R2.3 flow expert on frozen A3 (596b09b, f8fd234)
-- R2.4 B1, B2 trained + dumped + evaluated; pre-registered base = B1 (AR1_R2_REPORT.md)
-- R2.5 map expansion v1.3 downloaded; R2.6 CoC v2 examples (5b24e4d)
-- CoC v2 full-split distribution: stopped (too slow single-threaded), not produced
+## GPU queue (tmux r3)
+- [done] R3.0b train-subset dumps (A3_trsub, B1_trsub)
+- [running] R3.2 B1_s123, then B1_s2024 (train + holdout / val dumps)
+- [queued] R3.3 M1 smoke (20 steps) -> M1 seed 42 -> dumps -> M1 expert -> M1 s123, s2024
+## CPU
+- [done] R3.0 a/b (13c7f2f), R3.1 (13c7f2f), R3.4 a-d (4b4ebc7)
+- after M1 seed 42 + expert: python ar1/r33_eval.py M1 -> gate report
