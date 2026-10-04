@@ -101,9 +101,49 @@ Reading: one expert sample is worse than the token decoder (+0.36 m L2@3s); the 
   Neither decoder reaches the Ego-MLP (1.633). Single seed, single run.
 
 =========================================================================================
-R2.4 NEW CAMERA BASE (B1, B2)
+R2.4 NEW CAMERA BASE (B1, B2) -- Alpamayo/ar1_r24_eval.txt
 =========================================================================================
-PENDING
+Runs (A3 recipe: fix, cmd [P], turn-weighted, plain CE, batch 3 x 8, 10 epochs, seed 42,
+AR median-ADE selection on 400 holdout samples; cached native-order vision):
+  B1  3 front cams at t0 (480 visual tokens): 1.15 s/step, 08:06-10:55 UTC (~22.5 GPU-h
+      train), best epoch 10 (holdout 1.899); dumps 44 min.
+  B2  3 front cams x 4 keyframes (1,920 tokens): 6.28 s/step, peak 23.7 GB, 10-03 11:39 -
+      10-04 01:41 UTC (~112 GPU-h train), best epoch 9 (holdout 1.951); dumps 68 min.
+  Token feeding checked: the dataset returns the cached tokens of the sample's own
+  frames (timestamps <= t0), equal to a direct gather.
+Official val, ALL 5,119 (hybrid decode, tau fit on holdout: B1 0.3, B2 0.7):
+                          L2@3s NoAvg TemAvg  Col% 3s No/Tem  ADE@6s mean med p95  FDE6
+  VLA no cam 3-seed [P]     1.954    0.909    1.45 / 0.60   2.930 2.109 7.371  7.436
+  B1 3 cams t0 [P]          2.165    1.033    1.45 / 0.49   3.125 2.296 7.716  7.766
+  B2 3 cams x 4 kf [P]      2.130    1.018    1.47 / 0.59   3.093 2.219 8.102  7.650
+  B1 cams shuffled          2.302    1.120    2.52 / 1.05   3.280 2.466 8.042  8.019
+  B2 cams shuffled          2.250    1.084    2.11 / 0.84   3.230 2.417 8.046  7.963
+  Ego-MLP + cmd 3-seed [P]  1.637    0.779    1.80 / 0.87   2.437 1.679 6.112  6.072
+Paired scene bootstrap, L2@3s NoAvg (95% CI), ALL / EXCL. first frames:
+  B1 - no cam       +0.211 [+0.081,+0.362]  /  +0.254 [+0.125,+0.401]
+  B2 - no cam       +0.176 [+0.069,+0.305]  /  +0.214 [+0.108,+0.340]
+  B2 - B1           -0.035 [-0.109,+0.037]  /  -0.040 [-0.114,+0.033]
+  B1 shuffled - B1  +0.137 [-0.001,+0.277]  /  +0.132 [-0.004,+0.271]
+  B2 shuffled - B2  +0.120 [+0.004,+0.233]  /  +0.112 [-0.005,+0.227]
+Strata, L2@3s (no cam / B1 / B2), ALL: straight 1.678 / 1.810 / 1.758; turning
+  2.570 / 2.545 / 2.706; stationary (993) 2.529 / 3.166 / 3.064. Stationary excl. first
+  frames (853): 0.664 / 1.621 / 1.479; B1 - no cam +0.956 [+0.287,+1.675], B2 - no cam
+  +0.815 [+0.272,+1.421].
+  B2 - B1: straight -0.052 [-0.113,+0.009]; turning +0.161 [+0.015,+0.306]; stationary
+  -0.102 [-0.400,+0.194].
+Camera shuffle: ADE@6s x1.049 (B1), x1.044 (B2) on ALL; x1.053 / x1.046 excl. first
+  frames. G7's rule (within 5% => unused) is borderline; the paired L2@3s differences
+  are +0.12 to +0.14 m, with CIs touching 0.
+Per-slot argmax accuracy (val, mean accel / curvature slot): no cam 0.156 / 0.168;
+  B1 0.122 / 0.135; B2 0.127 / 0.137; shuffled B1 0.094 / 0.103, B2 0.113 / 0.120.
+  Slot 0 accel: 0.205 / 0.176 / 0.183. The camera models are less accurate at every slot.
+  Shuffling lowers accuracy further, so the cameras are read, but they do not help.
+PRE-REGISTERED DECISION: B2 - B1 L2@3s CI includes 0 on ALL (-0.035 [-0.109,+0.037])
+  and on stationary (-0.102 [-0.400,+0.194]) -> base input = B1.
+Reading: with the correct patch order, cameras still make the token VLA worse than
+  no cameras (+0.18-0.21 m L2@3s), most of all when stationary. The patch-order fix does
+  not reverse the week-1 camera verdict for this recipe. Single seed per arm vs a 3-seed
+  reference; the no-camera seed sd was 0.044 m.
 
 =========================================================================================
 R2.5 nuScenes MAP EXPANSION
@@ -183,4 +223,11 @@ The other 16 (one line each; "same" = same decision and cause as v1):
        through the intersection (as #20).
 Count: 3 of 4 flagged fixed, #20 needs a human image check. Two new doubtful labels
 (#06, #14) come from the successor-lane in-path test and the 20 deg intersection rule.
-Decision distribution on all splits: see Alpamayo/ar1_r26_coc_all.txt (CPU job).
+Decision distribution on all splits: NOT produced. The v2 map queries run at about 2 s
+per sample single-threaded; the job was stopped after 19 h without output.
+
+=========================================================================================
+GATE -- STOPPED after B2. Nothing is running; GPUs idle. Commits: c75c7af (R2.0),
+c9dd833 (R2.1), b8bc570 (R2.2), 596b09b + f8fd234 (R2.3), 5b24e4d (R2.5 / R2.6),
+8b68caf (B1 interim), this commit (R2.4 final).
+=========================================================================================
