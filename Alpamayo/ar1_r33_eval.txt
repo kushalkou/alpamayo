@@ -1,0 +1,69 @@
+  mm = f'{e3.min(1)[m].mean():.3f} {np.nanmean(np.nanmin(e6, 1)[m]):.3f}'
+  c = E.scene_boot(sub, np.nanmin(e6, 1)[m], R[tk]['ade'])
+tau (holdout): M1 0.3; B1 seeds used: ['B1', 'B1_s123', 'B1_s2024']
+
+===== ALL 5,119 =====
+  method                 L2 NoAvg 1/2/3s   | L2 TemAvg 1/2/3s  | Col% NoAvg     | Col% TemAvg    | ADE6 mean/med/p95 FDE6 | L2@3s med/p95 | ADE@3s | minADE6 @3s @6s
+  KIN                    0.362 1.049 2.178 | 0.278 0.562 0.998 | 0.08 0.29 1.39 | 0.16 0.23 0.57 | 3.161 2.240 8.199 7.750 | 1.449 5.636 | 0.998 | 0.998 3.161 (1 sample)
+  Ego-MLP + cmd 3-seed [P] 0.326 0.825 1.637 | 0.243 0.463 0.779 | 0.42 0.62 1.80 | 0.45 0.53 0.87 | 2.437 1.679 6.112 6.072 | 1.054 4.116 | 0.779 | 0.779 2.437 (1 sample)
+  VLA no cam 3-seed [P]  0.355 0.959 1.954 | 0.261 0.523 0.909 | 0.05 0.34 1.45 | 0.11 0.24 0.60 | 2.930 2.109 7.371 7.436 | 1.324 4.974 | 0.909 | 0.909 2.930 (1 sample)
+  B1 (3-seed mean) [P]   0.404 1.057 2.091 | 0.298 0.585 0.993 | 0.05 0.34 1.23 | 0.11 0.21 0.49 | 3.048 2.371 6.999 7.588 | 1.502 4.902 | 0.993 | 0.993 3.048 (1 sample)
+  B1 seed 42 [P]         0.424 1.102 2.165 | 0.312 0.611 1.033 | 0.06 0.27 1.45 | 0.12 0.19 0.49 | 3.125 2.296 7.716 7.766 | 1.480 5.570 | 1.033 | 1.033 3.125 (1 sample)
+  M1 token decoder [P]   0.416 1.112 2.203 | 0.307 0.612 1.043 | 0.02 0.43 1.54 | 0.08 0.21 0.61 | 3.183 2.295 7.758 7.865 | 1.475 6.053 | 1.043 | 1.043 3.183 (1 sample)
+  M1 + expert, 1 sample  0.457 1.118 2.148 | 0.341 0.637 1.047 | 0.55 1.09 2.32 | 0.52 0.71 1.15 | 3.084 2.123 8.931 7.522 | 1.367 7.558 | 1.047 | 0.871 2.656
+  M1 + expert, mean of 6 0.437 1.093 2.111 | 0.325 0.616 1.022 | 0.66 1.15 2.34 | 0.62 0.80 1.22 | 3.046 2.079 8.849 7.455 | 1.321 7.748 | 1.022 | 0.871 2.656
+  paired scene bootstrap (95% CI):
+  M1 token decoder [ - B1 seed 42 [P] L2@3s +0.038 [-0.039,+0.124] p=0.3616 | L2T@3s +0.010 [-0.024,+0.047] p=0.6020 | ADE6 +0.058 [-0.055,+0.179] p=0.3214
+  M1 token decoder [ - B1 (3-seed mean) [ L2@3s +0.111 [+0.023,+0.210] p=0.0108 | L2T@3s +0.050 [+0.009,+0.097] p=0.0140 | ADE6 +0.135 [+0.016,+0.269] p=0.0254
+  M1 token decoder [ - VLA no cam 3-seed  L2@3s +0.249 [+0.087,+0.440] p=0.0012 | L2T@3s +0.134 [+0.044,+0.242] p=0.0018 | ADE6 +0.253 [+0.062,+0.471] p=0.0082
+  M1 + expert, mean  - M1 token decoder [ L2@3s -0.092 [-0.173,+0.002] p=0.0544 | L2T@3s -0.021 [-0.067,+0.033] p=0.4194 | ADE6 -0.137 [-0.227,-0.034] p=0.0100
+  M1 + expert, 1 sam - M1 token decoder [ L2@3s -0.055 [-0.136,+0.040] p=0.2330 | L2T@3s +0.004 [-0.042,+0.059] p=0.9252 | ADE6 -0.099 [-0.190,+0.004] p=0.0604
+  expert minADE_6@6s - token ADE@6s    -0.527 [-0.607,-0.440] p=0.0000
+  strata L2@3s (straight / turning / stationary): VLA no cam 3-seed [P] 1.678 / 2.570 / 2.529; B1 seed 42 [P] 1.810 / 2.545 / 3.166; M1 token decoder [P] 1.790 / 2.426 / 3.508
+
+===== EXCL. FIRST FRAMES (n=4979) =====
+  method                 L2 NoAvg 1/2/3s   | L2 TemAvg 1/2/3s  | Col% NoAvg     | Col% TemAvg    | ADE6 mean/med/p95 FDE6 | L2@3s med/p95 | ADE@3s | minADE6 @3s @6s
+  KIN                    0.231 0.799 1.820 | 0.180 0.403 0.782 | 0.08 0.14 1.02 | 0.16 0.18 0.43 | 2.712 2.187 7.113 6.980 | 1.413 5.022 | 0.782 | 0.782 2.712 (1 sample)
+  Ego-MLP + cmd 3-seed [P] 0.209 0.599 1.310 | 0.154 0.319 0.583 | 0.42 0.54 1.63 | 0.46 0.50 0.79 | 2.025 1.644 5.337 5.360 | 1.030 3.679 | 0.583 | 0.583 2.025 (1 sample)
+  VLA no cam 3-seed [P]  0.233 0.725 1.618 | 0.169 0.374 0.706 | 0.05 0.25 1.21 | 0.11 0.19 0.50 | 2.512 2.064 6.318 6.731 | 1.299 4.387 | 0.706 | 0.706 2.512 (1 sample)
+  B1 (3-seed mean) [P]   0.295 0.848 1.793 | 0.216 0.452 0.812 | 0.05 0.25 1.07 | 0.12 0.18 0.42 | 2.679 2.307 6.319 6.969 | 1.470 4.393 | 0.812 | 0.812 2.679 (1 sample)
+  B1 seed 42 [P]         0.316 0.897 1.872 | 0.231 0.480 0.854 | 0.06 0.20 1.31 | 0.12 0.16 0.44 | 2.763 2.248 6.741 7.163 | 1.445 5.139 | 0.854 | 0.854 2.763 (1 sample)
+  M1 token decoder [P]   0.305 0.902 1.907 | 0.224 0.477 0.861 | 0.02 0.34 1.41 | 0.08 0.17 0.56 | 2.820 2.248 7.177 7.266 | 1.438 5.608 | 0.861 | 0.861 2.820 (1 sample)
+  M1 + expert, 1 sample  0.354 0.922 1.869 | 0.265 0.511 0.877 | 0.54 1.00 2.29 | 0.51 0.67 1.10 | 2.739 2.061 8.018 6.943 | 1.338 5.818 | 0.877 | 0.702 2.312
+  M1 + expert, mean of 6 0.334 0.897 1.832 | 0.248 0.491 0.852 | 0.66 1.04 2.31 | 0.61 0.76 1.18 | 2.702 2.026 8.117 6.877 | 1.284 5.837 | 0.852 | 0.702 2.312
+  paired scene bootstrap (95% CI):
+  M1 token decoder [ - B1 seed 42 [P] L2@3s +0.035 [-0.043,+0.123] p=0.4076 | L2T@3s +0.007 [-0.027,+0.045] p=0.7174 | ADE6 +0.057 [-0.057,+0.183] p=0.3404
+  M1 token decoder [ - B1 (3-seed mean) [ L2@3s +0.114 [+0.025,+0.215] p=0.0104 | L2T@3s +0.050 [+0.008,+0.097] p=0.0154 | ADE6 +0.141 [+0.020,+0.278] p=0.0198
+  M1 token decoder [ - VLA no cam 3-seed  L2@3s +0.289 [+0.128,+0.478] p=0.0000 | L2T@3s +0.156 [+0.066,+0.262] p=0.0000 | ADE6 +0.308 [+0.118,+0.524] p=0.0006
+  M1 + expert, mean  - M1 token decoder [ L2@3s -0.075 [-0.156,+0.018] p=0.1082 | L2T@3s -0.009 [-0.055,+0.044] p=0.6974 | ADE6 -0.119 [-0.209,-0.018] p=0.0192
+  M1 + expert, 1 sam - M1 token decoder [ L2@3s -0.039 [-0.119,+0.054] p=0.3858 | L2T@3s +0.016 [-0.030,+0.069] p=0.5680 | ADE6 -0.081 [-0.172,+0.021] p=0.1148
+  expert minADE_6@6s - token ADE@6s    -0.509 [-0.587,-0.425] p=0.0000
+  strata L2@3s (straight / turning / stationary): VLA no cam 3-seed [P] 1.678 / 2.570 / 0.664; B1 seed 42 [P] 1.810 / 2.545 / 1.621; M1 token decoder [P] 1.790 / 2.426 / 1.998
+
+META-ACTION WORDS (generated, constrained) vs R1.2 labels, per slot t0+1..6 s
+  val n_fut = 12 (n=4219)
+    lon acc   0.716 0.644 0.604 0.576 0.564 0.559 | mean 0.610
+    lon mF1   0.399 0.347 0.314 0.285 0.265 0.244 | mean 0.309
+    lat acc   0.915 0.862 0.833 0.807 0.803 0.794 | mean 0.836
+    lat mF1   0.708 0.540 0.413 0.346 0.334 0.279 | mean 0.437
+    unconstrained argmax == constrained word: 0.999 of word slots
+    label shares lon: gentle_acc 0.192 strong_acc 0.003 gentle_dec 0.161 strong_dec 0.005 maintain 0.493 stop 0.146 reverse 0.001
+    label shares lat: steer_L 0.072 steer_R 0.088 sharp_L 0.008 sharp_R 0.007 reverse_L 0.000 reverse_R 0.000 straight 0.825
+  val all 5,119 (n=5119)
+    lon acc   0.727 0.650 0.607 0.583 0.573 0.569 | mean 0.618
+    lon mF1   0.405 0.350 0.314 0.287 0.268 0.250 | mean 0.312
+    lat acc   0.918 0.865 0.835 0.814 0.809 0.802 | mean 0.841
+    lat mF1   0.717 0.554 0.407 0.347 0.333 0.285 | mean 0.440
+    unconstrained argmax == constrained word: 0.999 of word slots
+    label shares lon: gentle_acc 0.183 strong_acc 0.002 gentle_dec 0.158 strong_dec 0.005 maintain 0.503 stop 0.148 reverse 0.001
+    label shares lat: steer_L 0.071 steer_R 0.085 sharp_L 0.008 sharp_R 0.007 reverse_L 0.000 reverse_R 0.000 straight 0.829
+
+CONSISTENCY: meta-actions derived from the predicted trajectory == generated words
+  val n_fut = 12: all 12 slots 0.412; lon 6/6 0.462; lat 6/6 0.886; per-slot lon 0.93 0.86 0.81 0.80 0.79 0.78 | lat 0.96 0.98 0.98 0.98 0.98 0.97
+  val all 5,119: all 12 slots 0.410; lon 6/6 0.460; lat 6/6 0.887; per-slot lon 0.93 0.86 0.80 0.80 0.78 0.78 | lat 0.97 0.98 0.98 0.98 0.98 0.97
+  CEILING (GT trajectory derived vs GT 10 Hz labels, n_fut = 12): all 12 0.180; lon 6/6 0.215; lat 6/6 0.768; per-slot lon 0.69 0.70 0.69 0.69 0.69 0.69 | lat 0.95 0.94 0.94 0.94 0.95 0.95
+  predicted-trajectory meta vs GT labels (n_fut = 12): all 12 0.128; lon slot acc mean 0.539; lat 0.825
+  expert mean-of-6 controls vs generated words (n_fut = 12): all 12 0.404; lon 6/6 0.437; lat 6/6 0.932
+  expert sample 0 vs generated words (n_fut = 12): all 12 0.264; lon 6/6 0.291; lat 6/6 0.897
+
+expert: best epoch 60 (holdout median ADE@6s 1.6173); train 54.13 GPU-h; inference 0.43 GPU-h

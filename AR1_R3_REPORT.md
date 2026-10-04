@@ -63,7 +63,60 @@ Over three seeds B1 stays worse than no cameras on L2 and ADE, with lower collis
 the false-go failure is present in every B1 seed.
 
 =========================================================================================
-R3.3 META-ACTION + TRAJ ARM (M1) -- PENDING (GPU queue)
+R3.3 META-ACTION + TRAJ ARM (M1), seed 42 -- Alpamayo/ar1_r33_eval.txt
+=========================================================================================
+Build (ar1/finetune_meta.py): B1 base + 18 text tokens from the frozen LLM vocabulary (6
+  lon words at t0+1..6 s, 1 token each; 6 lat words, 2 tokens each), then 24 trajectory
+  tokens. Teacher forcing, plain CE on all 42 targets. Text logits come from the frozen
+  lm_head. A3 recipe otherwise; 10 epochs. Inference: greedy decoding constrained to the
+  valid words, then the trajectory.
+Run: 11:35-14:41 UTC (1.25 s/step, peak 17.8 GB, about 25 GPU-h); best epoch 8 (holdout
+  AR median ADE@6s 1.704; B1 s42 1.899). Text CE 0.25 at the end of training.
+  Val dump: the first attempt timed out at the end-of-split all_gather (NCCL 10 min;
+  per-rank decode times uneven); rerun with a 3 h timeout.
+Expert (ar1/train_expert_meta.py, option A on the frozen M1 sequence, KV online, ctx 503;
+  GT words in training, M1's own generated words at selection / inference): 80 epochs,
+  best epoch 60 (holdout median 1.617). 4.25 s/step on 8 GPUs, 6.8 h wall = 54 GPU-h
+  training; 0.43 GPU-h inference. The first final step OOMed (checkpoint loaded onto
+  cuda:0 by all ranks); fixed with map_location, predictions rerun from the saved best.
+Official val (L2 m, Col %):
+                        L2@3s No / Tem  Col% 3s No / Tem  ADE@6s mean med p95  minADE6 3s/6s
+  ALL 5,119
+  no cam 3-seed [P]     1.954  0.909     1.45 / 0.60      2.930 2.109 7.371   = ADE
+  B1 3-seed mean [P]    2.091  0.993     1.23 / 0.49      3.048 2.371 6.999   = ADE
+  B1 seed 42 [P]        2.165  1.033     1.45 / 0.49      3.125 2.296 7.716   = ADE
+  M1 token decoder [P]  2.203  1.043     1.54 / 0.61      3.183 2.295 7.758   = ADE
+  M1 + expert, 1 sample 2.148  1.047     2.32 / 1.15      3.084 2.123 8.931   0.871 2.656
+  M1 + expert, mean 6   2.111  1.022     2.34 / 1.22      3.046 2.079 8.849   0.871 2.656
+  EXCL. first frames (4,979)
+  no cam 3-seed [P]     1.618  0.706     1.21 / 0.50      2.512 2.064 6.318
+  B1 seed 42 [P]        1.872  0.854     1.31 / 0.44      2.763 2.248 6.741
+  M1 token decoder [P]  1.907  0.861     1.41 / 0.56      2.820 2.248 7.177
+  M1 + expert, mean 6   1.832  0.852     2.31 / 1.18      2.702 2.026 8.117   0.702 2.312
+Paired scene bootstrap, ALL (L2@3s; ADE@6s):
+  M1 token - B1 s42           +0.038 [-0.039,+0.124]; +0.058 [-0.055,+0.179]
+  M1 token - B1 3-seed mean   +0.111 [+0.023,+0.210]; +0.135 [+0.016,+0.269]
+  M1 token - no cam 3-seed    +0.249 [+0.087,+0.440]; +0.253 [+0.062,+0.471]
+  expert mean-6 - M1 token    -0.092 [-0.173,+0.002]; -0.137 [-0.227,-0.034]
+  expert 1 sample - M1 token  -0.055 [-0.136,+0.040]; -0.099 [-0.190,+0.004]
+  expert minADE_6@6s - token ADE@6s  -0.527 [-0.607,-0.440]
+Strata L2@3s, ALL (straight / turning / stationary): no cam 1.678 / 2.570 / 2.529;
+  B1 s42 1.810 / 2.545 / 3.166; M1 token 1.790 / 2.426 / 3.508.
+Meta-action words, val n_fut = 12, vs the CAN labels used in training (slot t+1 .. t+6 s):
+  lon acc 0.716 0.644 0.604 0.576 0.564 0.559 (mean 0.610); macro-F1 mean 0.309
+  lat acc 0.915 0.862 0.833 0.807 0.803 0.794 (mean 0.836); macro-F1 mean 0.437
+  Unconstrained argmax equals the constrained word in 0.999 of slots.
+  Against the 2 Hz GT labels: see Amendment A1.
+Consistency (Table 9 analog; predicted-trajectory-derived meta == generated words):
+  token decoder: all 12 slots 0.412, lon 6/6 0.462, lat 6/6 0.886
+  expert mean-of-6: 0.404 (lon 0.437, lat 0.932); expert sample 0: 0.264
+  GT self-consistency with 2 Hz labels: 1.000 (A1)
+Reading: adding meta-action words does not change the token decoder against its B1
+  twin. Still worse than no cameras and the B1 3-seed mean. Worst when stationary
+  (3.51). The expert's mean of 6 is better than the token decoder on ADE@6s (-0.14 m)
+  but has 2x the collision rate and a heavier p95 tail. The words collapse toward
+  maintain / straight (A2). Single seed; seeds 123 / 2024 running.
+
 =========================================================================================
 
 =========================================================================================
