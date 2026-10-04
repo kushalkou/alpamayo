@@ -38,6 +38,8 @@ def main():
     ap.add_argument('--splits', default='val,holdout')
     ap.add_argument('--flips', default='0')
     ap.add_argument('--limit', type=int, default=None)
+    ap.add_argument('--rand_subset', type=int, default=0,
+                    help='R3.0b: fixed random subset of N n_fut=12 records (seed 0), e.g. on train')
     ap.add_argument('--shuffle_inputs', action='store_true',
                     help='INPUT-SHUFFLE test: permute w1_ego (ego + cmd/meta rows) across the '
                          'dumped samples (seed 99); targets/GT stay with their own sample')
@@ -91,6 +93,9 @@ def main():
                 if m0: print(f'[dumpw1] INPUT-SHUFFLE: {int((perm != np.arange(len(R))).sum())}/{len(R)} '
                              f'samples get another sample\'s ego+extra rows', flush=True)
             if a.limit: R = R[:a.limit]
+            if a.rand_subset:
+                R = [t for t in R if t['n_fut'] >= 12]
+                R = [R[i] for i in sorted(np.random.RandomState(0).choice(len(R), a.rand_subset, replace=False))]
             if a.vcache:
                 vc_patch.tag_records(R)
             ds = NuScenesVLADataset(R, split=split, augment=False)

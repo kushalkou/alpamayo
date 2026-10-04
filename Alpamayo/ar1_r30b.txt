@@ -1,0 +1,4 @@
+R3.0b OVERFITTING: AR ADE@6s, fixed 1,000-sample train subset vs val (n_fut = 12); hybrid decode, tau from holdout
+    model                  train mean / med   val mean / med   gap val-train (mean / med)
+    no cam s42 (A3)         2.708 /  1.970   2.896 /  2.003       +0.188 / +0.033
+    B1 3 cams t0            2.783 /  1.935   3.125 /  2.296       +0.342 / +0.360

@@ -1,0 +1,19 @@
+R3.0a STATIONARY: false-go = P(pred > 1 m within 3 s | GT < 0.5 m); false-stop = P(pred < 0.5 m | GT > 1 m)
+
+  ALL 5,119: stationary n=993; GT stopped 676, GT moves 283, in between 34
+    model                 false-go  false-stop    pred median travel 3s, GT stopped (m)
+    no cam s42 (A3)          0.016       0.625                                    0.000
+    no cam s123              0.012       0.629                                    0.000
+    no cam s2024             0.037       0.629                                    0.000
+    B1 3 cams t0             0.302       0.424                                    0.000
+    B2 3 cams x 4 kf         0.320       0.371                                    0.000
+    no cam 3-seed mean       0.022       0.628
+
+  EXCL. FIRST FRAMES (n=4979): stationary n=853; GT stopped 653, GT moves 168, in between 32
+    model                 false-go  false-stop    pred median travel 3s, GT stopped (m)
+    no cam s42 (A3)          0.017       0.506                                    0.000
+    no cam s123              0.012       0.512                                    0.000
+    no cam s2024             0.038       0.512                                    0.000
+    B1 3 cams t0             0.300       0.458                                    0.000
+    B2 3 cams x 4 kf         0.319       0.417                                    0.000
+    no cam 3-seed mean       0.022       0.510
