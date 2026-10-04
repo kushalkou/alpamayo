@@ -112,3 +112,34 @@ d. AR1_COC_AUDIT.txt: 100 random VAL traces, stratified by lon decision (20 each
    classes present in val), seed 0. Each has sample id, scene, decision, causes
    (components), trace, CAM_FRONT path, and a [future] line for the auditor.
    The CoC training arm is NOT launched (waits for Kushal's audit).
+
+=========================================================================================
+AMENDMENT A1-A3 (R3.3 M1 seed 42; ar1/r33_amend.py; Alpamayo/ar1_r33_amend.txt)
+=========================================================================================
+Val n_fut = 12 (n = 4,219). NEW labels = R1.2 rules on the GT 2 Hz trajectory controls.
+CAN labels = R1.2 on 10 Hz CAN (what M1 was trained on); side number.
+A1. GT self-consistency (GT-trajectory-derived vs NEW labels): 1.000 (all 12 slots);
+    identical by construction. NEW vs CAN labels agree on all 12 slots in 0.180 of
+    samples (slot mean lon 0.693, lat 0.945): the old ceiling was a label mismatch.
+                                   lon acc / mF1 (slot mean)   lat acc / mF1 (slot mean)
+    M1 words vs NEW labels          0.478 / 0.313               0.825 / 0.418
+    M1 words vs CAN labels (side)   0.610 / 0.309               0.836 / 0.437
+    M1 CONSISTENCY (predicted-trajectory-derived == generated words; label-free):
+      all 12 slots 0.412; lon 6/6 0.462; lat 6/6 0.886; slot mean lon 0.828, lat 0.976
+    Predicted-trajectory-derived vs NEW labels: all 12 0.080 (slot mean lon 0.434, lat
+      0.816); vs CAN 0.128.
+    M1's words match its own trajectory far better (0.41) than they match the GT labels.
+A2. Collapse. Generated vs GT class shares per slot (full table in the txt):
+    lon maintain: generated 0.544 (t+1 s) -> 0.670 (t+6 s); CAN 0.487 -> 0.506; NEW 0.36.
+    lon gentle acc / gentle dec: generated 0.158 -> 0.088 / 0.157 -> 0.062 (CAN ~0.19 /
+      ~0.16). strong acc, strong dec, reverse: never generated (CAN 0.1-0.5%; NEW ~5%).
+    lat: generated straight 0.843 -> 0.881 (CAN 0.816 -> 0.834); sharp L / R rare.
+    Distinct 12-word sequences: generated 389, CAN labels 1,548, NEW 2,893.
+    Share equal to the majority sequence (maintain x6, straight x6), which is also the
+      most frequent train sequence (2,808 / 18,313): generated 0.433, CAN 0.168,
+      NEW 0.023.
+    The generated words collapse toward maintain / straight, more so at longer horizons.
+A3. Re-decode with valid-word-constrained decoding: QUEUED after the M1 seeds (tmux a3).
+    Note: the original M1 dump already used constrained greedy decoding (unconstrained
+    argmax agreed on 0.999 of word slots), so M1_G is a determinism check. M1_T07 =
+    sampling at T = 0.7 over the valid words. Results pending.
