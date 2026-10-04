@@ -1,0 +1,1180 @@
+AR1_COC_AUDIT -- 100 random VAL CoC traces for human audit (phase R3.4d)
+Generator: Alpamayo/code/ar1/coc_template.py v3 (STRtree map index; yield / lead only
+for agents on the ego path or on a crosswalk the path crosses; turn only for heading
+change inside map intersection polygons). Stratified by lon decision, seed 0:
+  Lead obstacle following: 20 of 1201
+  Set speed tracking: 20 of 3128
+  Speed adaptation (road events): 20 of 42
+  Stop for static constraints: 20 of 638
+  Yield (agent right-of-way): 20 of 110
+Causes = critical components (history t0-1 s .. t0 + static map). The decision is
+labelled from the future 6 s; the [future] line is for the auditor only.
+Image paths are relative to Alpamayo/nuscenes/. Route = VAD command [P].
+
+-----------------------------------------------------------------------------------------
+A001  scene-0783  sample 29ba615932994396a7ee5b465f9ea5e9
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657844012404.jpg
+  decision: lon = Lead obstacle following; lat = Lane change right
+  causes: ego 8.7 m/s (1 s ago 9.1), turn signal off; 6 lane(s), in an intersection; lead
+          car 32 m ahead, +0.0 m lat., moving the same way (9.1 m/s); route: go straight
+  trace: Keep a safe gap, changing lanes to the right because the car 32 m ahead in the
+         ego path is moving the same way.
+  [future] min / end speed 4.6 / 4.6 m/s; heading -3 deg (-0 in intersections);
+           end x 44 m, y -2.8 m
+
+-----------------------------------------------------------------------------------------
+A002  scene-1072  sample 0a29d84ae38840e0b576626475c8b146
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799710912460.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 9.0 m/s (1 s ago 8.6), turn signal off; 1 lane(s); lead car 13 m ahead,
+          -1.4 m lat., moving the same way (8.5 m/s); route: go straight
+  trace: Keep a safe gap, keeping the lane because the car 13 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 6.4 / 6.5 m/s; heading +0 deg (+0 in intersections);
+           end x 47 m, y -0.3 m
+
+-----------------------------------------------------------------------------------------
+A003  scene-0562  sample 0c15e8d3127a4b88991c235095d800d2
+  image:
+    samples/CAM_FRONT/n008-2018-08-31-11-37-23-0400__CAM_FRONT__1535730496362404.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 6.7 m/s (1 s ago 6.8), turn signal off; 5 lane(s); turn stop line 17 m
+          ahead; lead car 35 m ahead, -0.1 m lat., moving the same way (6.7 m/s);
+          construction zone; route: go straight
+  trace: Keep a safe gap, keeping the lane because the car 35 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 6.7 / 7.4 m/s; heading +1 deg (-0 in intersections);
+           end x 44 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A004  scene-0564  sample 26ce0c76786c43158b3bac999b27e76b
+  image:
+    samples/CAM_FRONT/n008-2018-08-31-11-37-23-0400__CAM_FRONT__1535730646012404.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 1.6 m/s (1 s ago 0.6), turn signal right; 4 lane(s), in an intersection;
+          traffic-light stop line 17 m ahead; lead truck 15 m ahead, +0.5 m lat., moving
+          the same way (3.1 m/s); route: go straight
+  trace: Keep a safe gap, keeping the lane because the truck 15 m ahead in the ego path
+         is moving the same way.
+  [future] min / end speed 1.7 / 4.2 m/s; heading +2 deg (+3 in intersections);
+           end x 21 m, y +1.0 m
+
+-----------------------------------------------------------------------------------------
+A005  scene-0014  sample 3a1dd258a83f44b6bd97e8cc426d7057
+  image:
+    samples/CAM_FRONT/n015-2018-07-18-11-41-49+0800__CAM_FRONT__1531885402412466.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 1.0 m/s (1 s ago 0.0), turn signal off; 3 lane(s); crosswalk stop line 18 m
+          ahead; lead bus 19 m ahead, -1.9 m lat., moving the same way (2.7 m/s); route:
+          go straight
+  trace: Keep a safe gap, keeping the lane because the bus 19 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 1.1 / 5.5 m/s; heading -14 deg (-9 in intersections);
+           end x 22 m, y -2.7 m
+
+-----------------------------------------------------------------------------------------
+A006  scene-0523  sample 4208e9982fbb49329271ee6dc0dbcf64
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-10-33-52-0400__CAM_FRONT__1535639728662404.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 7.1 m/s (1 s ago 5.3), turn signal off; 2 lane(s), in an intersection; turn
+          stop line 1 m ahead; crosswalk 8 m ahead; lead car 29 m ahead, -8.1 m lat.,
+          moving the same way (8.2 m/s); route: turn right
+  trace: Keep a safe gap, keeping the lane because the car 29 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 7.1 / 8.6 m/s; heading -29 deg (+1 in intersections);
+           end x 42 m, y -15.4 m
+
+-----------------------------------------------------------------------------------------
+A007  scene-0926  sample 43cdc169284546798f3a66b131ac7c91
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-44-23+0800__CAM_FRONT__1538984962862460.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 4.3 m/s (1 s ago 5.4), turn signal off; 1 lane(s); lead car 20 m ahead,
+          -0.3 m lat., moving the same way (3.6 m/s); route: go straight
+  trace: Keep a safe gap, keeping the lane because the car 20 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 4.0 / 5.2 m/s; heading +1 deg (+1 in intersections);
+           end x 26 m, y +0.1 m
+
+-----------------------------------------------------------------------------------------
+A008  scene-0908  sample 4600f63ac85949c9a3123d1798888efb
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-15-12-01-0400__CAM_FRONT__1537298033662404.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 4.2 m/s (1 s ago 2.8), turn signal off; 4 lane(s); traffic-light stop line
+          30 m ahead; lead car 15 m ahead, -0.2 m lat., moving the same way (5.5 m/s);
+          route: go straight
+  trace: Keep a safe gap, keeping the lane because the car 15 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 4.3 / 7.6 m/s; heading -1 deg (+0 in intersections);
+           end x 35 m, y -0.2 m
+
+-----------------------------------------------------------------------------------------
+A009  scene-1073  sample 4dad239b9fc048f7a6e69e2ba45b35b1
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799751512460.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 6 lane(s); traffic-light stop line
+          25 m ahead; lead car 10 m ahead, -0.2 m lat., moving the same way (0.6 m/s);
+          route: go straight
+  trace: Keep a safe gap, then proceed, keeping the lane because the car 10 m ahead in
+         the ego path is moving the same way.
+  [future] min / end speed 0.0 / 3.5 m/s; heading +3 deg (+0 in intersections);
+           end x 15 m, y +0.3 m
+
+-----------------------------------------------------------------------------------------
+A010  scene-0013  sample 5dd248af969c406f9812c24fe4498974
+  image:
+    samples/CAM_FRONT/n015-2018-07-18-11-41-49+0800__CAM_FRONT__1531885343912466.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 5.7 m/s (1 s ago 4.4), turn signal off; 3 lane(s); turn stop line 6 m
+          ahead; lead bus 35 m ahead, +0.9 m lat., moving the same way (6.3 m/s); route:
+          go straight
+  trace: Keep a safe gap, keeping the lane because the bus 35 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 5.8 / 7.1 m/s; heading +4 deg (+3 in intersections);
+           end x 40 m, y +2.3 m
+
+-----------------------------------------------------------------------------------------
+A011  scene-0795  sample 6edc535af6e4466d93c99da08c7b6b58
+  image:
+    samples/CAM_FRONT/n015-2018-10-02-10-50-40+0800__CAM_FRONT__1538448735612460.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 12.7 m/s (1 s ago 12.4), turn signal off; 5 lane(s), in an intersection;
+          lead car 36 m ahead, -1.3 m lat., moving the same way (14.3 m/s); construction
+          zone; route: go straight
+  trace: Keep a safe gap, keeping the lane because the car 36 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 12.2 / 12.3 m/s; heading +2 deg (+0 in intersections);
+           end x 77 m, y +0.2 m
+
+-----------------------------------------------------------------------------------------
+A012  scene-0800  sample 83c7c252af754edb82e3e6e4a5f42100
+  image:
+    samples/CAM_FRONT/n015-2018-10-02-10-50-40+0800__CAM_FRONT__1538448853612460.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 10.7 m/s (1 s ago 10.9), turn signal off; 5 lane(s); lead car 20 m ahead,
+          +1.0 m lat., moving the same way (10.6 m/s); route: turn left
+  trace: Keep a safe gap, keeping the lane because the car 20 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 9.3 / 9.5 m/s; heading +19 deg (+3 in intersections);
+           end x 60 m, y +9.2 m
+
+-----------------------------------------------------------------------------------------
+A013  scene-0564  sample cf21155eda904501bbc960d4766764c0
+  image:
+    samples/CAM_FRONT/n008-2018-08-31-11-37-23-0400__CAM_FRONT__1535730648012404.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 3.0 m/s (1 s ago 2.2), turn signal right; 6 lane(s), in an intersection;
+          traffic-light stop line 13 m ahead; crosswalk 19 m ahead; lead truck 17 m
+          ahead, +0.1 m lat., moving the same way (4.0 m/s); route: go straight
+  trace: Keep a safe gap, keeping the lane because the truck 17 m ahead in the ego path
+         is moving the same way.
+  [future] min / end speed 3.1 / 3.8 m/s; heading -19 deg (-9 in intersections);
+           end x 24 m, y -1.2 m
+
+-----------------------------------------------------------------------------------------
+A014  scene-0626  sample d3eeecca49a24b65aa5e86ec9c63a3bf
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-14-35-12-0400__CAM_FRONT__1537295837862678.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 7.5 m/s (1 s ago 7.7), turn signal off; 2 lane(s), in an intersection; lead
+          car 28 m ahead, -0.8 m lat., moving the same way (7.5 m/s); construction zone;
+          route: go straight
+  trace: Keep a safe gap, keeping the lane because the car 28 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 5.6 / 5.6 m/s; heading -4 deg (-2 in intersections);
+           end x 40 m, y -1.6 m
+
+-----------------------------------------------------------------------------------------
+A015  scene-0799  sample e443b4ca9e474278b7147c4daaf67eca
+  image:
+    samples/CAM_FRONT/n015-2018-10-02-10-50-40+0800__CAM_FRONT__1538448840662460.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 8.7 m/s (1 s ago 8.9), turn signal off; 4 lane(s), in an intersection; lead
+          car 20 m ahead, +0.1 m lat., moving the same way (9.4 m/s); route: go straight
+  trace: Keep a safe gap, keeping the lane because the car 20 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 8.8 / 9.6 m/s; heading +1 deg (-0 in intersections);
+           end x 29 m, y -0.2 m
+
+-----------------------------------------------------------------------------------------
+A016  scene-0794  sample e4571b3d5c2e47178cc767b3f9d2a4e3
+  image:
+    samples/CAM_FRONT/n015-2018-10-02-10-50-40+0800__CAM_FRONT__1538448717662460.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 0.0 m/s (1 s ago 0.1), turn signal off; 9 lane(s); traffic-light stop line
+          17 m ahead; lead car 8 m ahead, +0.1 m lat., stationary (0.0 m/s); route: go
+          straight
+  trace: Stay stopped, then proceed, keeping the lane because the car 8 m ahead in the
+         ego path is stationary.
+  [future] min / end speed 0.0 / 4.9 m/s; heading -1 deg (+0 in intersections);
+           end x 8 m, y -0.1 m
+
+-----------------------------------------------------------------------------------------
+A017  scene-0798  sample ef183f507ce945519cc458276a8ae6e2
+  image:
+    samples/CAM_FRONT/n015-2018-10-02-10-50-40+0800__CAM_FRONT__1538448818662460.jpg
+  decision: lon = Lead obstacle following; lat = Lane keeping & centering
+  causes: ego 8.2 m/s (1 s ago 9.3), turn signal off; 3 lane(s); lead car 19 m ahead,
+          +0.2 m lat., moving the same way (8.6 m/s); route: go straight
+  trace: Keep a safe gap, keeping the lane because the car 19 m ahead in the ego path is
+         moving the same way.
+  [future] min / end speed 8.2 / 9.3 m/s; heading -0 deg (-0 in intersections);
+           end x 45 m, y -0.4 m
+
+-----------------------------------------------------------------------------------------
+A018  scene-0095  sample 2ab5ae2167d94c37987a69ef23b3cb6b
+  image:
+    samples/CAM_FRONT/n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151263762404.jpg
+  decision: lon = Lead obstacle following; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 4 lane(s); traffic-light stop line
+          20 m ahead; lead car 12 m ahead, -0.2 m lat., stationary (0.0 m/s); route: go
+          straight
+  trace: Stay stopped, then proceed because the car 12 m ahead in the ego path is
+         stationary.
+  [future] min / end speed 0.0 / 1.1 m/s; heading +0 deg (+0 in intersections);
+           end x 1 m, y +0.0 m
+
+-----------------------------------------------------------------------------------------
+A019  scene-0095  sample 5369488db9e94abcaacb56ed00a0def6
+  image:
+    samples/CAM_FRONT/n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151250612404.jpg
+  decision: lon = Lead obstacle following; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 4 lane(s); traffic-light stop line
+          20 m ahead; lead car 12 m ahead, -0.2 m lat., stationary (0.0 m/s); route: go
+          straight
+  trace: Stay stopped because the car 12 m ahead in the ego path is stationary.
+  [future] min / end speed 0.0 / 0.0 m/s; heading -0 deg (+0 in intersections);
+           end x 0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A020  scene-0781  sample eb60a132b3b844788070acf04596941d
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657799412404.jpg
+  decision: lon = Lead obstacle following; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 7 lane(s); traffic-light stop line
+          22 m ahead; lead car 11 m ahead, -0.1 m lat., stationary (0.0 m/s); route: go
+          straight
+  trace: Stay stopped because the car 11 m ahead in the ego path is stationary.
+  [future] min / end speed 0.0 / 0.0 m/s; heading -0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A021  scene-1069  sample dfde680850a348f79e05d215229b8539
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799625112460.jpg
+  decision: lon = Set speed tracking; lat = Lane change left
+  causes: ego 5.1 m/s (1 s ago 3.8), turn signal left; 4 lane(s); traffic-light stop line
+          7 m ahead; lead car 21 m ahead, +0.9 m lat., moving the same way (8.8 m/s);
+          route: turn left
+  trace: Keep the current speed, changing lanes to the left because the lane ahead is
+         clear.
+  [future] min / end speed 5.2 / 12.5 m/s; heading +6 deg (+0 in intersections);
+           end x 60 m, y +5.7 m
+
+-----------------------------------------------------------------------------------------
+A022  scene-0038  sample 09f3a3ce512a442db7dd47f9ed39e64f
+  image:
+    samples/CAM_FRONT/n015-2018-07-24-10-42-41+0800__CAM_FRONT__1532400340162460.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 5.2 m/s (1 s ago 5.2), turn signal left; 3 lane(s); traffic-light stop line
+          8 m ahead; lead car 25 m ahead, +3.4 m lat., moving the same way (7.5 m/s);
+          route: turn left
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 5.2 / 8.5 m/s; heading +16 deg (+0 in intersections);
+           end x 40 m, y +8.9 m
+
+-----------------------------------------------------------------------------------------
+A023  scene-0925  sample 27f53c7168584747bdbaff8ae8d758c5
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-44-23+0800__CAM_FRONT__1538984910912460.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 1.1 m/s (1 s ago 1.6), turn signal off; 1 lane(s); crosswalk stop line 4 m
+          ahead; crosswalk 12 m ahead; route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 0.4 / 0.8 m/s; heading -0 deg (+0 in intersections);
+           end x 5 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A024  scene-0917  sample 2b78a8099c93418097ce1f2807e23618
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984294512460.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 4.4 m/s (1 s ago 3.8), turn signal off; 2 lane(s); stop-sign stop line 5 m
+          ahead; route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 2.1 / 2.2 m/s; heading +15 deg (+5 in intersections);
+           end x 23 m, y +2.8 m
+
+-----------------------------------------------------------------------------------------
+A025  scene-0907  sample 2beac07fddfa49f38f5380f1ae761d6d
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-15-12-01-0400__CAM_FRONT__1537298006762404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 5.7 m/s (1 s ago 5.6), turn signal off; 1 lane(s), in an intersection; turn
+          stop line 2 m ahead; crosswalk 9 m ahead; route: turn right
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 5.7 / 6.6 m/s; heading -49 deg (-11 in intersections);
+           end x 29 m, y -25.1 m
+
+-----------------------------------------------------------------------------------------
+A026  scene-0278  sample 37d0faf82cdb4af1a3d85b18077ee1f8
+  image:
+    samples/CAM_FRONT/n015-2018-07-11-11-54-16+0800__CAM_FRONT__1531281970662460.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 5.0 m/s (1 s ago 3.3), turn signal off; 3 lane(s), in an intersection;
+          route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 5.2 / 5.4 m/s; heading +5 deg (-2 in intersections);
+           end x 35 m, y +2.8 m
+
+-----------------------------------------------------------------------------------------
+A027  scene-1062  sample 388f452488174a08badefaf26028a36e
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799430262460.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 8.7 m/s (1 s ago 8.3), turn signal off; 1 lane(s); route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 4.8 / 4.8 m/s; heading -31 deg (+0 in intersections);
+           end x 42 m, y -6.3 m
+
+-----------------------------------------------------------------------------------------
+A028  scene-0796  sample 4ee219c4638949de9d994bc792fd0a69
+  image:
+    samples/CAM_FRONT/n015-2018-10-02-10-50-40+0800__CAM_FRONT__1538448754512460.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 11.8 m/s (1 s ago 12.0), turn signal off; 3 lane(s); traffic-light stop
+          line 29 m ahead; route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 11.4 / 12.0 m/s; heading -1 deg (-1 in intersections);
+           end x 71 m, y -0.6 m
+
+-----------------------------------------------------------------------------------------
+A029  scene-0016  sample 52c853ea6b55497b9cd9ddaa03f92133
+  image:
+    samples/CAM_FRONT/n015-2018-07-18-11-41-49+0800__CAM_FRONT__1531885625412609.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 7.1 m/s (1 s ago 7.5), turn signal off; 5 lane(s); route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 4.5 / 4.5 m/s; heading -8 deg (+0 in intersections);
+           end x 35 m, y -1.1 m
+
+-----------------------------------------------------------------------------------------
+A030  scene-0099  sample 56f2d967734747c181e8cac27acef265
+  image:
+    samples/CAM_FRONT/n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151432612404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 7.4 m/s (1 s ago 6.5), turn signal off; 3 lane(s); route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 7.4 / 7.7 m/s; heading +0 deg (+0 in intersections);
+           end x 31 m, y -0.1 m
+
+-----------------------------------------------------------------------------------------
+A031  scene-0969  sample 588dd5faaf2a4697b35195f46196cb8b
+  image:
+    samples/CAM_FRONT/n015-2018-09-25-13-17-43+0800__CAM_FRONT__1537852985162460.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 0.4 m/s (1 s ago 1.6), turn signal right; 2 lane(s); route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 0.3 / 3.5 m/s; heading +6 deg (+0 in intersections);
+           end x 14 m, y -1.6 m
+
+-----------------------------------------------------------------------------------------
+A032  scene-0555  sample 6582e60293a44278bbf3358225db11d4
+  image:
+    samples/CAM_FRONT/n008-2018-08-28-16-43-51-0400__CAM_FRONT__1535489342012404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 6.4 m/s (1 s ago 5.0), turn signal off; 3 lane(s), in an intersection; turn
+          stop line 4 m ahead; route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 1.0 / 1.7 m/s; heading +2 deg (+2 in intersections);
+           end x 23 m, y +0.3 m
+
+-----------------------------------------------------------------------------------------
+A033  scene-0106  sample 8255767d23a3456d861591793f5df935
+  image:
+    samples/CAM_FRONT/n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151723362404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 7.1 m/s (1 s ago 7.1), turn signal off; 3 lane(s), in an intersection;
+          construction zone; route: go straight
+  trace: Keep the current speed, keeping the lane through the construction zone.
+  [future] min / end speed 3.7 / 3.9 m/s; heading -1 deg (-1 in intersections);
+           end x 28 m, y -0.3 m
+
+-----------------------------------------------------------------------------------------
+A034  scene-0916  sample 841dd6709e9b4d7c9d6bf888f1fe6d7e
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984249912460.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 5.2 m/s (1 s ago 6.0), turn signal off; 1 lane(s); route: turn left
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 3.8 / 3.8 m/s; heading +63 deg (+0 in intersections);
+           end x 12 m, y +5.3 m
+
+-----------------------------------------------------------------------------------------
+A035  scene-0094  sample 8b17a8d9c23a4a849ec471da90fec39e
+  image:
+    samples/CAM_FRONT/n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151217912404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 4.2 m/s (1 s ago 5.0), turn signal off; 3 lane(s); traffic-light stop line
+          32 m ahead; route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 0.7 / 0.7 m/s; heading +0 deg (+0 in intersections);
+           end x 12 m, y -0.1 m
+
+-----------------------------------------------------------------------------------------
+A036  scene-0520  sample 92abf540e437448da253d88821abedb2
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-10-33-52-0400__CAM_FRONT__1535639672912404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 9.7 m/s (1 s ago 9.6), turn signal off; 2 lane(s); traffic-light stop line
+          30 m ahead; route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 9.1 / 9.1 m/s; heading +0 deg (+0 in intersections);
+           end x 33 m, y -0.3 m
+
+-----------------------------------------------------------------------------------------
+A037  scene-0106  sample b988f7f03263462d94d39a722dc820ca
+  image:
+    samples/CAM_FRONT/n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151725912404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 5.2 m/s (1 s ago 6.4), turn signal off; 3 lane(s), in an intersection;
+          traffic-light stop line 38 m ahead; construction zone; route: go straight
+  trace: Keep the current speed, keeping the lane through the construction zone.
+  [future] min / end speed 3.7 / 3.9 m/s; heading -0 deg (-0 in intersections);
+           end x 12 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A038  scene-0909  sample c1db9ff389054e339f0412d79b890fed
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-15-12-01-0400__CAM_FRONT__1537298061412404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 6.3 m/s (1 s ago 7.0), turn signal off; 3 lane(s), in an intersection;
+          route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 4.8 / 4.9 m/s; heading +2 deg (+1 in intersections);
+           end x 21 m, y +0.3 m
+
+-----------------------------------------------------------------------------------------
+A039  scene-0519  sample d1854d6255ca48628ff4d66317f43b7e
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-10-33-52-0400__CAM_FRONT__1535639642662575.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 7.0 m/s (1 s ago 6.5), turn signal off; 5 lane(s); route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 6.8 / 8.7 m/s; heading -0 deg (+0 in intersections);
+           end x 46 m, y -0.2 m
+
+-----------------------------------------------------------------------------------------
+A040  scene-0524  sample dfa48a639ca54273906096ebbd03660e
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-10-33-52-0400__CAM_FRONT__1535639753412404.jpg
+  decision: lon = Set speed tracking; lat = Lane keeping & centering
+  causes: ego 7.7 m/s (1 s ago 8.2), turn signal off; 1 lane(s), in an intersection; turn
+          stop line 26 m ahead; route: go straight
+  trace: Keep the current speed, keeping the lane because the lane ahead is clear.
+  [future] min / end speed 7.4 / 7.6 m/s; heading +4 deg (+3 in intersections);
+           end x 23 m, y +0.8 m
+
+-----------------------------------------------------------------------------------------
+A041  scene-0917  sample 19ccc1fa32844e0c9e4eb9d7e741a43f
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984305912460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn left
+  causes: ego 1.6 m/s (1 s ago 3.2), turn signal off; 6 lane(s); stop-sign stop line 2 m
+          ahead; route: go straight
+  trace: Slow down, turning left for the left turn at the intersection.
+  [future] min / end speed 0.3 / 4.2 m/s; heading +69 deg (+51 in intersections);
+           end x 9 m, y +5.7 m
+
+-----------------------------------------------------------------------------------------
+A042  scene-0917  sample 5bdba79e793f4133981f352b450b50c3
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984305412460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn left
+  causes: ego 2.5 m/s (1 s ago 3.6), turn signal off; 6 lane(s); stop-sign stop line 3 m
+          ahead; route: go straight
+  trace: Slow down, turning left for the left turn at the intersection.
+  [future] min / end speed 0.3 / 3.8 m/s; heading +60 deg (+41 in intersections);
+           end x 9 m, y +4.1 m
+
+-----------------------------------------------------------------------------------------
+A043  scene-0962  sample 656b5571b0c647f5bc103ceef3bfe661
+  image:
+    samples/CAM_FRONT/n015-2018-09-25-13-17-43+0800__CAM_FRONT__1537852761662460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn left
+  causes: ego 5.9 m/s (1 s ago 6.0), turn signal off; 4 lane(s), in an intersection;
+          traffic-light stop line 12 m ahead; crosswalk 20 m ahead; route: go straight
+  trace: Slow down, turning left for the left turn at the intersection.
+  [future] min / end speed 4.8 / 5.0 m/s; heading +58 deg (+51 in intersections);
+           end x 29 m, y +6.3 m
+
+-----------------------------------------------------------------------------------------
+A044  scene-0962  sample 661e92f2f19f44c283f0b540e68fdef8
+  image:
+    samples/CAM_FRONT/n015-2018-09-25-13-17-43+0800__CAM_FRONT__1537852763162460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn left
+  causes: ego 5.7 m/s (1 s ago 5.9), turn signal left; 5 lane(s); traffic-light stop line
+          3 m ahead; crosswalk 12 m ahead; route: turn left
+  trace: Slow down, turning left for the left turn at the intersection.
+  [future] min / end speed 4.8 / 5.6 m/s; heading +84 deg (+54 in intersections);
+           end x 21 m, y +15.3 m
+
+-----------------------------------------------------------------------------------------
+A045  scene-0018  sample 73ac66237c854ee69fc29e9b24860e41
+  image:
+    samples/CAM_FRONT/n015-2018-07-18-11-41-49+0800__CAM_FRONT__1531885802362460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn left
+  causes: ego 4.2 m/s (1 s ago 4.7), turn signal off; 7 lane(s); construction zone;
+          route: go straight
+  trace: Slow down, turning left for the left turn at the intersection.
+  [future] min / end speed 2.4 / 2.5 m/s; heading +86 deg (+40 in intersections);
+           end x 13 m, y +7.2 m
+
+-----------------------------------------------------------------------------------------
+A046  scene-0018  sample 9fbcde13d96b43a8aee0f76aee3bfc65
+  image:
+    samples/CAM_FRONT/n015-2018-07-18-11-41-49+0800__CAM_FRONT__1531885802912463.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn left
+  causes: ego 4.1 m/s (1 s ago 4.0), turn signal left; 7 lane(s); route: turn left
+  trace: Slow down, turning left for the left turn at the intersection.
+  [future] min / end speed 2.4 / 2.5 m/s; heading +85 deg (+40 in intersections);
+           end x 11 m, y +8.5 m
+
+-----------------------------------------------------------------------------------------
+A047  scene-1060  sample ffced1bcacb046af9928fe92d99fdb23
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799344162460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn left
+  causes: ego 7.4 m/s (1 s ago 8.0), turn signal off; 3 lane(s); turn stop line 12 m
+          ahead; route: turn left
+  trace: Slow down, turning left for the left turn at the intersection.
+  [future] min / end speed 6.4 / 8.0 m/s; heading +58 deg (+38 in intersections);
+           end x 32 m, y +24.5 m
+
+-----------------------------------------------------------------------------------------
+A048  scene-0928  sample 0cb0b2de67684cab83278bc2add2a0ec
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-44-23+0800__CAM_FRONT__1538984996862460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 4.8 m/s (1 s ago 5.7), turn signal right; 3 lane(s), in an intersection;
+          stop-sign stop line 11 m ahead; route: go straight
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 3.5 / 3.6 m/s; heading -79 deg (-73 in intersections);
+           end x 19 m, y -7.0 m
+
+-----------------------------------------------------------------------------------------
+A049  scene-0920  sample 188e7d58e565459096ad682313f93902
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984455012460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 4.6 m/s (1 s ago 4.6), turn signal off; 2 lane(s), in an intersection; turn
+          stop line 6 m ahead; route: turn right
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 2.5 / 5.2 m/s; heading -62 deg (-38 in intersections);
+           end x 16 m, y -13.5 m
+
+-----------------------------------------------------------------------------------------
+A050  scene-1061  sample 50e62add1dd7476c9ab223655ffb9f5e
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799409512460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 7.1 m/s (1 s ago 8.4), turn signal off; 3 lane(s); turn stop line 19 m
+          ahead; route: turn right
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 5.6 / 9.1 m/s; heading -46 deg (-41 in intersections);
+           end x 32 m, y -20.6 m
+
+-----------------------------------------------------------------------------------------
+A051  scene-0632  sample 690c4ddabc7845f48f4831ac73129154
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-14-35-12-0400__CAM_FRONT__1537295995612404.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 5.0 m/s (1 s ago 5.2), turn signal off; 3 lane(s), in an intersection;
+          route: go straight
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 3.9 / 5.7 m/s; heading -90 deg (-42 in intersections);
+           end x 18 m, y -13.8 m
+
+-----------------------------------------------------------------------------------------
+A052  scene-0928  sample 8dffb9bba025425e9d03fd0384ed1d1f
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-44-23+0800__CAM_FRONT__1538984997362460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 4.7 m/s (1 s ago 5.4), turn signal right; 3 lane(s), in an intersection;
+          stop-sign stop line 9 m ahead; route: go straight
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 3.4 / 3.4 m/s; heading -84 deg (-73 in intersections);
+           end x 17 m, y -8.9 m
+
+-----------------------------------------------------------------------------------------
+A053  scene-0928  sample 967fb73bdd20468495b1ac6de9159404
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-44-23+0800__CAM_FRONT__1538984995862460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 5.5 m/s (1 s ago 6.2), turn signal off; 4 lane(s), in an intersection;
+          stop-sign stop line 16 m ahead; route: go straight
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 3.5 / 3.7 m/s; heading -60 deg (-60 in intersections);
+           end x 24 m, y -2.8 m
+
+-----------------------------------------------------------------------------------------
+A054  scene-1061  sample 9fa6e5f94026465cb1f2acdf414c304b
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799406512460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 9.1 m/s (1 s ago 7.8), turn signal off; 1 lane(s); route: go straight
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 5.6 / 6.3 m/s; heading -41 deg (-36 in intersections);
+           end x 42 m, y -4.0 m
+
+-----------------------------------------------------------------------------------------
+A055  scene-1061  sample ac0ed47350fd4fa9a2e9e5cfab4db259
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799410012460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 6.4 m/s (1 s ago 7.6), turn signal off; 3 lane(s); turn stop line 16 m
+          ahead; route: turn right
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 5.6 / 9.3 m/s; heading -45 deg (-41 in intersections);
+           end x 33 m, y -23.0 m
+
+-----------------------------------------------------------------------------------------
+A056  scene-1061  sample ac9313c735754711a28d2da611b007ff
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799408512460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 7.9 m/s (1 s ago 9.7), turn signal off; 1 lane(s); turn stop line 26 m
+          ahead; route: go straight
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 5.6 / 8.2 m/s; heading -46 deg (-41 in intersections);
+           end x 33 m, y -14.5 m
+
+-----------------------------------------------------------------------------------------
+A057  scene-0928  sample b16163568a0e472791b837c0ecad1e5b
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-44-23+0800__CAM_FRONT__1538984995362460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 5.9 m/s (1 s ago 6.4), turn signal right; 4 lane(s), in an intersection;
+          turn stop line 24 m ahead; route: go straight
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 3.5 / 3.6 m/s; heading -44 deg (-44 in intersections);
+           end x 25 m, y -1.0 m
+
+-----------------------------------------------------------------------------------------
+A058  scene-0920  sample caccb9f684a14ff0a17f35c9f822f259
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984454512460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 4.6 m/s (1 s ago 4.6), turn signal off; 3 lane(s), in an intersection; turn
+          stop line 8 m ahead; route: turn right
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 2.5 / 4.8 m/s; heading -66 deg (-44 in intersections);
+           end x 15 m, y -12.7 m
+
+-----------------------------------------------------------------------------------------
+A059  scene-0632  sample ddbdad13484d4b6f91fd7ac2ae4ad606
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-14-35-12-0400__CAM_FRONT__1537295995112404.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 4.9 m/s (1 s ago 4.8), turn signal off; 2 lane(s), in an intersection;
+          route: go straight
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 3.9 / 5.4 m/s; heading -89 deg (-42 in intersections);
+           end x 20 m, y -11.3 m
+
+-----------------------------------------------------------------------------------------
+A060  scene-1061  sample f267aa43c6904cf7b43b3d493012b43a
+  image:
+    samples/CAM_FRONT/n015-2018-11-21-19-21-35+0800__CAM_FRONT__1542799409012460.jpg
+  decision: lon = Speed adaptation (road events); lat = Turn right
+  causes: ego 7.5 m/s (1 s ago 9.3), turn signal off; 1 lane(s); turn stop line 23 m
+          ahead; route: turn right
+  trace: Slow down, turning right for the right turn at the intersection.
+  [future] min / end speed 5.6 / 8.8 m/s; heading -46 deg (-41 in intersections);
+           end x 32 m, y -17.4 m
+
+-----------------------------------------------------------------------------------------
+A061  scene-0921  sample 022b90e4ad174f848690f010cc06f404
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984494412460.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 2.4 m/s (1 s ago 3.2), turn signal off; 6 lane(s); turn stop line 6 m
+          ahead; route: go straight
+  trace: Stop, keeping the lane at the turn stop line 6 m ahead.
+  [future] min / end speed 0.0 / 0.0 m/s; heading -0 deg (+0 in intersections);
+           end x 2 m, y +0.0 m
+
+-----------------------------------------------------------------------------------------
+A062  scene-0966  sample 093cfa9fb2a04b5d8193cd406e096419
+  image:
+    samples/CAM_FRONT/n015-2018-09-25-13-17-43+0800__CAM_FRONT__1537852860662460.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 3.7 m/s (1 s ago 4.5), turn signal right; 3 lane(s); construction zone;
+          route: go straight
+  trace: Stop, keeping the lane; no lead, stop line or crosswalk explains it in the map
+         or annotations.
+  [future] min / end speed 0.0 / 0.5 m/s; heading +7 deg (+2 in intersections);
+           end x 6 m, y +0.1 m
+
+-----------------------------------------------------------------------------------------
+A063  scene-0925  sample 1745a8aa698a4c798a8102135d7e1142
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-44-23+0800__CAM_FRONT__1538984916912460.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 0.8 m/s (1 s ago 0.4), turn signal off; 1 lane(s); crosswalk stop line 5 m
+          ahead; crosswalk 8 m ahead; route: go straight
+  trace: Stop, then proceed, keeping the lane at the crosswalk stop line 5 m ahead.
+  [future] min / end speed 0.0 / 3.5 m/s; heading +1 deg (+0 in intersections);
+           end x 6 m, y +0.0 m
+
+-----------------------------------------------------------------------------------------
+A064  scene-0797  sample 4af258d64bc749b29cb771304aa4cd14
+  image:
+    samples/CAM_FRONT/n015-2018-10-02-10-50-40+0800__CAM_FRONT__1538448773162460.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 4.5 m/s (1 s ago 6.2), turn signal off; 2 lane(s); traffic-light stop line
+          26 m ahead; route: go straight
+  trace: Stop, keeping the lane at the traffic-light stop line 26 m ahead (light state
+         not annotated).
+  [future] min / end speed 0.2 / 0.2 m/s; heading -1 deg (+0 in intersections);
+           end x 8 m, y -0.2 m
+
+-----------------------------------------------------------------------------------------
+A065  scene-0778  sample 7ff89b70dc764d9b98b84e5e2a3e5d44
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657716612404.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s); route: go straight
+  trace: Stay stopped, then proceed, keeping the lane; no lead, stop line or crosswalk
+         explains it in the map or annotations.
+  [future] min / end speed -0.9 / -0.9 m/s; heading +111 deg (+0 in intersections);
+           end x 4 m, y +5.3 m
+
+-----------------------------------------------------------------------------------------
+A066  scene-0330  sample 81ddc3fd101e41d0931e7c87381ca697
+  image:
+    samples/CAM_FRONT/n008-2018-08-22-15-53-49-0400__CAM_FRONT__1534967938362404.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 4.0 m/s (1 s ago 5.0), turn signal off; 2 lane(s); route: go straight
+  trace: Stop, keeping the lane; no lead, stop line or crosswalk explains it in the map
+         or annotations.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +3 deg (+0 in intersections);
+           end x 8 m, y +0.2 m
+
+-----------------------------------------------------------------------------------------
+A067  scene-0925  sample 87091b64b814472f8d4dbac04de8d3fc
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-44-23+0800__CAM_FRONT__1538984912912460.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 0.8 m/s (1 s ago 0.6), turn signal off; 1 lane(s); crosswalk stop line 3 m
+          ahead; crosswalk 11 m ahead; route: go straight
+  trace: Stop, keeping the lane at the crosswalk stop line 3 m ahead.
+  [future] min / end speed 0.0 / 0.0 m/s; heading -0 deg (+0 in intersections);
+           end x 4 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A068  scene-0635  sample 8e352778ec734bdeb57a8905d06ea95c
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-14-35-12-0400__CAM_FRONT__1537296076412404.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 0.5 m/s (1 s ago 0.5), turn signal off; 1 lane(s); route: go straight
+  trace: Stop, keeping the lane; no lead, stop line or crosswalk explains it in the map
+         or annotations.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x 0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A069  scene-0963  sample b9b511c212f041358c3654276401f8ab
+  image:
+    samples/CAM_FRONT/n015-2018-09-25-13-17-43+0800__CAM_FRONT__1537852791112460.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 2.0 m/s (1 s ago 1.9), turn signal right; 6 lane(s), in an intersection;
+          turn stop line 7 m ahead; crosswalk 0 m ahead; route: go straight
+  trace: Stop, keeping the lane at the turn stop line 7 m ahead.
+  [future] min / end speed 0.0 / 0.2 m/s; heading -0 deg (-0 in intersections);
+           end x 4 m, y -0.1 m
+
+-----------------------------------------------------------------------------------------
+A070  scene-0276  sample ff771831a0b243169b037f4659e23a9d
+  image:
+    samples/CAM_FRONT/n015-2018-07-11-11-54-16+0800__CAM_FRONT__1531281907762460.jpg
+  decision: lon = Stop for static constraints; lat = Lane keeping & centering
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 5 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 10 m ahead; route: go straight
+  trace: Stay stopped, then proceed, keeping the lane at the traffic-light stop line 1 m
+         ahead (light state not annotated).
+  [future] min / end speed 0.0 / 7.5 m/s; heading +5 deg (-2 in intersections);
+           end x 23 m, y +2.3 m
+
+-----------------------------------------------------------------------------------------
+A071  scene-0771  sample 00dcc65076f64cbea2f576be968b7000
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657575912404.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s); route: go straight
+  trace: Stay stopped; no lead, stop line or crosswalk explains it in the map or
+         annotations.
+  [future] min / end speed 0.0 / 0.0 m/s; heading -0 deg (+0 in intersections);
+           end x 0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A072  scene-0635  sample 01076466d815421c857d2c8cf8034488
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-14-35-12-0400__CAM_FRONT__1537296080912404.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s); route: go straight
+  trace: Stay stopped; no lead, stop line or crosswalk explains it in the map or
+         annotations.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x 0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A073  scene-0561  sample 781696f733bf458ca2a588fdec64a1b0
+  image:
+    samples/CAM_FRONT/n008-2018-08-31-11-37-23-0400__CAM_FRONT__1535730467862404.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal left; 7 lane(s); turn stop line 20 m
+          ahead; crosswalk 6 m ahead; route: go straight
+  trace: Stay stopped, then proceed at the turn stop line 20 m ahead.
+  [future] min / end speed 0.0 / 1.1 m/s; heading +0 deg (+0 in intersections);
+           end x 1 m, y +0.0 m
+
+-----------------------------------------------------------------------------------------
+A074  scene-0346  sample 89bc1e54d10a47f8bbb13552df6fc114
+  image:
+    samples/CAM_FRONT/n015-2018-08-02-17-16-37+0800__CAM_FRONT__1533201731012460.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 4 lane(s); turn stop line 15 m
+          ahead; crosswalk 9 m ahead; route: go straight
+  trace: Stay stopped at the turn stop line 15 m ahead.
+  [future] min / end speed 0.0 / 0.0 m/s; heading -0 deg (+0 in intersections);
+           end x 0 m, y +0.0 m
+
+-----------------------------------------------------------------------------------------
+A075  scene-0771  sample 8b830239436f46d3b0b90de4cc4c0546
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657576412404.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal left; 1 lane(s); route: go straight
+  trace: Stay stopped; no lead, stop line or crosswalk explains it in the map or
+         annotations.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A076  scene-0560  sample 93071f98339b40279937bafd206cb42e
+  image:
+    samples/CAM_FRONT/n008-2018-08-31-11-37-23-0400__CAM_FRONT__1535730432012404.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal left; 7 lane(s); turn stop line 20 m
+          ahead; crosswalk 6 m ahead; route: go straight
+  trace: Stay stopped at the turn stop line 20 m ahead.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A077  scene-0784  sample 942c0bdb5e1b48628fb9d4bf3435511d
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657856512404.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 7 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 9 m ahead; route: go straight
+  trace: Stay stopped at the traffic-light stop line 1 m ahead (light state not
+         annotated).
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A078  scene-0784  sample a364a98930634dd7b0885e922421e5fe
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657865862404.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 7 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 9 m ahead; route: go straight
+  trace: Stay stopped at the traffic-light stop line 1 m ahead (light state not
+         annotated).
+  [future] min / end speed 0.0 / 0.0 m/s; heading -0 deg (+0 in intersections);
+           end x 0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A079  scene-0635  sample b0715ea6c3714813b5255319443ea853
+  image:
+    samples/CAM_FRONT/n008-2018-09-18-14-35-12-0400__CAM_FRONT__1537296077862404.jpg
+  decision: lon = Stop for static constraints; lat = None
+  causes: ego 0.1 m/s (1 s ago 0.4), turn signal off; 1 lane(s); route: go straight
+  trace: Stay stopped; no lead, stop line or crosswalk explains it in the map or
+         annotations.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A080  scene-0921  sample 9c40f85f7e0340bfb535de1478ec1864
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984500612460.jpg
+  decision: lon = Stop for static constraints; lat = Turn left
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal left; 6 lane(s); turn stop line 4 m
+          ahead; route: go straight
+  trace: Stay stopped, then proceed, turning left at the turn stop line 4 m ahead.
+  [future] min / end speed 0.0 / 3.3 m/s; heading +43 deg (+35 in intersections);
+           end x 11 m, y +2.4 m
+
+-----------------------------------------------------------------------------------------
+A081  scene-0332  sample 70ea11fab78d40d89ee2915fcc20bd9a
+  image:
+    samples/CAM_FRONT/n008-2018-08-22-15-53-49-0400__CAM_FRONT__1534968250012404.jpg
+  decision: lon = Yield (agent right-of-way); lat = Lane keeping & centering
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 2 lane(s), in an intersection; turn
+          stop line 0 m ahead; crosswalk 7 m ahead; yield candidate pedestrian 8 m ahead,
+          -1.6 m lat., crossing to the right (1.4 m/s); route: go straight
+  trace: Slow down and yield, then proceed, keeping the lane because the pedestrian 8 m
+         ahead in the ego path is crossing to the right and has right of way.
+  [future] min / end speed 0.0 / 5.4 m/s; heading -2 deg (-2 in intersections);
+           end x 10 m, y -0.3 m
+
+-----------------------------------------------------------------------------------------
+A082  scene-0519  sample 779690ce8de54dc292f1e47bb1bd348c
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-10-33-52-0400__CAM_FRONT__1535639653112404.jpg
+  decision: lon = Yield (agent right-of-way); lat = Lane keeping & centering
+  causes: ego 9.0 m/s (1 s ago 8.3), turn signal off; 4 lane(s); crosswalk 4 m ahead;
+          yield candidate pedestrian 1 m ahead, -7.3 m lat., stationary (0.1 m/s); route:
+          go straight
+  trace: Slow down and yield, keeping the lane because the pedestrian 1 m ahead in the
+         ego path is stationary and has right of way.
+  [future] min / end speed 7.7 / 7.7 m/s; heading -0 deg (+0 in intersections);
+           end x 30 m, y -0.3 m
+
+-----------------------------------------------------------------------------------------
+A083  scene-0521  sample 982b03dbf8e84f14a851e1d1512ba03a
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-10-33-52-0400__CAM_FRONT__1535639690662404.jpg
+  decision: lon = Yield (agent right-of-way); lat = Lane keeping & centering
+  causes: ego 4.5 m/s (1 s ago 5.8), turn signal off; 4 lane(s); crosswalk stop line 12 m
+          ahead; crosswalk 19 m ahead; yield candidate pedestrian 19 m ahead, +1.3 m
+          lat., crossing to the left (1.6 m/s); route: go straight
+  trace: Slow down and yield, keeping the lane because the pedestrian 19 m ahead in the
+         ego path is crossing to the left and has right of way.
+  [future] min / end speed 2.3 / 4.4 m/s; heading -1 deg (+1 in intersections);
+           end x 17 m, y -0.3 m
+
+-----------------------------------------------------------------------------------------
+A084  scene-0917  sample de8043171d774855a2a0059c4c0e14f6
+  image:
+    samples/CAM_FRONT/n015-2018-10-08-15-36-50+0800__CAM_FRONT__1538984298912460.jpg
+  decision: lon = Yield (agent right-of-way); lat = Lane keeping & centering
+  causes: ego 3.0 m/s (1 s ago 4.2), turn signal left; 2 lane(s); stop-sign stop line 21
+          m ahead; yield candidate pedestrian 12 m ahead, +1.1 m lat., crossing to the
+          left (1.5 m/s); route: go straight
+  trace: Slow down and yield, keeping the lane because the pedestrian 12 m ahead in the
+         ego path is crossing to the left and has right of way.
+  [future] min / end speed 2.1 / 3.1 m/s; heading +15 deg (+9 in intersections);
+           end x 17 m, y +2.1 m
+
+-----------------------------------------------------------------------------------------
+A085  scene-0553  sample 05bc09f952ab4cf8b754405f20d503c5
+  image:
+    samples/CAM_FRONT/n008-2018-08-28-16-43-51-0400__CAM_FRONT__1535489303912404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 6 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 8 m ahead; yield candidate pedestrian 8 m ahead, +3.6 m
+          lat., crossing to the right (1.5 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 8 m ahead in the ego path is crossing
+         to the right and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A086  scene-0557  sample 1c4e3d00204344b5a373df3ade9916bb
+  image:
+    samples/CAM_FRONT/n008-2018-08-31-11-37-23-0400__CAM_FRONT__1535730289012404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal right; 5 lane(s); traffic-light stop
+          line 1 m ahead; crosswalk 8 m ahead; yield candidate pedestrian 7 m ahead, +8.2
+          m lat., crossing to the right (1.5 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 7 m ahead in the ego path is crossing
+         to the right and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A087  scene-0771  sample 317fba7a6afb4dac8974af0d61afe325
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657570412404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s); yield candidate
+          pedestrian 2 m ahead, -1.0 m lat., stationary (0.2 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 2 m ahead in the ego path is
+         stationary and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A088  scene-0553  sample 31812a5e8d514b5f8d2fbc50fc007475
+  image:
+    samples/CAM_FRONT/n008-2018-08-28-16-43-51-0400__CAM_FRONT__1535489311362404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 6 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 8 m ahead; yield candidate pedestrian 8 m ahead, -0.1 m
+          lat., crossing to the right (1.1 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 8 m ahead in the ego path is crossing
+         to the right and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading -0 deg (+0 in intersections);
+           end x 0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A089  scene-0553  sample 32e2619879854a83953c08ec8557f3bb
+  image:
+    samples/CAM_FRONT/n008-2018-08-28-16-43-51-0400__CAM_FRONT__1535489311862404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 6 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 8 m ahead; yield candidate pedestrian 8 m ahead, -0.6 m
+          lat., crossing to the right (1.1 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 8 m ahead in the ego path is crossing
+         to the right and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A090  scene-0553  sample 3a064c48e47b489a8b442b8081f877b6
+  image:
+    samples/CAM_FRONT/n008-2018-08-28-16-43-51-0400__CAM_FRONT__1535489310362404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 6 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 8 m ahead; yield candidate pedestrian 8 m ahead, +1.0 m
+          lat., crossing to the right (1.2 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 8 m ahead in the ego path is crossing
+         to the right and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A091  scene-0554  sample 3b79884e7686499b847fd7ece438c229
+  image:
+    samples/CAM_FRONT/n008-2018-08-28-16-43-51-0400__CAM_FRONT__1535489328912404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 6 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 8 m ahead; yield candidate car 25 m ahead, +1.9 m lat.,
+          crossing to the right (7.8 m/s); route: go straight
+  trace: Slow down and yield because the car 25 m ahead in the ego path is crossing to
+         the right and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x 0 m, y +0.0 m
+
+-----------------------------------------------------------------------------------------
+A092  scene-0777  sample 44046f30e7b5484e945279176eef203b
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657704362404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s); yield candidate
+          pedestrian 1 m ahead, +1.1 m lat., stationary (0.0 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 1 m ahead in the ego path is
+         stationary and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A093  scene-0332  sample 8398a7b012a04b00a72951ce2792e9d6
+  image:
+    samples/CAM_FRONT/n008-2018-08-22-15-53-49-0400__CAM_FRONT__1534968248512411.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.1), turn signal off; 2 lane(s), in an intersection; turn
+          stop line 0 m ahead; crosswalk 7 m ahead; yield candidate pedestrian 6 m ahead,
+          +1.6 m lat., crossing to the left (1.7 m/s); route: go straight
+  trace: Slow down and yield, then proceed because the pedestrian 6 m ahead in the ego
+         path is crossing to the left and has right of way.
+  [future] min / end speed 0.0 / 3.2 m/s; heading -2 deg (-2 in intersections);
+           end x 4 m, y -0.1 m
+
+-----------------------------------------------------------------------------------------
+A094  scene-0777  sample 9917500ef64c454581306b77eb6ffcb2
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657696512404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s); lead pedestrian 1 m
+          ahead, -1.1 m lat., moving the same way (0.7 m/s); yield candidate pedestrian 1
+          m ahead, +1.0 m lat., stationary (0.2 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 1 m ahead in the ego path is
+         stationary and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x 0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A095  scene-0332  sample b92ee1ed90c242d18bce9a8fdbbeb8d8
+  image:
+    samples/CAM_FRONT/n008-2018-08-22-15-53-49-0400__CAM_FRONT__1534968247412404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.5), turn signal off; 2 lane(s), in an intersection; turn
+          stop line 0 m ahead; crosswalk 7 m ahead; yield candidate pedestrian 7 m ahead,
+          -0.4 m lat., crossing to the left (2.0 m/s); route: go straight
+  trace: Slow down and yield, then proceed because the pedestrian 7 m ahead in the ego
+         path is crossing to the left and has right of way.
+  [future] min / end speed 0.0 / 1.7 m/s; heading -1 deg (-1 in intersections);
+           end x 1 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A096  scene-0777  sample cbbfb7a9e034467cba128f38c9b29d91
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657696012404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s); lead pedestrian 1 m
+          ahead, -1.2 m lat., moving the same way (0.8 m/s); yield candidate pedestrian 1
+          m ahead, +1.1 m lat., stationary (0.1 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 1 m ahead in the ego path is
+         stationary and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x 0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A097  scene-0332  sample d11353f29481498487eef6a6661060a4
+  image:
+    samples/CAM_FRONT/n008-2018-08-22-15-53-49-0400__CAM_FRONT__1534968249012408.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 2 lane(s), in an intersection; turn
+          stop line 0 m ahead; crosswalk 7 m ahead; yield candidate pedestrian 6 m ahead,
+          +2.6 m lat., crossing to the left (2.0 m/s); route: go straight
+  trace: Slow down and yield, then proceed because the pedestrian 6 m ahead in the ego
+         path is crossing to the left and has right of way.
+  [future] min / end speed 0.0 / 3.9 m/s; heading -2 deg (-2 in intersections);
+           end x 5 m, y -0.2 m
+
+-----------------------------------------------------------------------------------------
+A098  scene-0553  sample d2ae3c5bbb5343a393882b44d56f8da3
+  image:
+    samples/CAM_FRONT/n008-2018-08-28-16-43-51-0400__CAM_FRONT__1535489308862404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal off; 6 lane(s); traffic-light stop line
+          1 m ahead; crosswalk 8 m ahead; yield candidate pedestrian 9 m ahead, -1.1 m
+          lat., crossing to the right (1.1 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 9 m ahead in the ego path is crossing
+         to the right and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A099  scene-0771  sample e3ca1a55038c406fab27d3b533831636
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657570912404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal left; 1 lane(s); yield candidate
+          pedestrian 2 m ahead, -1.1 m lat., stationary (0.2 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 2 m ahead in the ego path is
+         stationary and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m
+
+-----------------------------------------------------------------------------------------
+A100  scene-0777  sample feeca927e64541709fbad93ad6bbe4c5
+  image:
+    samples/CAM_FRONT/n008-2018-08-30-15-31-50-0400__CAM_FRONT__1535657703362404.jpg
+  decision: lon = Yield (agent right-of-way); lat = None
+  causes: ego 0.0 m/s (1 s ago 0.0), turn signal left; 1 lane(s); yield candidate
+          pedestrian 1 m ahead, +1.2 m lat., stationary (0.1 m/s); route: go straight
+  trace: Slow down and yield because the pedestrian 1 m ahead in the ego path is
+         stationary and has right of way.
+  [future] min / end speed 0.0 / 0.0 m/s; heading +0 deg (+0 in intersections);
+           end x -0 m, y -0.0 m

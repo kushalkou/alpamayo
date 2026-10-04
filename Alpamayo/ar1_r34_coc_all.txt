@@ -1,0 +1,22 @@
+  return lib.distance(a, b, **kwargs)
+  return lib.distance(a, b, **kwargs)
+built 29049 rows in 39 s
+
+train: n = 22213 (n_fut >= 6; 18313 with n_fut = 12)
+  lon: Set speed tracking 15187 (0.684); Stop for static constraints 3797 (0.171); Lead obstacle following 2033 (0.092); Yield (agent right-of-way) 936 (0.042); Speed adaptation (road events) 253 (0.011); Acceleration for passing/overtaking 7 (0.000)
+  lat: Lane keeping & centering 16906 (0.761); None 3304 (0.149); Turn right 892 (0.040); Turn left 633 (0.028); Lane change right 271 (0.012); Lane change left 207 (0.009)
+  n_tok_trace: mean 16.5 median 15 p95 26 max 34
+  n_tok_coc: mean 78.4 median 74 p95 114 max 156
+
+holdout: n = 1717 (n_fut >= 6; 1417 with n_fut = 12)
+  lon: Set speed tracking 1107 (0.645); Stop for static constraints 218 (0.127); Lead obstacle following 199 (0.116); Yield (agent right-of-way) 174 (0.101); Speed adaptation (road events) 19 (0.011)
+  lat: Lane keeping & centering 1247 (0.726); None 334 (0.195); Turn right 60 (0.035); Turn left 42 (0.024); Lane change right 18 (0.010); Lane change left 16 (0.009)
+  n_tok_trace: mean 17.5 median 15 p95 27 max 34
+  n_tok_coc: mean 81.8 median 76 p95 121 max 151
+
+val: n = 5119 (n_fut >= 6; 4219 with n_fut = 12)
+  lon: Set speed tracking 3128 (0.611); Lead obstacle following 1201 (0.235); Stop for static constraints 638 (0.125); Yield (agent right-of-way) 110 (0.021); Speed adaptation (road events) 42 (0.008)
+  lat: Lane keeping & centering 4076 (0.796); None 611 (0.119); Turn right 173 (0.034); Turn left 140 (0.027); Lane change right 68 (0.013); Lane change left 51 (0.010)
+  n_tok_trace: mean 17.6 median 15 p95 26 max 34
+  n_tok_coc: mean 82.5 median 76 p95 114 max 141
+wrote /home/dgx1user/Alpamayo-Kushal/Alpamayo/data/ar1_coc.pkl and /home/dgx1user/Alpamayo-Kushal/AR1_COC_AUDIT.txt; total 51 s

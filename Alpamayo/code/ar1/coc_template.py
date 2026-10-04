@@ -13,12 +13,17 @@ Map helpers (all at t0 from the ego pose):
               of the ego heading, nearest by lateral distance
   path lanes  ego lane + successors (outgoing graph) to depth 3 = every branch the ego
               could take (the chosen branch would need the route, which is privileged)
-  in path     object ahead (0 < x < 50 m) within 1.6 m + half its width of the arcline
-              of a path lane. Replaces v1's curvature corridor.
+  in path     (v3, R3.4b) object ahead (0 < x < 50 m) whose centre is within 1.5 m + half
+              its width of the ego's REALIZED 6 s path (GT future positions; used for the
+              label only, like AR1's labeller that sees the future). If the ego covers
+              < 5 m: centre inside the ego lane or its direct successors and |y| < 2.5 m.
+  crosswalk   a crosswalk ahead only counts if it intersects the realized path.
   lanes here  lanes / connectors within 8 m, heading within 30 deg of the ego
   stop line   nearest stop line ahead (0 < x < 40 m, |y| < 6 m) with its type
               (STOP_SIGN, TRAFFIC_LIGHT, PED_CROSSING, YIELD, TURN_STOP)
   crosswalk   nearest crosswalk centroid ahead (0 < x < 25 m, |y| < 8 m)
+  turn        (v3) heading change accumulated INSIDE intersection polygons > 30 deg; a
+              bend within a lane is lane keeping.
   intersection  the ego, or a point on its future path, lies on an intersection road
               segment (future use is only for the decision, never for the components)
 Objects: annotations at t0, visibility >= 40%, >= 1 lidar point; velocity from the same
@@ -210,7 +215,13 @@ def objects(r, inst, S, A, by_s, M, path):
             vy = (a['translation'][1] - prev['translation'][1]) / dt
             sp = math.hypot(vx, vy); c, s = math.cos(e[2]), math.sin(e[2])
             vl = (vx * c + vy * s, -vx * s + vy * c)
-        inp = bool(0 < x < 50 and path and M.in_lanes(a['translation'][0], a['translation'][1], path))
+        if isinstance(path, tuple):                 # realized future path (LineString, 'line')
+            from shapely.geometry import Point as _P
+            inp = bool(0 < x < 50 and path[0].distance(_P(a['translation'][0], a['translation'][1]))
+                       < 1.5 + a['size'][0] / 2)
+        else:                                       # ego (almost) stationary: lanes, |y| < 2.5 m
+            inp = bool(0 < x < 50 and abs(y) < 2.5 and path and
+                       M.in_lanes(a['translation'][0], a['translation'][1], path))
         out.append({'kind': kd, 'x': x, 'y': y, 'speed': sp, 'vel': vl, 'in_path': inp,
                     'moving': sp is not None and sp > 0.5, 'g': a['translation'][:2]})
     return out
@@ -373,10 +384,18 @@ def _scene_rows(job):
         ego = {'v0': float(V0[st]['v0_can']), 'v_1s': float(e4[1, 0]), 'signal': ts}
         e = ego_pose(r)
         lane0 = M.lane_at(e[0], e[1], e[2])
-        path = M.succ(lane0, 3) if lane0 else set()
+        from shapely.geometry import LineString
+        fp = np.asarray(r['future_positions'])[:, :2]
+        line = LineString(np.vstack([[e[0], e[1]], fp]))
+        if line.length >= 5.0:                      # R3.4b: in path = near the realized path
+            path = (line, 'line')
+        else:
+            path = M.succ(lane0, 1) if lane0 else set()
         objs = objects(r, G['inst'], S, G['A'], G['by_s'], M, path)
         sl = M.ahead('stop_line', e, 40, 6)
         xw = M.ahead('ped_crossing', e, 25, 8)
+        if xw is not None and isinstance(path, tuple) and not xw[3].intersects(path[0]):
+            xw = None                               # crosswalk not on the ego's path
         F = future(r, G['Mt'][st], M, lane0)
         lon, lat, cause, lead, yc = decide(ego, objs, F, xw)
         cons = sum(o['kind'] == 'cone/barrier' and 0 < o['x'] < 30 and abs(o['y']) < 6 for o in objs) >= 3
@@ -487,8 +506,8 @@ def write_audit(rows, n=100, seed=0):
     pick = sorted(pick, key=lambda st: (rows[st]['lon'], rows[st]['lat'], st))
     with open(AUDIT, 'w') as f:
         f.write('AR1_COC_AUDIT -- 100 random VAL CoC traces for human audit (phase R3.4d)\n'
-                'Generator: Alpamayo/code/ar1/coc_template.py v3 (STRtree map index; yield only for\n'
-                'agents inside the ego lane polygons or on a crosswalk ahead; turn only for heading\n'
+                'Generator: Alpamayo/code/ar1/coc_template.py v3 (STRtree map index; yield / lead only\n'
+                'for agents on the ego path or on a crosswalk the path crosses; turn only for heading\n'
                 'change inside map intersection polygons). Stratified by lon decision, seed 0:\n'
                 + ''.join(f'  {c}: {sum(rows[st]["lon"] == c for st in pick)} of {len(by[c])}\n' for c in cls) +
                 'Causes = critical components (history t0-1 s .. t0 + static map). The decision is\n'
@@ -499,14 +518,14 @@ def write_audit(rows, n=100, seed=0):
             img = H[st]['cams']['CAM_FRONT'][-1][0].split('nuscenes/')[1]
             f.write('\n' + '-' * 89 + '\n')
             f.write(f'A{k:03d}  {x["scene"]}  sample {st}\n')
-            f.write(f'  image: {img}\n')
+            f.write(f'  image:\n    {img}\n')
             f.write(f'  decision: lon = {x["lon"]}; lat = {x["lat"]}\n')
             f.write(textwrap.fill(components_text(x), 89, initial_indent='  causes: ',
                                   subsequent_indent='          ') + '\n')
             f.write(textwrap.fill(compose(x['lon'], x['lat'], x['cause'], x['ego'], F, x['sl'], x['xw'], x['cons']),
                                   89, initial_indent='  trace: ', subsequent_indent='         ') + '\n')
-            f.write(f'  [future] min / end speed {F["vmin"]:.1f} / {F["vend"]:.1f} m/s, heading {F["dpsi"]:+.0f} deg '
-                    f'({F["dpsi_int"]:+.0f} inside intersections), end x {F["x_end"]:.0f} y {F["y_end"]:+.1f} m\n')
+            f.write(f'  [future] min / end speed {F["vmin"]:.1f} / {F["vend"]:.1f} m/s; heading {F["dpsi"]:+.0f} deg '
+                    f'({F["dpsi_int"]:+.0f} in intersections);\n           end x {F["x_end"]:.0f} m, y {F["y_end"]:+.1f} m\n')
 
 
 def main():

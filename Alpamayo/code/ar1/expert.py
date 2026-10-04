@@ -57,9 +57,12 @@ class Layer(nn.Module):
         q = rope(self.q(h).view(B, L, NQ, HD).transpose(1, 2), pos)
         k = rope(self.k(h).view(B, L, NKV, HD).transpose(1, 2), pos)
         v = self.v(h).view(B, L, NKV, HD).transpose(1, 2)
-        k = torch.cat([K, k], 2).repeat_interleave(NQ // NKV, 1)
-        v = torch.cat([V, v], 2).repeat_interleave(NQ // NKV, 1)
-        a = F.scaled_dot_product_attention(q, k, v)                 # no mask
+        k = torch.cat([K.to(x.dtype), k], 2)
+        v = torch.cat([V.to(x.dtype), v], 2)
+        # GQA without repeat_interleave: q head h uses kv head h // 7; with no mask this is
+        # identical to repeating K/V (R3.3; saves 7x attention memory on long contexts)
+        g = NQ // NKV
+        a = F.scaled_dot_product_attention(q.reshape(B, NKV, g * L, HD), k, v).reshape(B, NQ, L, HD)
         x = x + self.drop(self.o(a.transpose(1, 2).reshape(B, L, NQ * HD)))
         h = self.n2(x)
         return x + self.drop(self.dn(F.silu(self.g(h)) * self.u(h)))
@@ -85,7 +88,6 @@ class FlowExpert(nn.Module):
         """xt [B,12,2]; t [B]; KV [B,28,2,4,C,128] (fp16 ok; cast to fp32)."""
         x = self.inp(xt) + self.step[None] + self.temb(t)[:, None]
         pos = torch.arange(ctx_len, ctx_len + self.n, device=xt.device)
-        KV = KV.float()
         for l, layer in enumerate(self.layers):
             x = layer(x, KV[:, l, 0], KV[:, l, 1], pos)
         return self.out(self.nf(x))
