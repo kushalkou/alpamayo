@@ -39,6 +39,29 @@ R3.1 COST WITH THE CACHE (B1, 480 visual tokens; Alpamayo/ar1_r24_B1.log)
   For scale: B2 (1,920 tokens, cached) 6.28 s/step, 14.0 h wall = 112 GPU-h training.
 
 =========================================================================================
+R3.2 B1 SEEDS (123, 2024; same recipe) -- Alpamayo/ar1_r32_eval.txt
+=========================================================================================
+Runs: B1_s123 05:21-08:37 UTC, B1_s2024 08:37-11:33 UTC (train + holdout / val dumps).
+Official val, ALL 5,119; per seed (42 / 123 / 2024), mean +- sd (ddof 1; T9b quoted the
+ddof-0 sd 0.044 for the same no-camera numbers):
+                     no camera (A3, G6C)                    B1 (3 cams t0)
+  L2@3s NoAvg   1.894 2.001 1.967 = 1.954 +- 0.054   2.165 2.048 2.061 = 2.091 +- 0.064
+  L2@3s TemAvg  0.877 0.926 0.923 = 0.909 +- 0.027   1.033 0.974 0.971 = 0.993 +- 0.035
+  ADE@6s        2.896 2.968 2.926 = 2.930 +- 0.036   3.125 3.009 3.010 = 3.048 +- 0.067
+  ADE@6s med    2.003 2.077 1.941 = 2.007 +- 0.068   2.296 2.215 2.150 = 2.220 +- 0.073
+  L2@3s p95     5.108 5.293 5.654 = 5.352 +- 0.278   5.570 5.308 5.328 = 5.402 +- 0.146
+  Col% Tem 3s   0.641 0.514 0.658 = 0.605 +- 0.078   0.495 0.466 0.498 = 0.486 +- 0.018
+Seed-mean difference B1 - no cam (paired scene bootstrap):
+                L2@3s                  L2@3s TemAvg           ADE@6s
+  ALL           +0.137 [+0.036,+0.255]  +0.084 [+0.023,+0.157]  +0.118 [+0.005,+0.244]
+  EXCL. first   +0.175 [+0.076,+0.291]  +0.106 [+0.046,+0.178]  +0.167 [+0.053,+0.291]
+  strata L2@3s  straight +0.081 [+0.039,+0.123]; turning -0.082 [-0.173,+0.012];
+                stationary +0.476 [-0.024,+0.978] (excl. first frames +0.751 [+0.234,+1.310])
+  stationary false-go: no cam 0.016 / 0.012 / 0.037; B1 0.302 / 0.321 / 0.299
+Over three seeds B1 stays worse than no cameras on L2 and ADE, with lower collision rates;
+the false-go failure is present in every B1 seed.
+
+=========================================================================================
 R3.3 META-ACTION + TRAJ ARM (M1) -- PENDING (GPU queue)
 =========================================================================================
 
