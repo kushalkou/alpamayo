@@ -208,7 +208,8 @@ def main():
     ap.add_argument('--max_steps', type=int, default=0)
     ap.add_argument('--dump', default='')
     a = ap.parse_args()
-    dist.init_process_group('nccl')
+    import datetime
+    dist.init_process_group('nccl', timeout=datetime.timedelta(hours=3))   # uneven decode times across ranks
     r = int(os.environ['LOCAL_RANK']); torch.cuda.set_device(r); dev = f'cuda:{r}'
     ws = dist.get_world_size(); m0 = r == 0
     log = lambda *x: print(*x, flush=True) if m0 else None
