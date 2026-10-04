@@ -80,7 +80,7 @@ Expert (ar1/train_expert_meta.py, option A on the frozen M1 sequence, KV online,
   training; 0.43 GPU-h inference. The first final step OOMed (checkpoint loaded onto
   cuda:0 by all ranks); fixed with map_location, predictions rerun from the saved best.
 Official val (L2 m, Col %):
-                        L2@3s No / Tem  Col% 3s No / Tem  ADE@6s mean med p95  minADE6 3s/6s
+                        L2@3s No / Tem  Col% 3s No / Tem  ADE@6s mean med p95 minADE6 3/6s
   ALL 5,119
   no cam 3-seed [P]     1.954  0.909     1.45 / 0.60      2.930 2.109 7.371   = ADE
   B1 3-seed mean [P]    2.091  0.993     1.23 / 0.49      3.048 2.371 6.999   = ADE
@@ -116,8 +116,6 @@ Reading: adding meta-action words does not change the token decoder against its 
   (3.51). The expert's mean of 6 is better than the token decoder on ADE@6s (-0.14 m)
   but has 2x the collision rate and a heavier p95 tail. The words collapse toward
   maintain / straight (A2). Single seed; seeds 123 / 2024 running.
-
-=========================================================================================
 
 =========================================================================================
 R3.4 CoC DATASET (ar1/coc_template.py v3; 4b4ebc7; Alpamayo/ar1_r34_coc_all.txt)
@@ -196,3 +194,10 @@ A3. Re-decode with valid-word-constrained decoding: QUEUED after the M1 seeds (t
     Note: the original M1 dump already used constrained greedy decoding (unconstrained
     argmax agreed on 0.999 of word slots), so M1_G is a determinism check. M1_T07 =
     sampling at T = 0.7 over the valid words. Results pending.
+
+=========================================================================================
+GATE (R3.3 seed 42 + R3.4) -- 2026-10-04 23:15 UTC
+=========================================================================================
+Running (tmux r33, then a3): M1_s123 train (started 23:06) + dumps -> ~03:30 UTC 10-05;
+M1_s2024 -> ~08:00; A3 re-decodes M1_G, M1_T07 (holdout + val) -> ~10:00. CoC training
+arm NOT launched (waits for the audit of AR1_COC_AUDIT.txt).
