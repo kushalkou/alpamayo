@@ -56,7 +56,8 @@ Seed-mean difference B1 - no cam (paired scene bootstrap):
   ALL           +0.137 [+0.036,+0.255]  +0.084 [+0.023,+0.157]  +0.118 [+0.005,+0.244]
   EXCL. first   +0.175 [+0.076,+0.291]  +0.106 [+0.046,+0.178]  +0.167 [+0.053,+0.291]
   strata L2@3s  straight +0.081 [+0.039,+0.123]; turning -0.082 [-0.173,+0.012];
-                stationary +0.476 [-0.024,+0.978] (excl. first frames +0.751 [+0.234,+1.310])
+  strata L2@3s  straight +0.081 [+0.039,+0.123]
+                turning -0.082 [-0.173,+0.012]
   stationary false-go: no cam 0.016 / 0.012 / 0.037; B1 0.302 / 0.321 / 0.299
 Over three seeds B1 stays worse than no cameras on L2 and ADE, with lower collision rates;
 the false-go failure is present in every B1 seed.
