@@ -129,12 +129,18 @@ def build(dev, a):
 
 
 @torch.no_grad()
-def decode(net, vt, ego, tk, dev, gt=None, full=False):
-    """constrained word decoding, then trajectory; returns dict (dump_w1 fields if full)."""
+def decode(net, vt, ego, tk, dev, gt=None, full=False, temp=0.0, gen=None):
+    """constrained word decoding (greedy, or sampling at temperature `temp` over the VALID
+    words only), then the trajectory (unchanged); returns dict (dump_w1 fields)."""
     vla = net.vla; lm = vla.cosmos.model.language_model
     ctx = vla._build_context(vt.to(dev, torch.float16).unsqueeze(0), ego.to(dev, torch.float32).unsqueeze(0))
     o = lm(inputs_embeds=ctx, use_cache=True); past = o.past_key_values; h = o.last_hidden_state[:, -1]
     words, free_ok, txt = [], [], []
+
+    def pick(lg, ids):
+        if temp <= 0:
+            return int(torch.argmax(lg[ids]).item())
+        return int(torch.multinomial(torch.softmax(lg[ids] / temp, -1), 1, generator=gen).item())
 
     def step(token_id):
         nonlocal past, h
@@ -144,16 +150,16 @@ def decode(net, vt, ego, tk, dev, gt=None, full=False):
 
     for s in range(6):                                       # lon words
         lg = net.lm_head(h).float()[0]
-        c = int(torch.argmax(lg[LON_W]).item())
+        c = pick(lg, LON_W)
         free_ok.append(int(lg.argmax().item()) == LON_W[c]); words.append(c); txt.append(LON_W[c]); step(LON_W[c])
     for s in range(6):                                       # lat words (2 tokens)
         lg = net.lm_head(h).float()[0]
         ka = list(LAT_A); ia = [LAT_A[k] for k in ka]
-        A = ka[int(torch.argmax(lg[ia]).item())]
+        A = ka[pick(lg, ia)]
         f1 = int(lg.argmax().item()) == LAT_A[A]; step(LAT_A[A]); txt.append(LAT_A[A])
         lg = net.lm_head(h).float()[0]
         kb = ALLOWED_B[A]; ib = [LAT_B[k] for k in kb]
-        Bw = kb[int(torch.argmax(lg[ib]).item())]
+        Bw = kb[pick(lg, ib)]
         free_ok.append(f1 and int(lg.argmax().item()) == LAT_B[Bw]); step(LAT_B[Bw]); txt.append(LAT_B[Bw])
         words.append(LAT_W.index((A, Bw)))
     logits = vla.output_head(h.float())[0]
@@ -207,6 +213,8 @@ def main():
     ap.add_argument('--batch_size', type=int, default=3)
     ap.add_argument('--max_steps', type=int, default=0)
     ap.add_argument('--dump', default='')
+    ap.add_argument('--word_temp', type=float, default=0.0, help='A3: sample valid words at this T (0 = greedy)')
+    ap.add_argument('--out_tag', default=None, help='A3: dump name (default = --tag)')
     a = ap.parse_args()
     import datetime
     dist.init_process_group('nccl', timeout=datetime.timedelta(hours=3))   # uneven decode times across ranks
@@ -230,10 +238,12 @@ def main():
             stats = {'missing': 0}
             ds = DS(R, H, Mt, stats)
             out = {}; t0 = time.time()
+            gw = torch.Generator(device=dev).manual_seed(777 + r)
             for c, i in enumerate(range(r, len(R), ws)):
                 t = R[i]
                 gt = [x for x, _ in t['w1_tokens']] + [k for _, k in t['w1_tokens']] if len(t['w1_tokens']) == 12 else None
-                d = decode(net, vcache.gather(H[t['sample_token']], (3,)), t['w1_ego'], tk, dev, gt)
+                d = decode(net, vcache.gather(H[t['sample_token']], (3,)), t['w1_ego'], tk, dev, gt,
+                           temp=a.word_temp, gen=gw)
                 d['meta_gt'] = ds.meta[i][0] + ds.meta[i][1]
                 out[t['sample_token']] = d
                 if m0 and c % 100 == 0:
@@ -244,7 +254,7 @@ def main():
                 M = {}
                 for p in parts:
                     M.update(p)
-                op = f'{RES}/w1_dump_{a.tag}_{split}_f0.0.pkl'
+                op = f'{RES}/w1_dump_{a.out_tag or a.tag}_{split}_f0.0.pkl'
                 pickle.dump({'order': [t['sample_token'] for t in R], 'data': M, 'ckpt_epoch': ck.get('epoch'),
                              'extra': ['cmd'], 'meta_missing_ticks': stats['missing']}, open(op, 'wb'))
                 log(f'[meta] saved {op} n={len(M)}')

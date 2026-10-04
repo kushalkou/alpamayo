@@ -1,0 +1,33 @@
+A1 / A2 on val n_fut = 12 (n = 4219); NEW = labels from GT 2 Hz controls, CAN = R1.2 10 Hz labels (M1 training targets)
+
+A1. GT self-consistency (GT-trajectory-derived vs NEW labels): all 12 1.000 (identical by construction: both are the same derivation of the same controls)
+    NEW vs CAN labels: all 12 0.180; lon 6/6 0.215; lat 6/6 0.768; per-slot lon 0.693 lat 0.945
+
+  M1: generated words and predicted trajectory (hybrid decode, tau 0.3)
+    words vs NEW labels, lon           acc 0.568 0.513 0.471 0.449 0.439 0.426 (mean 0.478) | mF1 0.401 0.354 0.315 0.289 0.270 0.247 (mean 0.313)
+    words vs NEW labels, lat           acc 0.901 0.851 0.822 0.799 0.792 0.786 (mean 0.825) | mF1 0.655 0.536 0.402 0.325 0.315 0.276 (mean 0.418)
+    words vs CAN (side) labels, lon    acc 0.716 0.644 0.604 0.576 0.564 0.559 (mean 0.610) | mF1 0.399 0.347 0.314 0.285 0.265 0.244 (mean 0.309)
+    words vs CAN (side) labels, lat    acc 0.915 0.862 0.833 0.807 0.803 0.794 (mean 0.836) | mF1 0.708 0.540 0.413 0.346 0.334 0.279 (mean 0.437)
+    CONSISTENCY (pred-traj-derived == generated): all 12 0.412; lon 6/6 0.462; lat 6/6 0.886; slot mean lon 0.828 lat 0.976  (label-free; same with either label set)
+    pred-traj-derived vs NEW labels: all 12 0.080; slot mean lon 0.434 lat 0.816
+    pred-traj-derived vs CAN labels: all 12 0.128; slot mean lon 0.539 lat 0.825
+
+A2. COLLAPSE. per-slot class shares (val n_fut = 12); classes lon ('gentle_acc', 'strong_acc', 'gentle_dec', 'strong_dec', 'maintain', 'stop', 'reverse'), lat ('steer_L', 'steer_R', 'sharp_L', 'sharp_R', 'reverse_L', 'reverse_R', 'straight')
+  M1 lon:
+    t+1s gen 0.158 0.000 0.157 0.000 0.544 0.141 0.000 | CAN 0.194 0.003 0.159 0.005 0.487 0.151 0.001 | NEW 0.198 0.054 0.187 0.047 0.359 0.155 0.000
+    t+2s gen 0.156 0.000 0.134 0.000 0.560 0.150 0.000 | CAN 0.195 0.003 0.163 0.005 0.486 0.148 0.001 | NEW 0.204 0.052 0.189 0.046 0.358 0.151 0.000
+    t+3s gen 0.144 0.000 0.123 0.000 0.580 0.153 0.000 | CAN 0.193 0.003 0.163 0.005 0.490 0.145 0.001 | NEW 0.204 0.053 0.189 0.047 0.359 0.148 0.000
+    t+4s gen 0.122 0.000 0.107 0.000 0.611 0.160 0.000 | CAN 0.192 0.003 0.163 0.004 0.493 0.143 0.001 | NEW 0.202 0.054 0.188 0.046 0.363 0.146 0.000
+    t+5s gen 0.107 0.000 0.086 0.000 0.638 0.169 0.000 | CAN 0.192 0.002 0.160 0.005 0.498 0.143 0.001 | NEW 0.200 0.054 0.188 0.047 0.364 0.146 0.000
+    t+6s gen 0.088 0.000 0.062 0.000 0.670 0.180 0.000 | CAN 0.186 0.001 0.156 0.005 0.506 0.145 0.001 | NEW 0.196 0.054 0.189 0.048 0.366 0.147 0.000
+  M1 lat:
+    t+1s gen 0.065 0.080 0.005 0.007 0.000 0.000 0.843 | CAN 0.075 0.093 0.007 0.008 0.000 0.000 0.816 | NEW 0.084 0.091 0.006 0.011 0.000 0.000 0.808
+    t+2s gen 0.077 0.085 0.003 0.010 0.000 0.000 0.826 | CAN 0.076 0.091 0.007 0.008 0.000 0.000 0.819 | NEW 0.085 0.090 0.006 0.010 0.000 0.000 0.809
+    t+3s gen 0.069 0.084 0.002 0.005 0.000 0.000 0.840 | CAN 0.075 0.088 0.007 0.007 0.000 0.000 0.823 | NEW 0.084 0.087 0.006 0.010 0.000 0.000 0.813
+    t+4s gen 0.063 0.082 0.004 0.003 0.000 0.000 0.849 | CAN 0.071 0.087 0.009 0.007 0.000 0.000 0.826 | NEW 0.082 0.086 0.007 0.009 0.000 0.000 0.816
+    t+5s gen 0.054 0.073 0.004 0.006 0.000 0.000 0.863 | CAN 0.068 0.085 0.009 0.007 0.000 0.000 0.831 | NEW 0.079 0.084 0.007 0.009 0.000 0.000 0.820
+    t+6s gen 0.047 0.065 0.002 0.005 0.000 0.000 0.881 | CAN 0.068 0.082 0.008 0.007 0.000 0.000 0.834 | NEW 0.077 0.083 0.007 0.009 0.000 0.000 0.824
+  M1: distinct generated 12-word sequences 389 (CAN labels 1548, NEW 2893)
+  M1: share == majority (maintain x6, straight x6): generated 0.433 | CAN 0.168 | NEW 0.023
+  M1: share == most frequent train sequence: generated 0.433 | CAN 0.168 | NEW 0.023
+  most frequent train sequence: lon ['maintain', 'maintain', 'maintain', 'maintain', 'maintain', 'maintain'] lat ['straight', 'straight', 'straight', 'straight', 'straight', 'straight'] (2808 of 18313 train)
