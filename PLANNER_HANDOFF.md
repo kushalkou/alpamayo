@@ -20,7 +20,7 @@ unless stated. [P] = privileged input (the VAD command, derived from the GT futu
 Backbone        Cosmos-Reason1-7B, frozen fp16, LoRA r16 (q, v, o). AR1: full 8.2B, bf16.
 Vision          FIXED in R2: native Qwen2.5-VL patch order (verified vs HF processor, cos
                 1.00000). 448x280 -> 160 tokens per image. Cache of all 87,147
-                front-camera keyframe images (94 GiB, bit-exact with batched live encoding).
+                front-camera keyframe images (94 GiB; bit-exact with batched encoding).
 Cameras         B1 = CAM_FRONT, FRONT_LEFT, FRONT_RIGHT at t0 (480 tokens), the base by
                 pre-registered rule. B2 = same x 4 keyframes (1,920 tokens).
 Ego / route     Causal ego state (CAN at t0); route = VAD command [P]. No non-privileged
