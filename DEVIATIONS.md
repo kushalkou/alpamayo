@@ -143,3 +143,4 @@ CHANGE LOG
   the 10 Hz CAN labels agree with the trajectory the model is trained on in only 69% of
   lon slots (R4 G4), so words and trajectory were trained against different truths.
   The old CAN labels stay for M1 (R3); M1-v2a (R5 B2) uses the 2 Hz labels.
+  Advisor spec (Jan 2026) listed CARLA closed-loop and RL; cut for compute, nuScenes open-loop only.

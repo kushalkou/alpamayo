@@ -57,3 +57,19 @@ A5 Experts (saved 6 samples; no training): minADE_6 (@3 s, @6 s); single-sample 
   by the heading of each predicted segment, same occupancy grids).
 A6 First speed word = lon word of slot t0+1 s; GT = CAN label (M1's training target);
   stationary val, seeds pooled.
+ADDENDUM HEADER (fixed before computing C1 / C2)
+C1 comfort (nuPlan bounds) on the predicted 2 Hz trajectory, val n_fut = 12 (4,219), 6 s:
+  points p0 = (0, 0) at t0, p1..p12 at 0.5 s steps; dt = 0.5. Backward differences:
+  v_k = (p_k - p_k-1) / dt (k = 1..12); speed s_k = |v_k|, s_0 = v0_can; heading h_k =
+  atan2(v_k) if s_k > 0.1 m/s else h_k-1, h_0 = pi/2 (heading at t0 in this frame);
+  lon accel a_k = (s_k - s_k-1) / dt (k = 1..12); yaw rate r_k = wrap(h_k - h_k-1) / dt
+  (k = 1..12); lat accel = s_k * r_k; yaw accel = (r_k - r_k-1) / dt (k = 2..12); lon
+  jerk = (a_k - a_k-1) / dt (k = 2..12); jerk = |A_k - A_k-1| / dt with the 2D
+  acceleration A_k = (v_k - v_k-1) / dt (k = 2..12, v_0 = v0_can along h_0), jerk for
+  k = 3..12. Bounds: lon accel in [-4.05, 2.40], |lat accel| <= 4.89, |yaw rate| <= 0.95,
+  |yaw accel| <= 1.93, |lon jerk| <= 4.13, |jerk| <= 8.37. A trajectory is comfortable
+  if every value at every step is within bounds; per-bound pass rates also reported.
+  CAVEAT: 2 Hz finite differences make jerk (and yaw accel) crude: they are second / third
+  differences over 0.5 s, far coarser than nuPlan's 10 Hz with filtering.
+C2 B2 vs B1 false-go (seed 42) on WSS scenes only (GT-stopped stationary samples), with
+  the paired scene bootstrap of the per-sample indicator difference.

@@ -1,0 +1,64 @@
+A2  WSS scenes (every keyframe pair < 0.5 m/s) and "parking" scenes per split
+  train    scenes  650  WSS scenes  44  WSS samples  1509 of 22213
+           WSS: scene-0029, scene-0059, scene-0060, scene-0218, scene-0226, scene-0232, scene-0233, scene-0239, scene-0242, scene-0260, scene-0295, scene-0323, scene-0357, scene-0358, scene-0400, scene-0464, scene-0467, scene-0595, scene-0652, scene-0670, scene-0672, scene-0681, scene-0705, scene-0718, scene-0727, scene-0733, scene-0758, scene-0759, scene-0765, scene-0789, scene-0806, scene-0813, scene-0871, scene-0873, scene-0887, scene-0903, scene-0957, scene-0975, scene-0976, scene-0977, scene-1046, scene-1082, scene-1096, scene-1099
+           "parking" (156): scene-0002, scene-0021, scene-0042, scene-0045, scene-0063, scene-0064, scene-0065, scene-0066, scene-0067, scene-0070, scene-0120, scene-0126, scene-0128, scene-0129, scene-0131, scene-0133, scene-0149, scene-0161, scene-0162, scene-0168, scene-0177, scene-0178, scene-0179, scene-0180, scene-0182, scene-0183, scene-0185, scene-0191, scene-0193, scene-0200, scene-0203, scene-0218*, scene-0220, scene-0225, scene-0254, scene-0255, scene-0283, scene-0284, scene-0287, scene-0302, scene-0359, scene-0360, scene-0361, scene-0362, scene-0373, scene-0374, scene-0375, scene-0376, scene-0382, scene-0395, scene-0396, scene-0423, scene-0427, scene-0429, scene-0432, scene-0435, scene-0439, scene-0440, scene-0441, scene-0443, scene-0444, scene-0445, scene-0447, scene-0449, scene-0450, scene-0454, scene-0455, scene-0456, scene-0459, scene-0462, scene-0480, scene-0499, scene-0500, scene-0510, scene-0512, scene-0514, scene-0517, scene-0518, scene-0525, scene-0527, scene-0529, scene-0530, scene-0531, scene-0538, scene-0543, scene-0577, scene-0583, scene-0584, scene-0588, scene-0600, scene-0644, scene-0646, scene-0650, scene-0655, scene-0656, scene-0657, scene-0659, scene-0665, scene-0666, scene-0669, scene-0697, scene-0698, scene-0700, scene-0701, scene-0703, scene-0704, scene-0735, scene-0738, scene-0739, scene-0740, scene-0741, scene-0744, scene-0746, scene-0750, scene-0751, scene-0761, scene-0762, scene-0763, scene-0764, scene-0765*, scene-0769, scene-0789*, scene-0815, scene-0817, scene-0819, scene-0820, scene-0821, scene-0860, scene-0864, scene-0865, scene-0866, scene-0869, scene-0872, scene-0873*, scene-0876, scene-0877, scene-0882, scene-0883, scene-0888, scene-0889, scene-0890, scene-0891, scene-0895, scene-0896, scene-0897, scene-0899, scene-0900, scene-0901, scene-0949, scene-0988, scene-0990, scene-0991, scene-1005, scene-1008, scene-1009, scene-1085   (* = WSS)
+  holdout  scenes   50  WSS scenes   6  WSS samples   206 of  1717
+           WSS: scene-0715, scene-0726, scene-0747, scene-0870, scene-0884, scene-1045
+           "parking" (10): scene-0210, scene-0420, scene-0426, scene-0457, scene-0511, scene-0515, scene-0526, scene-0747*, scene-0892, scene-1004   (* = WSS)
+  val      scenes  150  WSS scenes  10  WSS samples   345 of  5119
+           WSS: scene-0100, scene-0344, scene-0553, scene-0554, scene-0770, scene-0771, scene-0775, scene-0777, scene-0781, scene-0784
+           "parking" (33): scene-0003, scene-0035, scene-0039, scene-0093, scene-0105, scene-0521, scene-0524, scene-0552, scene-0561, scene-0630, scene-0633, scene-0634, scene-0770*, scene-0771*, scene-0775*, scene-0777*, scene-0778, scene-0799, scene-0802, scene-0906, scene-0907, scene-0909, scene-0912, scene-0913, scene-0914, scene-0916, scene-0917, scene-0919, scene-0924, scene-0931, scene-0966, scene-0969, scene-1064   (* = WSS)
+  stationary samples (v0_can < 0.5), GT-go rate within 3 s, near vs away (10 m of stop line / crosswalk / intersection)
+  train n  4717  near n  4204 GT-go 0.209 | away n   513 GT-go 0.384 | in WSS scenes n 1508 GT-go 0.000
+  val   n   993  near n   693 GT-go 0.330 | away n   300 GT-go 0.180 | in WSS scenes n  345 GT-go 0.000
+  GA2 input: train WSS scenes = 44
+
+A1  R4 shuffle (B1 s42, val stationary): false-go of GT-stopped recipients by donor x recipient type
+  recipient \ donor        WSS donor            non-WSS donor        (unshuffled false-go)
+  WSS recipient          0.379 (n 124)        0.290 (n 221)        0.394
+  non-WSS recipient      0.394 (n  94)        0.291 (n 237)        0.205
+  all recipients         0.385 (n 218)        0.290 (n 458)        0.302
+  GA1 input: false-go(WSS donor) - false-go(non-WSS donor), all GT-stopped recipients = +9.5 points
+
+A3  paired scene bootstrap, L2@3s NoAvg and ADE@6s; (b) and (c) are POST-HOC
+  (a) all, with first frames: n 5119 (150 scenes)
+    B1 - no cam (3-seed means)   L2@3s +0.137 [+0.036,+0.255]  ADE6 +0.118 [+0.005,+0.244]
+    M1 - B1 (3-seed means)       L2@3s +0.087 [+0.005,+0.179]  ADE6 +0.086 [-0.024,+0.210]
+    B2 - B1 (seed 42)            L2@3s -0.035 [-0.109,+0.037]  ADE6 -0.032 [-0.132,+0.073]
+  (a) all, excl. first frames: n 4979 (150 scenes)
+    B1 - no cam (3-seed means)   L2@3s +0.175 [+0.076,+0.291]  ADE6 +0.167 [+0.053,+0.291]
+    M1 - B1 (3-seed means)       L2@3s +0.099 [+0.018,+0.192]  ADE6 +0.106 [-0.003,+0.230]
+    B2 - B1 (seed 42)            L2@3s -0.040 [-0.114,+0.033]  ADE6 -0.037 [-0.139,+0.071]
+  (b) excl. WSS scenes [POST-HOC], with first frames: n 4774 (140 scenes)
+    B1 - no cam (3-seed means)   L2@3s +0.036 [-0.013,+0.094]  ADE6 +0.018 [-0.058,+0.096]
+    M1 - B1 (3-seed means)       L2@3s +0.020 [-0.040,+0.089]  ADE6 +0.007 [-0.084,+0.106]
+    B2 - B1 (seed 42)            L2@3s -0.029 [-0.110,+0.049]  ADE6 -0.018 [-0.127,+0.098]
+  (b) excl. WSS scenes [POST-HOC], excl. first frames: n 4644 (140 scenes)
+    B1 - no cam (3-seed means)   L2@3s +0.077 [+0.028,+0.134]  ADE6 +0.070 [-0.006,+0.150]
+    M1 - B1 (3-seed means)       L2@3s +0.033 [-0.027,+0.102]  ADE6 +0.028 [-0.063,+0.128]
+    B2 - B1 (seed 42)            L2@3s -0.034 [-0.116,+0.045]  ADE6 -0.023 [-0.134,+0.096]
+  (c) WSS scenes only [POST-HOC], with first frames: n 345 (10 scenes)
+    B1 - no cam (3-seed means)   L2@3s +1.538 [+0.385,+2.727]  ADE6 +1.507 [+0.378,+2.673]
+    M1 - B1 (3-seed means)       L2@3s +1.010 [+0.289,+1.751]  ADE6 +1.177 [+0.320,+2.076]
+    B2 - B1 (seed 42)            L2@3s -0.125 [-0.298,+0.010]  ADE6 -0.229 [-0.494,-0.012]
+  (c) WSS scenes only [POST-HOC], excl. first frames: n 335 (10 scenes)
+    B1 - no cam (3-seed means)   L2@3s +1.529 [+0.383,+2.712]  ADE6 +1.497 [+0.376,+2.656]
+    M1 - B1 (3-seed means)       L2@3s +1.016 [+0.291,+1.762]  ADE6 +1.182 [+0.323,+2.087]
+    B2 - B1 (seed 42)            L2@3s -0.126 [-0.304,+0.012]  ADE6 -0.230 [-0.504,-0.008]
+  GA3 input: (b) with first frames, B1 - no cam L2@3s +0.036 [-0.013,+0.094]
+
+A6  M1 (old 10 Hz labels), stationary val, first speed word (slot t0+1 s): generated (cols) vs GT CAN (rows), seeds pooled
+    GT \ gen       gentle_ac  strong_ac  gentle_de  strong_de   maintain       stop    reverse   total
+    gentle_acc          136          0          1          0         46        159          0     342
+    strong_acc           11          0          0          0          4          6          0      21
+    gentle_dec           10          0          0          0         31         19          0      60
+    strong_dec            0          0          0          0          2          1          0       3
+    maintain             41          0          1          0        126        138          0     306
+    stop                 77          0          1          0        583       1577          0    2238
+    reverse               2          0          2          0          0          5          0       9
+    accuracy 0.617 over 2979 sample-seeds
+
+A7  CoC "turn signal" cause: source and coverage
+  code (ar1/coc_template.py _scene_rows): m = G['can'].get_messages(sc, 'vehicle_monitor') || ts = 'unknown (no CAN)' if i < 0 else ('left' if m[i]['left_signal'] else
+  train samples 22213: message <= t0 available 0.947; signal on: left 0.074, right 0.092; message age median 0.25 s, p95 0.48 s (vehicle_monitor is 2 Hz)
+  val   samples 5119: message <= t0 available 0.970; signal on: left 0.075, right 0.072; message age median 0.25 s, p95 0.47 s (vehicle_monitor is 2 Hz)
