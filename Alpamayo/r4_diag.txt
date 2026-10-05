@@ -1,0 +1,91 @@
+PART 1a  val stationary: n, GT-go rate, false-go, missed-go (ALL); false-go excl. first frames
+  no cam s42    n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.016  missed-go 0.625 | excl.ff n 853 false-go 0.017
+  no cam s123   n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.012  missed-go 0.629 | excl.ff n 853 false-go 0.012
+  no cam s2024  n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.037  missed-go 0.629 | excl.ff n 853 false-go 0.038
+  B1     s42    n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.302  missed-go 0.424 | excl.ff n 853 false-go 0.300
+  B1     s123   n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.321  missed-go 0.378 | excl.ff n 853 false-go 0.320
+  B1     s2024  n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.299  missed-go 0.424 | excl.ff n 853 false-go 0.299
+  M1     s42    n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.317  missed-go 0.473 | excl.ff n 853 false-go 0.319
+  M1     s123   n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.324  missed-go 0.396 | excl.ff n 853 false-go 0.325
+  M1     s2024  n 993 (stopped 676, goes 283)  GT-go 0.285  false-go 0.303  missed-go 0.364 | excl.ff n 853 false-go 0.303
+  no cam pooled  false-go 0.022  missed-go 0.628
+  B1     pooled  false-go 0.307  missed-go 0.409
+  M1     pooled  false-go 0.315  missed-go 0.411
+
+PART 1b  TRAIN 50-scene subset, stationary (314); tau from each model's holdout
+  no cam s42    n 314 (stopped 223, goes 80)  GT-go 0.255  false-go 0.004  missed-go 0.713
+  no cam s123   n 314 (stopped 223, goes 80)  GT-go 0.255  false-go 0.009  missed-go 0.713
+  no cam s2024  n 314 (stopped 223, goes 80)  GT-go 0.255  false-go 0.004  missed-go 0.700
+  no cam pooled  false-go 0.006
+  B1     s42    n 314 (stopped 223, goes 80)  GT-go 0.255  false-go 0.013  missed-go 0.487
+  B1     s123   n 314 (stopped 223, goes 80)  GT-go 0.255  false-go 0.013  missed-go 0.450
+  B1     s2024  n 314 (stopped 223, goes 80)  GT-go 0.255  false-go 0.004  missed-go 0.487
+  B1     pooled  false-go 0.010
+  side: R3.0b random-1000 train dump, no cam s42: stationary n 197 (stopped 144) false-go 0.028
+  side: R3.0b random-1000 train dump, B1 s42: stationary n 197 (stopped 144) false-go 0.021
+  G1 inputs: B1 train false-go 0.010, B1 val false-go 0.307
+
+PART 1c  GT-stopped val stationary samples 676; pooled B1 false-gos 623
+  scenes with GT-stopped samples 46; top 10% = 5 scenes hold 0.759 of false-gos (they hold 0.253 of GT-stopped samples); scenes with >= 1 false-go: 25
+
+PART 1d  B1 pooled false-go by factor (GT-stopped val stationary; scene bootstrap CI)
+  all GT-stopped: n 676 false-go 0.307 [0.146,0.478]
+    in-path lead < 20 m: yes           n  329  false-go 0.179 [0.053,0.361]
+    in-path lead < 20 m: no            n  347  false-go 0.428 [0.186,0.655]
+    within 10 m of stop line: yes      n  289  false-go 0.060 [0.008,0.157]
+    within 10 m of stop line: no       n  387  false-go 0.492 [0.250,0.704]
+    within 10 m of crosswalk: yes      n  225  false-go 0.007 [0.000,0.032]
+    within 10 m of crosswalk: no       n  451  false-go 0.457 [0.244,0.651]
+    within 10 m of intersection: yes   n  437  false-go 0.096 [0.039,0.179]
+    within 10 m of intersection: no    n  239  false-go 0.693 [0.370,0.900]
+    within 10 m of any: yes            n  439  false-go 0.096 [0.039,0.176]
+    within 10 m of any: no             n  237  false-go 0.699 [0.377,0.906]
+    nav command left [P]               n    0  false-go -
+    nav command right [P]              n    0  false-go -
+    nav command straight [P]           n  676  false-go 0.307 [0.146,0.478]
+    first frame: yes                   n   23  false-go 0.333 [0.159,0.522]
+    first frame: no                    n  653  false-go 0.306 [0.144,0.478]
+    stopped before t0 0-2 s            n  159  false-go 0.258 [0.158,0.369]
+    stopped before t0 2-5 s            n  146  false-go 0.260 [0.124,0.413]
+    stopped before t0 > 5 s            n  348  false-go 0.348 [0.135,0.571]
+    stopped before t0 unknown (no CAN) n   23  false-go 0.333 [0.159,0.522]   (sources {'none': 23, 'can': 653})
+
+PART 1e  overlap of B1 false-go sets (GT-stopped val stationary)
+  s42 vs s123: |A| 204 |B| 217 Jaccard 0.846
+  s42 vs s2024: |A| 204 |B| 202 Jaccard 0.699
+  s123 vs s2024: |A| 217 |B| 202 Jaccard 0.696
+  3-way: intersection 163, union 254, Jaccard 0.642
+
+PART 2a  B1 s42 camera shuffle among the 993 val stationary samples (perm seed 99)
+  unshuffled                     false-go 0.302  missed-go 0.424  L2@3s mean 3.166
+  shuffled among stationary      false-go 0.321  missed-go 0.466  L2@3s mean 3.333
+  side: all-val shuffle (R2.4)   false-go 0.501  missed-go 0.311  L2@3s mean 3.788
+  G3 input: |shuffled - real| = 1.9 points
+
+PART 3a  meta-action labels: 10 Hz CAN vs 2 Hz GT-trajectory derivation (n_fut = 12)
+  val n 4219 per-slot agreement lon 0.688 0.695 0.694 0.694 0.694 0.692 | lat 0.945 0.944 0.942 0.944 0.946 0.949 | min 0.688, mean 0.819
+    lon class shares  CAN gentle_acc 0.192 strong_acc 0.003 gentle_dec 0.161 strong_dec 0.005 maintain 0.493 stop 0.146 reverse 0.001
+    lon class shares  2Hz gentle_acc 0.201 strong_acc 0.054 gentle_dec 0.189 strong_dec 0.047 maintain 0.361 stop 0.149 reverse 0.000
+    lat class shares  CAN steer_L 0.072 steer_R 0.088 sharp_L 0.008 sharp_R 0.007 reverse_L 0.000 reverse_R 0.000 straight 0.825
+    lat class shares  2Hz steer_L 0.082 steer_R 0.087 sharp_L 0.007 sharp_R 0.010 reverse_L 0.000 reverse_R 0.000 straight 0.815
+    all-majority share CAN 0.168, 2 Hz 0.023; GT-vs-GT consistency (GT-trajectory-derived vs labels) CAN 0.180, 2 Hz 1.000
+  train n 18313 per-slot agreement lon 0.712 0.711 0.713 0.713 0.716 0.717 | lat 0.949 0.949 0.949 0.949 0.950 0.950 | min 0.711, mean 0.832
+    lon class shares  CAN gentle_acc 0.162 strong_acc 0.001 gentle_dec 0.167 strong_dec 0.004 maintain 0.490 stop 0.177 reverse 0.001
+    lon class shares  2Hz gentle_acc 0.180 strong_acc 0.042 gentle_dec 0.188 strong_dec 0.041 maintain 0.370 stop 0.179 reverse 0.000
+    lat class shares  CAN steer_L 0.076 steer_R 0.084 sharp_L 0.006 sharp_R 0.006 reverse_L 0.000 reverse_R 0.000 straight 0.827
+    lat class shares  2Hz steer_L 0.083 steer_R 0.094 sharp_L 0.007 sharp_R 0.007 reverse_L 0.000 reverse_R 0.000 straight 0.809
+    all-majority share CAN 0.153, 2 Hz 0.017; GT-vs-GT consistency (GT-trajectory-derived vs labels) CAN 0.203, 2 Hz 1.000
+
+PART 3b  M1 (seeds pooled), stationary val: generated words; L2@3s by slot-1 accel word == GT
+  lon slot t+1 generated: gentle_acc 0.093 gentle_dec 0.002 maintain 0.266 stop 0.639
+  lon all slots generated: gentle_acc 0.100 gentle_dec 0.001 maintain 0.275 stop 0.625 | CAN labels: gentle_acc 0.199 strong_acc 0.005 gentle_dec 0.027 strong_dec 0.001 maintain 0.128 stop 0.639 reverse 0.001
+  lat slot t+1 generated: steer_L 0.017 steer_R 0.018 sharp_L 0.001 sharp_R 0.002 straight 0.962
+  lat all slots generated: steer_L 0.031 steer_R 0.034 sharp_L 0.001 sharp_R 0.002 straight 0.933 | CAN labels: steer_L 0.042 steer_R 0.052 sharp_L 0.011 sharp_R 0.009 straight 0.886
+  slot-1 accel word == CAN label: share 0.617; L2@3s mean match 1.373 (n 1839) vs mismatch 6.846 (n 1140)
+  side, vs 2 Hz label (n_fut = 12): share 0.610; L2@3s match 1.280 vs mismatch 7.550
+
+PART 3c  consistency (trajectory-derived words == generated words, all 12 slots)
+  M1 s42    all val 0.410 | stationary 0.684 | moving 0.344
+  M1 s123   all val 0.562 | stationary 0.723 | moving 0.524
+  M1 s2024  all val 0.517 | stationary 0.771 | moving 0.456
+  pooled    all val 0.497 | stationary 0.726 | moving 0.441  (G5 input)

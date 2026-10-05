@@ -1,0 +1,9 @@
+A3_tr50 gpus=2 wall_s=7 gpu_h=.003 rc=1
+B1_s2024_tr50 gpus=2 wall_s=283 gpu_h=.157 rc=0
+B1_tr50 gpus=2 wall_s=291 gpu_h=.161 rc=0
+B1_s123_tr50 gpus=2 wall_s=350 gpu_h=.194 rc=0
+G6C_s2024_tr50 gpus=2 wall_s=270 gpu_h=.150 rc=0
+G6C_s123_tr50 gpus=2 wall_s=277 gpu_h=.153 rc=0
+B1_statshuf gpus=4 wall_s=466 gpu_h=.517 rc=0
+R4_GPU_DONE
+A3_tr50 (retry) gpus=2 wall_s=333 gpu_h=.185 rc=0
