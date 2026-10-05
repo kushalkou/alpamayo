@@ -1,0 +1,4 @@
+C2  B2 vs B1 (seed 42) false-go, GT-stopped stationary samples
+  WSS scenes      n  345 (10 scenes)  B1 0.394  B2 0.403  B2-B1 +0.009 [+0.000,+0.020]
+  non-WSS scenes  n  331 (36 scenes)  B1 0.205  B2 0.233  B2-B1 +0.027 [-0.066,+0.145]
+  all             n  676 (46 scenes)  B1 0.302  B2 0.320  B2-B1 +0.018 [-0.028,+0.078]
