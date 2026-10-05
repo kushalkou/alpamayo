@@ -73,3 +73,14 @@ C1 comfort (nuPlan bounds) on the predicted 2 Hz trajectory, val n_fut = 12 (4,2
   differences over 0.5 s, far coarser than nuPlan's 10 Hz with filtering.
 C2 B2 vs B1 false-go (seed 42) on WSS scenes only (GT-stopped stationary samples), with
   the paired scene bootstrap of the per-sample indicator difference.
+
+GATE VERDICTS SO FAR (2026-10-05; raw output Alpamayo/r5_b1_relabel.txt, r5_trackA.txt)
+  GB1 GT-vs-GT consistency 1.000 (by construction) >= 0.90 -> proceed to B2 (running).
+      Side: GT-token rollout vs 2 Hz labels 0.808 (val, all 12 slots).
+  GA1 WSS-donor - non-WSS-donor false-go = +9.5 points (< 20) -> "not image-content driven"
+  GA2 train has 44 WSS scenes (not < 5) -> condition not met ("train/val scene-type shift
+      supported" does NOT apply). Val 10 WSS scenes, holdout 6.
+  GA3 (b) excl. WSS, with first frames: B1 - no cam L2@3s +0.036 [-0.013,+0.094], CI
+      includes 0 -> "camera harm is scene-type specific" (POST-HOC subset).
+  PENDING: GB2-GB5 (B2 training), A4, A5, A8 ("not available": no AR1 PDF on disk),
+      C1 comfort, C2 B2 vs B1 false-go on WSS.
