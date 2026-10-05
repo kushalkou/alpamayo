@@ -57,7 +57,15 @@ N_TXT = 6 + 12
 TICKS = (10, 20, 30, 40, 50, 60)
 
 
+LABELS = {'src': 'can', 'm2': None}          # R5: --labels 2hz -> data/ar1_meta2hz.pkl
+
+
 def meta_labels(Mt, st, stats):
+    if LABELS['src'] == '2hz':
+        if LABELS['m2'] is None:
+            LABELS['m2'] = pickle.load(open(f'{DATA}/ar1_meta2hz.pkl', 'rb'))
+        v = LABELS['m2'][st]
+        return [list(v[:6]), list(v[6:])]
     out = []
     for key, dflt in (('lon', 4), ('lat', 6)):
         seq, last = [], None
@@ -213,9 +221,12 @@ def main():
     ap.add_argument('--batch_size', type=int, default=3)
     ap.add_argument('--max_steps', type=int, default=0)
     ap.add_argument('--dump', default='')
+    ap.add_argument('--labels', default='can', choices=('can', '2hz'),
+                    help="R5: meta-action label source: 10 Hz CAN (R1.2) or 2 Hz GT trajectory (ar1/relabel_2hz.py)")
     ap.add_argument('--word_temp', type=float, default=0.0, help='A3: sample valid words at this T (0 = greedy)')
     ap.add_argument('--out_tag', default=None, help='A3: dump name (default = --tag)')
     a = ap.parse_args()
+    LABELS['src'] = a.labels
     import datetime
     dist.init_process_group('nccl', timeout=datetime.timedelta(hours=3))   # uneven decode times across ranks
     r = int(os.environ['LOCAL_RANK']); torch.cuda.set_device(r); dev = f'cuda:{r}'

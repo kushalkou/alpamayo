@@ -134,3 +134,12 @@ Format of each row:
   AR1:    UNVERIFIED (H100-class).
   ours:   8 x V100 32 GB.
   reason: Available hardware.
+
+-----------------------------------------------------------------------------------------
+CHANGE LOG
+2026-10-05 (R5 B1) Meta-action labels: new label set from the 2 Hz GT target controls
+  (ar1/relabel_2hz.py -> data/ar1_meta2hz.pkl). Same AR1 Table 5 classes and the same
+  numeric thresholds; the 10 Hz rule's trailing 0.5 s window equals one 2 Hz step. Reason:
+  the 10 Hz CAN labels agree with the trajectory the model is trained on in only 69% of
+  lon slots (R4 G4), so words and trajectory were trained against different truths.
+  The old CAN labels stay for M1 (R3); M1-v2a (R5 B2) uses the 2 Hz labels.

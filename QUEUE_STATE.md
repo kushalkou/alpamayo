@@ -1,5 +1,7 @@
-# QUEUE_STATE -- after phase R3 (2026-10-05)
+# QUEUE_STATE -- R5 (started 2026-10-05)
 
-Nothing running, nothing queued; GPUs idle. All R3 GPU items and amendment A3 are done
-(r3_status.log: A3_DONE 10-05 08:25 UTC). The CoC training arm is NOT launched (waits
-for Kushal's audit of AR1_COC_AUDIT.html). Next work: see PLANNER_HANDOFF.md section 6.
+Running: tmux r5 = Alpamayo/code/ar1/run_r5b2.sh (M1-v2a seed 42: train, then holdout /
+val dumps). Resume after reboot: `cd Alpamayo/code && tmux new -d -s r5 "bash
+ar1/run_r5b2.sh"` (markers results/R5_M1v2a_{TRAINED,DUMPED}; a training interrupted
+mid-run restarts from scratch). Status: Alpamayo/r5_status.log. Launch nothing beyond
+B2 seed 42. Track A is CPU, plus at most 6 GPU-h of inference after B2.

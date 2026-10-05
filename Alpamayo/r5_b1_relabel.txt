@@ -1,0 +1,24 @@
+
+train n_fut = 12, n 18313
+  lon 2 Hz class shares: gentle_acc 0.180 strong_acc 0.042 gentle_dec 0.188 strong_dec 0.041 maintain 0.370 stop 0.179 reverse 0.000
+  lat 2 Hz class shares: steer_L 0.083 steer_R 0.094 sharp_L 0.007 sharp_R 0.007 reverse_L 0.000 reverse_R 0.000 straight 0.809
+  all-majority share 2 Hz 0.017 (10 Hz CAN 0.153)
+  GT-vs-GT consistency (GT-trajectory-derived vs 2 Hz labels): 1.000
+  side: GT-TOKEN rollout derived vs 2 Hz labels: all 12 0.806; slot mean lon 0.959 lat 0.985
+  per-slot agreement with old 10 Hz CAN labels: lon 0.712 0.711 0.713 0.713 0.716 0.717 | lat 0.949 0.949 0.949 0.949 0.950 0.950
+
+holdout n_fut = 12, n 1417
+  lon 2 Hz class shares: gentle_acc 0.162 strong_acc 0.051 gentle_dec 0.172 strong_dec 0.041 maintain 0.356 stop 0.218 reverse 0.000
+  lat 2 Hz class shares: steer_L 0.088 steer_R 0.068 sharp_L 0.005 sharp_R 0.005 reverse_L 0.000 reverse_R 0.000 straight 0.834
+  all-majority share 2 Hz 0.010 (10 Hz CAN 0.133)
+  GT-vs-GT consistency (GT-trajectory-derived vs 2 Hz labels): 1.000
+  side: GT-TOKEN rollout derived vs 2 Hz labels: all 12 0.859; slot mean lon 0.971 lat 0.991
+  per-slot agreement with old 10 Hz CAN labels: lon 0.711 0.713 0.716 0.720 0.718 0.721 | lat 0.944 0.945 0.944 0.944 0.939 0.939
+
+val n_fut = 12, n 4219
+  lon 2 Hz class shares: gentle_acc 0.201 strong_acc 0.054 gentle_dec 0.189 strong_dec 0.047 maintain 0.361 stop 0.149 reverse 0.000
+  lat 2 Hz class shares: steer_L 0.082 steer_R 0.087 sharp_L 0.007 sharp_R 0.010 reverse_L 0.000 reverse_R 0.000 straight 0.815
+  all-majority share 2 Hz 0.023 (10 Hz CAN 0.168)
+  GT-vs-GT consistency (GT-trajectory-derived vs 2 Hz labels): 1.000
+  side: GT-TOKEN rollout derived vs 2 Hz labels: all 12 0.808; slot mean lon 0.964 lat 0.986
+  per-slot agreement with old 10 Hz CAN labels: lon 0.688 0.695 0.694 0.694 0.694 0.692 | lat 0.945 0.944 0.942 0.944 0.946 0.949
