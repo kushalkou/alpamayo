@@ -201,3 +201,41 @@ GATE (R3.3 seed 42 + R3.4) -- 2026-10-04 23:15 UTC
 Running (tmux r33, then a3): M1_s123 train (started 23:06) + dumps -> ~03:30 UTC 10-05;
 M1_s2024 -> ~08:00; A3 re-decodes M1_G, M1_T07 (holdout + val) -> ~10:00. CoC training
 arm NOT launched (waits for the audit of AR1_COC_AUDIT.txt).
+
+=========================================================================================
+R3.3 SEEDS 123 / 2024 + AMENDMENT A3 (2026-10-05; ar1/r33_seeds_a3.py;
+Alpamayo/ar1_r33_seeds_a3.txt)
+=========================================================================================
+M1 seeds: s123 best epoch 6 (holdout 1.719), s2024 best epoch 6 (holdout 1.780); s42
+epoch 8 (1.704). Each about 3.1 h train + 0.75 h dumps.
+Official val, ALL 5,119, per seed (42 / 123 / 2024), mean +- sd (ddof 1):
+               no camera                   B1                          M1
+  L2@3s No    1.954 +- 0.054              2.091 +- 0.064              2.203 2.122 2.210
+                                                                      = 2.178 +- 0.049
+  L2@3s Tem   0.909 +- 0.027              0.993 +- 0.035              1.037 +- 0.013
+  ADE@6s      2.930 +- 0.036              3.048 +- 0.067              3.134 +- 0.083
+  L2@3s p95   5.352 +- 0.278              5.402 +- 0.146              6.140 +- 0.183
+  Col% Tem 3s 0.605 +- 0.078              0.486 +- 0.018              0.568 +- 0.039
+Seed-mean differences (paired scene bootstrap):
+  M1 - B1       L2@3s +0.087 [+0.005,+0.179]; ADE6 +0.086 [-0.024,+0.210]
+  M1 - no cam   L2@3s +0.224 [+0.059,+0.419]; ADE6 +0.204 [+0.015,+0.423]
+  M1 - B1 strata: straight +0.008 [-0.042,+0.057]; turning -0.066 [-0.206,+0.075];
+                  stationary +0.463 [+0.113,+0.803] (excl. first frames +0.598)
+  stationary false-go, M1 seeds: 0.317 / 0.324 / 0.303
+  EXCL. first frames: M1 - B1 L2@3s +0.099 [+0.018,+0.192]; M1 - no cam +0.274.
+Words, val n_fut = 12: slot-mean acc / macro-F1 (CAN = training labels, NEW = 2 Hz);
+consistency (all 12 slots); share = majority sequence; number of distinct sequences
+             CAN lon     CAN lat     NEW lon     NEW lat     cons.  maj.   dist.
+  M1 s42     0.610/0.309 0.836/0.437 0.478/0.313 0.825/0.418 0.412  0.433  389
+  M1 s123    0.612/0.313 0.846/0.409 0.481/0.312 0.834/0.393 0.565  0.457  263
+  M1 s2024   0.612/0.311 0.848/0.424 0.483/0.311 0.837/0.414 0.523  0.474  277
+  M1_T07     0.558/0.293 0.784/0.398 0.447/0.305 0.775/0.383 0.367  0.237  1,198
+  M1_G (A3)  identical to M1 s42 (words 1.000, trajectory tokens 1.0000)
+  labels: majority share CAN 0.168, NEW 0.023
+A3 trajectory, ALL: M1_G = M1 exactly (L2@3s 2.203, ADE6 3.183). M1_T07: L2@3s 2.272,
+  ADE6 3.320; M1_T07 - M1: L2@3s +0.069 [+0.027,+0.109], ADE6 +0.137 [+0.069,+0.206].
+Reading: over three seeds the meta-action words make the B1 token VLA slightly worse
+  (+0.09 m L2@3s), almost entirely when stationary. Greedy constrained decoding is
+  deterministic and equals the original dump. Sampling the words at T = 0.7 reduces the
+  collapse (majority 0.24, 1,198 distinct sequences) but lowers word accuracy,
+  consistency and trajectory accuracy.
