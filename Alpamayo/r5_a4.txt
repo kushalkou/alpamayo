@@ -1,0 +1,30 @@
+  [mlp a] seed 42: holdout ADE@6s 2.141 (epoch 83)
+  [mlp a] seed 123: holdout ADE@6s 2.145 (epoch 60)
+  [mlp a] seed 2024: holdout ADE@6s 2.148 (epoch 73)
+  [mlp b] seed 42: holdout ADE@6s 1.846 (epoch 49)
+  [mlp b] seed 123: holdout ADE@6s 1.842 (epoch 36)
+  [mlp b] seed 2024: holdout ADE@6s 1.841 (epoch 69)
+
+VAD-port metric (0.5 m grid, axis-aligned box, ALL 5,119): L2 TemAvg 1/2/3 | L2 NoAvg 1/2/3 | Col TemAvg 1/2/3 | Col NoAvg 1/2/3
+  GoStraight, v0 ours (causal CAN)         0.376 0.784 1.326 | 0.527 1.448 2.762 | 0.14 0.27 0.75 | 0.10 0.47 2.07
+  GoStraight, v0 VAD converter             0.279 0.626 1.112 | 0.398 1.202 2.410 | 0.14 0.21 0.60 | 0.10 0.31 1.66
+  Ego-MLP + cmd, ours (causal), s42        0.243 0.462 0.778 | 0.325 0.823 1.636 | 0.33 0.58 0.92 | 0.08 0.84 1.84
+  Ego-MLP + cmd, ours (causal), s123       0.250 0.470 0.785 | 0.336 0.829 1.639 | 0.53 0.57 0.82 | 0.59 0.68 1.33
+  Ego-MLP + cmd, ours (causal), s2024      0.245 0.469 0.786 | 0.329 0.833 1.646 | 0.54 0.65 0.95 | 0.59 0.74 1.78
+  Ego-MLP + cmd, VAD converter, s42        0.166 0.335 0.604 | 0.222 0.627 1.345 | 0.09 0.15 0.34 | 0.08 0.21 0.94
+  Ego-MLP + cmd, VAD converter, s123       0.177 0.340 0.608 | 0.245 0.624 1.346 | 0.16 0.26 0.44 | 0.10 0.18 0.98
+  Ego-MLP + cmd, VAD converter, s2024      0.163 0.333 0.602 | 0.223 0.622 1.344 | 0.14 0.31 0.46 | 0.08 0.70 1.00
+
+Li et al. protocol (0.1 m grid, yaw-aware box +0.986 m, max-over-horizon collision, L2 TemAvg; ALL 5,119)
+  model                                    L2 1s   2s   3s   avg  | Col 1s  2s   3s   avg  | delta vs Li Table 1 (L2 avg; Col avg)
+  GoStraight, v0 ours (causal CAN)         0.38 0.78 1.33 0.83 | 0.12 1.04 3.36 1.50 | -0.00; +0.42
+  GoStraight, v0 VAD converter             0.28 0.63 1.11 0.67 | 0.12 0.88 2.97 1.32 | -0.16; +0.24
+  Ego-MLP + cmd, ours (causal), s42        0.24 0.46 0.78 0.49 | 0.02 0.33 1.29 0.55 | +0.14; +0.17
+  Ego-MLP + cmd, ours (causal), s123       0.25 0.47 0.79 0.50 | 0.02 0.33 1.33 0.56 | +0.15; +0.19
+  Ego-MLP + cmd, ours (causal), s2024      0.25 0.47 0.79 0.50 | 0.02 0.53 1.50 0.68 | +0.15; +0.31
+  Ego-MLP + cmd, VAD converter, s42        0.17 0.33 0.60 0.37 | 0.04 0.21 1.29 0.51 | +0.01; +0.14
+  Ego-MLP + cmd, VAD converter, s123       0.18 0.34 0.61 0.37 | 0.04 0.33 1.37 0.58 | +0.02; +0.21
+  Ego-MLP + cmd, VAD converter, s2024      0.16 0.33 0.60 0.37 | 0.04 0.33 1.43 0.60 | +0.01; +0.23
+  Ego-MLP + cmd, ours (causal), 3-seed mean 0.25 0.47 0.78 0.50 | 0.02 0.40 1.37 0.60 | +0.15; +0.22
+  Ego-MLP + cmd, VAD converter, 3-seed mean 0.17 0.34 0.60 0.37 | 0.04 0.29 1.36 0.56 | +0.02; +0.19
+  Li Table 1 (as quoted from the arXiv HTML): GoStraight L2 0.38 0.79 1.33 (0.83), Col 0.15 0.60 2.50; Ego-MLP L2 0.15 0.32 0.59 (0.35), Col 0.00 0.27 0.85
