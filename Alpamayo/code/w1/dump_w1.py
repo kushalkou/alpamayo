@@ -38,6 +38,7 @@ def main():
     ap.add_argument('--splits', default='val,holdout')
     ap.add_argument('--flips', default='0')
     ap.add_argument('--limit', type=int, default=None)
+    ap.add_argument('--tokens_file', default=None, help='R4: pickle list of sample tokens to keep (order kept)')
     ap.add_argument('--rand_subset', type=int, default=0,
                     help='R3.0b: fixed random subset of N n_fut=12 records (seed 0), e.g. on train')
     ap.add_argument('--shuffle_inputs', action='store_true',
@@ -93,6 +94,9 @@ def main():
                 if m0: print(f'[dumpw1] INPUT-SHUFFLE: {int((perm != np.arange(len(R))).sum())}/{len(R)} '
                              f'samples get another sample\'s ego+extra rows', flush=True)
             if a.limit: R = R[:a.limit]
+            if a.tokens_file:
+                keep = set(pickle.load(open(a.tokens_file, 'rb')))
+                R = [t for t in R if t['sample_token'] in keep]
             if a.rand_subset:
                 R = [t for t in R if t['n_fut'] >= 12]
                 R = [R[i] for i in sorted(np.random.RandomState(0).choice(len(R), a.rand_subset, replace=False))]
