@@ -1,0 +1,55 @@
+tau (holdout): M1v2a 0.3
+
+===== ALL 5,119 =====
+  method                 L2 NoAvg 1/2/3s   | L2 TemAvg 1/2/3s  | Col% NoAvg     | Col% TemAvg    | ADE6 mean/med/p95 FDE6 | L2@3s med/p95
+  VLA no cam 3-seed [P]  0.355 0.959 1.954 | 0.261 0.523 0.909 | 0.05 0.34 1.45 | 0.11 0.24 0.60 | 2.930 2.109 7.371 7.436 | 1.324 4.974
+  B1 seed 42 [P]         0.424 1.102 2.165 | 0.312 0.611 1.033 | 0.06 0.27 1.45 | 0.12 0.19 0.49 | 3.125 2.296 7.716 7.766 | 1.480 5.570
+  M1 seed 42 (10 Hz labels) [P] 0.416 1.112 2.203 | 0.307 0.612 1.043 | 0.02 0.43 1.54 | 0.08 0.21 0.61 | 3.183 2.295 7.758 7.865 | 1.475 6.053
+  M1-v2a seed 42 (2 Hz labels) [P] 0.355 0.939 1.877 | 0.260 0.516 0.884 | 0.00 0.27 1.58 | 0.08 0.19 0.57 | 2.808 1.883 7.636 7.066 | 1.206 5.261
+
+===== EXCL. FIRST FRAMES (n=4979) =====
+  method                 L2 NoAvg 1/2/3s   | L2 TemAvg 1/2/3s  | Col% NoAvg     | Col% TemAvg    | ADE6 mean/med/p95 FDE6 | L2@3s med/p95
+  VLA no cam 3-seed [P]  0.233 0.725 1.618 | 0.169 0.374 0.706 | 0.05 0.25 1.21 | 0.11 0.19 0.50 | 2.512 2.064 6.318 6.731 | 1.299 4.387
+  B1 seed 42 [P]         0.316 0.897 1.872 | 0.231 0.480 0.854 | 0.06 0.20 1.31 | 0.12 0.16 0.44 | 2.763 2.248 6.741 7.163 | 1.445 5.139
+  M1 seed 42 (10 Hz labels) [P] 0.305 0.902 1.907 | 0.224 0.477 0.861 | 0.02 0.34 1.41 | 0.08 0.17 0.56 | 2.820 2.248 7.177 7.266 | 1.438 5.608
+  M1-v2a seed 42 (2 Hz labels) [P] 0.236 0.714 1.558 | 0.171 0.372 0.689 | 0.00 0.20 1.41 | 0.08 0.16 0.51 | 2.415 1.824 6.724 6.410 | 1.180 4.586
+
+GB4 and strata: M1-v2a - B1 s42 (and - M1 s42), paired scene bootstrap, L2@3s / ADE@6s
+  (a) all                   with first frames   n 5119  M1-v2a - B1 s42: L2@3s -0.288 [-0.434,-0.160]  ADE6 -0.317 [-0.471,-0.175]
+  (a) all                   with first frames   n 5119  M1-v2a - M1 s42: L2@3s -0.326 [-0.504,-0.175]  ADE6 -0.375 [-0.569,-0.205]
+  (a) all                   excl. first frames  n 4979  M1-v2a - B1 s42: L2@3s -0.314 [-0.461,-0.185]  ADE6 -0.348 [-0.505,-0.205]
+  (a) all                   excl. first frames  n 4979  M1-v2a - M1 s42: L2@3s -0.350 [-0.528,-0.197]  ADE6 -0.406 [-0.601,-0.235]
+  (b) excl. WSS [POST-HOC]  with first frames   n 4774  M1-v2a - B1 s42: L2@3s -0.180 [-0.270,-0.098]  ADE6 -0.214 [-0.328,-0.105]
+  (b) excl. WSS [POST-HOC]  with first frames   n 4774  M1-v2a - M1 s42: L2@3s -0.187 [-0.289,-0.108]  ADE6 -0.230 [-0.349,-0.129]
+  (b) excl. WSS [POST-HOC]  excl. first frames  n 4644  M1-v2a - B1 s42: L2@3s -0.206 [-0.296,-0.125]  ADE6 -0.246 [-0.360,-0.135]
+  (b) excl. WSS [POST-HOC]  excl. first frames  n 4644  M1-v2a - M1 s42: L2@3s -0.210 [-0.312,-0.131]  ADE6 -0.260 [-0.378,-0.159]
+  (c) WSS only [POST-HOC]   with first frames   n  345  M1-v2a - B1 s42: L2@3s -1.786 [-3.179,-0.425]  ADE6 -1.734 [-3.108,-0.405]
+  (c) WSS only [POST-HOC]   with first frames   n  345  M1-v2a - M1 s42: L2@3s -2.249 [-4.004,-0.545]  ADE6 -2.371 [-4.253,-0.552]
+  (c) WSS only [POST-HOC]   excl. first frames  n  335  M1-v2a - B1 s42: L2@3s -1.811 [-3.212,-0.433]  ADE6 -1.766 [-3.153,-0.406]
+  (c) WSS only [POST-HOC]   excl. first frames  n  335  M1-v2a - M1 s42: L2@3s -2.282 [-4.055,-0.548]  ADE6 -2.418 [-4.322,-0.567]
+
+GB2 collapse: generated all-majority share 0.408 vs label share 0.023: 38.5 points (M1 s42 with 10 Hz labels: generated 0.433 vs its label share 0.168)
+  distinct generated sequences 345, label sequences 2893
+
+GB3 per-class precision / recall / F1, pooled over the 6 slots, val n_fut = 12 (2 Hz labels)
+  lon gentle_acc  support   5079  generated   2613  P 0.468  R 0.241  F1 0.318
+  lon strong_acc  support   1355  generated      2  P 0.000  R 0.000  F1 0.000  <-- F1 = 0 with support >= 30
+  lon gentle_dec  support   4773  generated   2712  P 0.460  R 0.261  F1 0.333
+  lon strong_dec  support   1188  generated      0  P 0.000  R 0.000  F1 0.000  <-- F1 = 0 with support >= 30
+  lon maintain    support   9151  generated  14814  P 0.473  R 0.766  F1 0.585
+  lon stop        support   3768  generated   5173  P 0.645  R 0.885  F1 0.746
+  lon slot accuracy 0.603 0.543 0.505 0.477 0.461 0.449
+  lat steer_L     support   2071  generated   1632  P 0.430  R 0.339  F1 0.379
+  lat steer_R     support   2202  generated   1723  P 0.485  R 0.380  F1 0.426
+  lat sharp_L     support    168  generated     64  P 0.234  R 0.089  F1 0.129
+  lat sharp_R     support    242  generated    213  P 0.286  R 0.252  F1 0.268
+  lat straight    support  20631  generated  21682  P 0.888  R 0.934  F1 0.910
+  lat slot accuracy 0.895 0.849 0.826 0.805 0.790 0.782
+  GB3 input: classes with support >= 30 and F1 = 0: ['lon:strong_acc', 'lon:strong_dec']
+
+false-go / missed-go (stationary, R3 rules)
+  B1     all FG 0.302 (n 676) MG 0.424 | WSS FG 0.394 (n 345) MG nan | non-WSS FG 0.205 (n 331) MG 0.424
+  M1     all FG 0.317 (n 676) MG 0.473 | WSS FG 0.391 (n 345) MG nan | non-WSS FG 0.239 (n 331) MG 0.473
+  M1v2a  all FG 0.061 (n 676) MG 0.530 | WSS FG 0.012 (n 345) MG nan | non-WSS FG 0.112 (n 331) MG 0.530
+
+GB5 consistency (trajectory follows own words, all 12 slots), all val: 0.854; stationary 0.904; moving 0.842  (M1 s42: 0.410)

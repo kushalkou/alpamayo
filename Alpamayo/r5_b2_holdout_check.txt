@@ -1,0 +1,5 @@
+HOLDOUT check (holdout = selection split; tau from holdout): L2@3s mean, ADE@6s mean (n_fut 12)
+  A3      L2@3s 1.711  ADE@6s 2.571  ADE@6s median 1.734
+  B1      L2@3s 1.777  ADE@6s 2.592  ADE@6s median 1.796
+  M1      L2@3s 1.727  ADE@6s 2.532  ADE@6s median 1.764
+  M1v2a   L2@3s 1.627  ADE@6s 2.360  ADE@6s median 1.620
