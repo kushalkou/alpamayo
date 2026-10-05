@@ -223,7 +223,8 @@ def objects(r, inst, S, A, by_s, M, path):
             inp = bool(0 < x < 50 and abs(y) < 2.5 and path and
                        M.in_lanes(a['translation'][0], a['translation'][1], path))
         out.append({'kind': kd, 'x': x, 'y': y, 'speed': sp, 'vel': vl, 'in_path': inp,
-                    'moving': sp is not None and sp > 0.5, 'g': a['translation'][:2]})
+                    'moving': sp is not None and sp > 0.5, 'g': a['translation'][:2],
+                    'ann': {'translation': a['translation'], 'size': a['size'], 'rotation': a['rotation']}})
     return out
 
 
