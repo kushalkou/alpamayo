@@ -242,8 +242,12 @@ def future(r, Mt, M, lane0):
     fp = np.asarray(r['future_positions']); fy = np.asarray(r['future_yaws'])
     xf, yf = to_ego(fp[-1], e)
     dpsi = math.degrees(wrap(fy[-1] - e[2]))
-    lon = Mt['lon'][1:]; ok = lon >= 0; v = Mt['v'][1:]
-    dec = bool(np.isin(lon[:30], (2, 3)).mean() >= 0.3) if ok[:30].any() else False
+    if Mt.get('hz') == 2:                      # R6 0b: speed features from GT 2 Hz controls
+        lon = np.asarray(Mt['lon']); ok = lon >= 0; v = np.asarray(Mt['v'], float)
+        dec = bool(np.isin(lon[:6], (2, 3)).mean() >= 0.3)
+    else:                                      # 10 Hz CAN ticks (R1.2)
+        lon = Mt['lon'][1:]; ok = lon >= 0; v = Mt['v'][1:]
+        dec = bool(np.isin(lon[:30], (2, 3)).mean() >= 0.3) if ok[:30].any() else False
     stop_f = bool((lon == 5).any())
     stay = bool((lon[ok] == 5).mean() > 0.5) if ok.any() else False
     go_after = False
@@ -261,7 +265,8 @@ def future(r, Mt, M, lane0):
     return {'dpsi': dpsi, 'y_end': yf, 'x_end': xf, 'dec': dec, 'stop': stop_f, 'stay': stay,
             'go_after': go_after, 'vmin': float(fin.min()) if len(fin) else float('nan'),
             'vend': float(fin[-1]) if len(fin) else float('nan'), 'lc': lc, 'inter': inter,
-            'speed_up': bool(len(fin) and fin[-1] > Mt['v'][0] + 0.5), 'dpsi_int': dpsi_int}
+            'speed_up': bool(len(fin) and fin[-1] > (Mt['v0'] if Mt.get('hz') == 2 else Mt['v'][0]) + 0.5),
+            'dpsi_int': dpsi_int}
 
 
 def decide(ego, objs, F, xw):
@@ -360,7 +365,8 @@ def _init_globals():
     _G.update(inst=inst, S=S, A=A, by_s=by_s, loc=loc,
               Mt=pickle.load(open(f'{DATA}/ar1_meta.pkl', 'rb')),
               W={r['sample_token']: r for r in pickle.load(open(f'{DATA}/w1_data.pkl', 'rb'))['records']},
-              V0=pickle.load(open(f'{DATA}/w1_v0.pkl', 'rb')), can=NuScenesCanBus(dataroot=ROOT), maps={})
+              V0=pickle.load(open(f'{DATA}/w1_v0.pkl', 'rb')), can=NuScenesCanBus(dataroot=ROOT), maps={},
+              T=pickle.load(open(f'{DATA}/w1_targets.pkl', 'rb'))['targets'])
 
 
 def _scene_rows(job):
@@ -397,7 +403,7 @@ def _scene_rows(job):
         xw = M.ahead('ped_crossing', e, 25, 8)
         if xw is not None and isinstance(path, tuple) and not xw[3].intersects(path[0]):
             xw = None                               # crosswalk not on the ego's path
-        F = future(r, G['Mt'][st], M, lane0)
+        F = future(r, mt2(st) if G.get('speed_src') == '2hz' else G['Mt'][st], M, lane0)
         lon, lat, cause, lead, yc = decide(ego, objs, F, xw)
         cons = sum(o['kind'] == 'cone/barrier' and 0 < o['x'] < 30 and abs(o['y']) < 6 for o in objs) >= 3
         near = sorted([o for o in objs if o['kind'] != 'cone/barrier' and 0 < o['x'] < 40 and abs(o['y']) < 12
@@ -407,6 +413,13 @@ def _scene_rows(job):
                        sl=sl[:3] if sl else None, xw=xw[:3] if xw else None, lane0=lane0,
                        nl=M.lanes_here(e[0], e[1], e[2]), inter0=M.on_intersection(e[0], e[1]))
     return out
+
+
+def mt2(st):
+    """R6 0b: per-step (0.5 s) speed features from the GT 2 Hz controls."""
+    from meta_actions import lon_cls
+    t = _G['T'][st]; s_ = np.asarray(t['s'], float)[:12]; a_ = np.asarray(t['acc'], float)[:12]
+    return {'hz': 2, 'v': s_, 'lon': np.array([lon_cls(v, a) for v, a in zip(s_, a_)]), 'v0': float(t['v0'])}
 
 
 def build_rows(want=None, procs=40, min_fut=12):
@@ -532,6 +545,15 @@ def write_audit(rows, n=100, seed=0):
 def main():
     import time
     t0 = time.time()
+    if '--all2hz' in sys.argv:
+        _init_globals(); _G['speed_src'] = '2hz'
+        rows = build_rows(None, min_fut=6)
+        out = {st: {'split': x['split'], 'n_fut': x['n_fut'], 'lon': x['lon'], 'lat': x['lat'],
+                    'trace': compose(x['lon'], x['lat'], x['cause'], x['ego'], x['F'], x['sl'], x['xw'], x['cons']),
+                    'coc': coc_text(x), 'causes': components_text(x)} for st, x in rows.items()}
+        pickle.dump(out, open(f'{DATA}/ar1_coc_2hz.pkl', 'wb'))
+        print(f'wrote {DATA}/ar1_coc_2hz.pkl ({len(out)} traces; old ar1_coc.pkl kept); {time.time() - t0:.0f} s')
+        return
     if '--all' in sys.argv:
         rows = build_rows(None, min_fut=6)
         print(f'built {len(rows)} rows in {time.time() - t0:.0f} s', flush=True)

@@ -1,0 +1,17 @@
+AR1 arXiv 2511.00088 (PDF from arxiv.org, 42 pages), page 23, text extracted with pypdf (scratch venv):
+Table 6: Open-loop evaluation of models on the CoC dataset. The base model is pre-trained with𝒟overall and all
+other models are finetuned on the CoC dataset, then evaluated on held-out CoC test data. Numbers with green
+background are the best under each setting.
+ID Model Name Route Parameters minADE 6@3s↓minADE 6@6.4s↓
+1 Base model (action modality)×0.5B 0.284 0.996
+2 + Ft. w/ Traj.×0.5B 0.282 0.971
+3 + Ft. w/ Meta-action & Traj.×0.5B 0.291 0.988
+4 + Ft. w/ CoC & Traj. (AR1) × 0.5B 0.279 0.955
+5 Base model (action modality)×3B 0.291 0.977
+6 + Ft. w/ Traj.×3B 0.293 0.976
+7 + Ft. w/ Meta-action & Traj.×3B 0.280 0.927
+8 + Ft. w/ CoC & Traj. (AR1) × 3B 0.275 0.908
+9 Base model (action modality)✓0.5B 0.264 0.848
+10 + Ft. w/ Traj.✓0.5B 0.262 0.834
+11 + Ft. w/ Meta-action & Traj.✓0.5B 0.264 0.821
+12 + Ft. w/ CoC & Traj. (AR1) ✓ 0.5B 0.254 0.794

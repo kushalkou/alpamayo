@@ -1,0 +1,15 @@
+0b CoC decision source: data/ar1_coc.pkl decisions use the 10 Hz CAN meta-actions (ar1/coc_template.future, data/ar1_meta.pkl); new 2 Hz file data/ar1_coc_2hz.pkl
+  audit traces whose decision changes (id: old -> new):
+    A031: Set speed tracking; Lane keeping & centering -> Stop for static constraints; Lane keeping & centering
+    A041: Speed adaptation (road events); Turn left -> Stop for static constraints; Turn left
+    A042: Speed adaptation (road events); Turn left -> Stop for static constraints; Turn left
+    A043: Speed adaptation (road events); Turn left -> Set speed tracking; Turn left
+    A044: Speed adaptation (road events); Turn left -> Set speed tracking; Turn left
+    A048: Speed adaptation (road events); Turn right -> Set speed tracking; Turn right
+    A052: Speed adaptation (road events); Turn right -> Set speed tracking; Turn right
+    A053: Speed adaptation (road events); Turn right -> Set speed tracking; Turn right
+  changed decisions 8 of 100; changed causes 0
+  train: decisions changed 408 of 22213 (0.018); new lon distribution: Set speed tracking 0.675; Stop for static constraints 0.170; Lead obstacle following 0.093; Yield (agent right-of-way) 0.045; Speed adaptation (road events) 0.017; Acceleration for passing/overtaking 0.000
+  holdout: decisions changed 28 of 1717 (0.016); new lon distribution: Set speed tracking 0.635; Stop for static constraints 0.127; Lead obstacle following 0.118; Yield (agent right-of-way) 0.101; Speed adaptation (road events) 0.019
+  val: decisions changed 139 of 5119 (0.027); new lon distribution: Set speed tracking 0.595; Lead obstacle following 0.239; Stop for static constraints 0.131; Yield (agent right-of-way) 0.023; Speed adaptation (road events) 0.012
+  all splits: causes changed 0 of 29049
