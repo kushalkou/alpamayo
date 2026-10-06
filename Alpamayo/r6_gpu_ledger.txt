@@ -1,0 +1,2 @@
+check200 gpus=2 wall_s=54
+verify_all gpus=8 wall_s=993 rc=0

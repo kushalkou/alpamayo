@@ -1,0 +1,21 @@
+V1 / V2  M1-v2a s42, batched decoder, all 5,119 val (force_s1: 676 GT-stopped stationary)
+  variant                                n   L2@3s  d vs own  false-go  consistency
+  own words (reference)               5119   1.871         -     0.061        0.856
+     excl. first frames               4979   1.552
+     excl. WSS                        4774   2.002
+     WSS only                          345   0.063
+  V1 cameras shuffled                 5119   2.039    +0.168     0.263        0.857
+                                     paired scene bootstrap vs own: +0.168 [+0.098,+0.246]
+  V1 ego shuffled                     5119   4.273    +2.401     0.240        0.648
+                                     paired scene bootstrap vs own: +2.401 [+2.178,+2.630]
+  V1 nav command shuffled             5119   2.208    +0.337     0.167        0.840
+                                     paired scene bootstrap vs own: +0.337 [+0.279,+0.398]
+  V2 (i) GT 2 Hz words [ORACLE]       5119   1.401    -0.471     0.013        0.744
+                                     paired scene bootstrap vs own: -0.471 [-0.556,-0.390]
+  V2 (ii) all maintain / straight     5119   2.531    +0.660     0.930        0.813
+                                     paired scene bootstrap vs own: +0.660 [+0.478,+0.861]
+  V2 (iii) slot-1 = gentle_acc         676   5.650         -     1.000        0.794
+
+GV1 own - forced-GT L2@3s = +0.471 m (>= 0.10 required) -> PASS
+GV2 ego-shuffle - own L2@3s = +2.401 m (>= 0.30 required) -> PASS
+GV3 forced slot-1 gentle_acc false-go = 1.000 (own on the same samples 0.061) -> words causally drive the start decision

@@ -1,0 +1,2 @@
+batched vs per-sample dump, 200 val samples: identical words 0.995, identical 24-token sequences 0.840, token slot agreement 0.9206
+L2@3s batched 1.6627 vs per-sample 1.6660; max traj diff 8.547 m

@@ -57,7 +57,12 @@ N_TXT = 6 + 12
 TICKS = (10, 20, 30, 40, 50, 60)
 
 
-LABELS = {'src': 'can', 'm2': None}          # R5: --labels 2hz -> data/ar1_meta2hz.pkl
+LABELS = {'src': 'can', 'm2': None}
+NOVIS = {'on': False}                          # R6: --no_vision -> 0 visual tokens
+
+
+def vis_tokens(H, st):
+    return torch.zeros(0, 3584, dtype=torch.float16) if NOVIS['on'] else vcache.gather(H[st], (3,))
 
 
 def meta_labels(Mt, st, stats):
@@ -99,7 +104,7 @@ class DS(torch.utils.data.Dataset):
         lon, lat = self.meta[i]
         tok = [p[0] for p in t['w1_tokens']] + [p[1] for p in t['w1_tokens']] if len(t['w1_tokens']) == 12 \
             else [0] * 24
-        return {'vt': vcache.gather(self.H[t['sample_token']], (3,)), 'ego': t['w1_ego'],
+        return {'vt': vis_tokens(self.H, t['sample_token']), 'ego': t['w1_ego'],
                 'txt': torch.tensor(text_ids(lon, lat)), 'tok': torch.tensor(tok), 'i': i,
                 'lon': torch.tensor(lon), 'lat': torch.tensor(lat)}
 
@@ -200,7 +205,7 @@ def ade6_select(net, R, H, idx, dev, tk, rank, ws):
         t = R[int(i)]
         if len(t['future_positions']) < 12:
             continue
-        d = decode(net, vcache.gather(H[t['sample_token']], (3,)), t['w1_ego'], tk, dev)
+        d = decode(net, vis_tokens(H, t['sample_token']), t['w1_ego'], tk, dev)
         a = np.array(d['argmax'])
         acc, cur = a[:12], a[12:]
         P, _ = unicycle_rollout(acc, cur, float(t['future_speeds'][0]), float(t['w1_ego'][3, 1]))
@@ -221,12 +226,14 @@ def main():
     ap.add_argument('--batch_size', type=int, default=3)
     ap.add_argument('--max_steps', type=int, default=0)
     ap.add_argument('--dump', default='')
+    ap.add_argument('--no_vision', action='store_true', help='R6: visual tokens removed (no-camera recipe)')
     ap.add_argument('--labels', default='can', choices=('can', '2hz'),
                     help="R5: meta-action label source: 10 Hz CAN (R1.2) or 2 Hz GT trajectory (ar1/relabel_2hz.py)")
     ap.add_argument('--word_temp', type=float, default=0.0, help='A3: sample valid words at this T (0 = greedy)')
     ap.add_argument('--out_tag', default=None, help='A3: dump name (default = --tag)')
     a = ap.parse_args()
     LABELS['src'] = a.labels
+    NOVIS['on'] = a.no_vision
     import datetime
     dist.init_process_group('nccl', timeout=datetime.timedelta(hours=3))   # uneven decode times across ranks
     r = int(os.environ['LOCAL_RANK']); torch.cuda.set_device(r); dev = f'cuda:{r}'
@@ -253,7 +260,7 @@ def main():
             for c, i in enumerate(range(r, len(R), ws)):
                 t = R[i]
                 gt = [x for x, _ in t['w1_tokens']] + [k for _, k in t['w1_tokens']] if len(t['w1_tokens']) == 12 else None
-                d = decode(net, vcache.gather(H[t['sample_token']], (3,)), t['w1_ego'], tk, dev, gt,
+                d = decode(net, vis_tokens(H, t['sample_token']), t['w1_ego'], tk, dev, gt,
                            temp=a.word_temp, gen=gw)
                 d['meta_gt'] = ds.meta[i][0] + ds.meta[i][1]
                 out[t['sample_token']] = d
