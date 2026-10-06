@@ -47,3 +47,21 @@ P2 runs: M1v2a_s123, M1v2a_s2024 (identical recipe); M1v2a_nocam s42 = finetune_
 3a Li et al. protocol exactly as R5 A4 (ar1/r5_a4.py functions).
 3b Comfort (first-order) = lon accel in [-4.05, 2.40], |lat accel| <= 4.89, |yaw rate|
    <= 0.95 (R5 C1 differencing); jerk / yaw-accel composite only in the appendix.
+FINAL ADDENDUM rules (fixed before computing; CPU only; no launches):
+F1 Every headline number comes from the per-sample dumps (finetune_meta --dump; hybrid
+   decode, each run's own holdout tau). Batched-decoder numbers appear only in the Part 1
+   verification section, labelled "batched".
+F2 2x2 (rows no camera / cameras; cols traj-only / +meta 2 Hz): no-cam VLA {A3, G6C_s123,
+   G6C_s2024}; no-cam M1-v2a {M1v2a_nocam} (single seed, marked *); B1 {B1, B1_s123,
+   B1_s2024}; M1-v2a {M1v2a, M1v2a_s123, M1v2a_s2024}. Per run, then the mean over seeds:
+   L2@3s NoAvg (all 5,119), ADE@6s (n_fut = 12), false-go and missed-go (R3), collision
+   @3s NoAvg vehicles, VAD port (aa) and yaw-aware (r5_a5c1.coll_rates).
+F3 Old M1 (10 Hz words) {M1, M1_s123, M1_s2024}, GT-stopped stationary val, pooled over
+   the 3 seeds (sample x seed): among false-gos, share whose generated slot-1 lon word
+   (meta_gen[0]) is maintain / gentle_acc / other (other broken down).
+F4 AR1 Table 6 0.5B rows (r6_0a_table6.txt, ASCII) beside our analog, labelled
+   "different metric (minADE_6 @6.4 s, CoC test set); compare direction only"; our arms
+   use [P], so they map to AR1's with-route column.
+F5 Cost estimates only: per-step marginal text cost from measured B1 vs M1 s/step, CoC
+   token length from the Cosmos tokenizer on data/ar1_coc_2hz.pkl train traces; measured
+   M1-v2a wall times for the causal-command ablation.
