@@ -65,3 +65,116 @@ F4 AR1 Table 6 0.5B rows (r6_0a_table6.txt, ASCII) beside our analog, labelled
 F5 Cost estimates only: per-step marginal text cost from measured B1 vs M1 s/step, CoC
    token length from the Cosmos tokenizer on data/ar1_coc_2hz.pkl train traces; measured
    M1-v2a wall times for the causal-command ablation.
+
+=========================================================================================
+GATE VERDICTS (headline numbers = per-sample dumps, F1; scene bootstrap 10,000)
+  GV1 PASS  own - forced-GT words L2@3s +0.471 [+0.390,+0.556] (batched; >= 0.10)
+  GV2 PASS  ego shuffle - own +2.401 [+2.178,+2.630] (batched; >= 0.30)
+  GV3       forced slot-1 gentle_acc FG 1.000 -> "words causally drive the start decision"
+  GS1 PASS  M1-v2a 3s - B1 3s, all: -0.150 [-0.232,-0.073] -> "meta-action (consistent
+            labels) improves on traj-only"
+  GS2 PASS  excl. first frames -0.168 [-0.252,-0.090]; excl. WSS -0.096 [-0.160,-0.035]
+  GS3 FAIL  M1-v2a 3-seed pooled false-go 0.119 > 0.10 (seeds 0.061, 0.198, 0.098)
+  GS4 FAIL  M1-v2a 3s - no-cam VLA 3s: -0.012 [-0.073,+0.054] (upper not < 0)
+  GS5       M1-v2a s42 - no-cam M1-v2a s42 +0.017 [-0.021,+0.058] -> "cameras neutral
+            with words"
+GPU: Part 1 2.24 GPU-h (cap 4); Part 2 73.9 GPU-h (no-cam 16.4, estimated 11 before
+launch, under the 35 stop; s123 31.9; s2024 25.6). Addendum: CPU only, nothing launched.
+F2  2x2, per-sample dumps, mean over seeds (* = single seed). FG / MG = false-go /
+    missed-go (R3); Col = collision % @3 s NoAvg vehicles, VAD port / yaw-aware.
+                  traj-only                         +meta (2 Hz words)
+                  L2@3s ADE6  FG    MG    Col       L2@3s ADE6  FG    MG    Col
+  no camera [P]   1.954 2.930 0.022 0.628 1.45/1.56 1.860 2.847 0.038 0.633 1.66/1.72 *
+  cameras B1 [P]  2.091 3.048 0.307 0.409 1.23/1.32 1.942 2.891 0.119 0.512 1.57/1.54
+  Per-seed L2@3s: no cam 1.894 2.001 1.967; B1 2.165 2.048 2.061; M1-v2a 1.877 1.968 1.980
+  Words cut L2 in both rows. Cameras add nothing measurable once words are present (GS4,
+  GS5). The real trade-off is false-go vs missed-go: the no-camera models almost never
+  start wrongly (FG <= 0.04) but miss 63% of real starts. Cameras + words sit in between.
+  Collision is 0.2-0.35 points higher with words than with B1.
+
+PART 2 detail (all from r6_part2.txt)
+  Strata, M1-v2a 3s - B1 3s: WSS only -0.886 [-1.589,-0.206]. M1-v2a 3s - no cam 3s:
+  excl. first frames +0.007 [-0.054,+0.072]; excl. WSS -0.060 [-0.110,-0.011]; WSS only
+  +0.653 [+0.180,+1.185]. Cameras + words win outside WSS, lose on the 10 WSS scenes.
+  GS5 strata: excl. WSS +0.014 [-0.028,+0.058]; WSS only +0.061 [+0.016,+0.110].
+  FG all / WSS / non-WSS: M1-v2a s42 0.061/0.012/0.112, s123 0.198/0.290/0.103,
+  s2024 0.098/0.070/0.127; no-cam M1-v2a 0.038/0.000/0.079; B1 0.30-0.32; no-cam VLA
+  0.012-0.037. MG: M1-v2a 0.498-0.530, no-cam M1-v2a 0.633, B1 0.378-0.424.
+  Holdout tau differs by seed (s42 0.3, s123 0.9, s2024 0.5). The high s123 FG comes with
+  tau 0.9 and is mostly WSS. No re-tuning (tau is selected on holdout by the frozen rule).
+  Collision 3 s NoAvg / TemAvg, aa | yaw: s42 1.58/0.57 | 1.54/0.58; s123 1.37/0.51 |
+  1.35/0.51; s2024 1.76/0.67 | 1.72/0.66; no-cam M1-v2a 1.66/0.62 | 1.72/0.65.
+  Words (val n_fut = 12): all-maintain/straight collapse 0.408 / 0.423 / 0.477, no cam
+  0.388 (labels 0.023). Consistency 0.854 / 0.884 / 0.908 / 0.830. F1 (support >= 30),
+  stable across seeds: straight 0.90-0.91, stop 0.69-0.75, maintain 0.57-0.59, steer
+  0.34-0.46, gentle acc / dec 0.27-0.37, sharp 0.13-0.26, strong acc / dec 0.00-0.01.
+
+F3  Old M1 (10 Hz words), 3 seeds pooled, GT-stopped stationary val (676 x 3): false-go
+    638 / 2,028 = 0.315. Slot-1 lon word among the false-gos: maintain 551 (0.864),
+    gentle_acc 57 (0.089), other 30 (0.047: stop 29, gentle_dec 1). Old false-gos come
+    mostly from "maintain", not from an explicit start word.
+
+PART 1 VERIFICATION (BATCHED decoder; these numbers appear only here)
+  Decoder check, 200 val: identical words 0.995, identical 24-token sequences 0.840 (fp16
+  batch-shape argmax flips); L2@3s 1.663 batched vs 1.666 per-sample. All variants are
+  compared with the batched own-words reference (L2@3s 1.871; per-sample headline 1.877).
+  variant                        L2@3s  vs own [CI]                 false-go consistency
+  own words (reference)          1.871  -                           0.061    0.856
+  V1 cameras shuffled            2.039  +0.168 [+0.098,+0.246]      0.263    0.857
+  V1 ego shuffled                4.273  +2.401 [+2.178,+2.630]      0.240    0.648
+  V1 nav command shuffled        2.208  +0.337 [+0.279,+0.398]      0.167    0.840
+  V2 GT 2 Hz words [ORACLE]      1.401  -0.471 [-0.556,-0.390]      0.013    0.744
+  V2 all maintain / straight     2.531  +0.660 [+0.478,+0.861]      0.930    0.813
+  V2 slot-1 gentle_acc (676)     5.650  -                           1.000    0.794
+  Own-word strata: excl. first frames 1.552, excl. WSS 2.002, WSS only 0.063.
+
+F4 / PART 0a  AR1 Table 6 (docs/ar1_2511.00088.pdf p.23; r6_0a_table6.txt), 0.5B, beside
+  our analog. DIFFERENT METRIC (minADE_6 @6.4 s, CoC test set); COMPARE DIRECTION ONLY.
+  Our arms use the command [P], so they map to AR1's with-route column.
+                       AR1 no route   AR1 with route | ours [P], 3 seeds, val
+                       mADE6 3s/6.4s  mADE6 3s/6.4s  | L2@3s NoAvg   ADE@6s (1 sample)
+  Base model           0.284 0.996    0.264 0.848    | -
+  + Traj               0.282 0.971    0.262 0.834    | B1 2.091      3.048
+  + Meta-action & Traj 0.291 0.988    0.264 0.821    | M1 10 Hz 2.178 3.134;
+                                                     | M1-v2a 2 Hz 1.942 2.891
+  + CoC & Traj (AR1)   0.279 0.955    0.254 0.794    | not run (CoC arm untouched)
+  Direction, with route: meta-action helps AR1 at 6.4 s (-0.013) and is flat at 3 s.
+  Ours: 10 Hz words hurt (+0.087 L2@3s); 2 Hz words help at both horizons (GS1).
+  (0a deviation: text extracted with pypdf in a scratch venv, not from page images.)
+
+PART 0b  data/ar1_coc_2hz.pkl (old kept). Audit decisions changed 8/100: A031 Set speed,
+  A041, A042 Speed adaptation -> Stop; A043/44/48/52/53 Speed adaptation -> Set speed.
+  Causes changed 0/29,049. Decisions changed: train 0.018, holdout 0.016, val 0.027.
+
+PART 3a  Li et al. protocol (R5 A4), all 5,119: L2 TemAvg 1/2/3 s (avg) | Col % (avg)
+  no-cam VLA (3)      0.26 0.52 0.91 (0.56) | 0.02 0.82 2.44 (1.09)
+  B1 (3)              0.30 0.58 0.99 (0.63) | 0.04 0.63 1.95 (0.87)
+  M1 10 Hz (3)        0.31 0.61 1.04 (0.65) | 0.05 0.81 2.25 (1.04)
+  M1-v2a 2 Hz (3)     0.27 0.54 0.92 (0.58) | 0.07 0.82 2.27 (1.05)
+  no-cam M1-v2a (1)   0.25 0.50 0.87 (0.54) | 0.06 0.92 2.46 (1.15)
+  A3 expert mean of 6 0.28 0.53 0.89 (0.57) | 0.02 0.51 1.74 (0.76)
+  Li Table 1: GoStraight (0.83) | 0.15 0.60 2.50; Ego-MLP (0.35) | 0.00 0.27 0.85.
+PART 3b  Comfort, first-order (lon accel, lat accel, yaw rate), val n_fut = 12 (4,219):
+  GT 0.675; no-cam VLA 0.918 / 0.862 / 0.956; B1 0.842 / 0.849 / 0.867; M1 0.827 / 0.870 /
+  0.793; M1-v2a 0.988 / 0.963 / 0.981; no-cam M1-v2a 0.993; A3 expert mean6 0.993.
+  Failures are almost all lon accel (lat / yaw >= 0.993 everywhere). GT fails more than
+  every model: 2 Hz differencing of real tracks amplifies noise.
+
+F5  Cost estimates (no launch)
+  (a) CoC arm on data/ar1_coc_2hz.pkl, per seed. CoC text 78.5 tokens mean (median 74, p95
+  114) vs 18 word tokens. Marginal text cost about 0.0056 s/token/step (B1 1.15 vs M1
+  1.25 s/step; scripts differ, so approximate). Padding to ~100 gives about 1.7 s/step:
+  10 epochs x 763 steps about 3.6 h; holdout selection with longer AR text about 1 h;
+  dumps about 2 h. Total about 6.6 h x 8 GPUs = 45-55 GPU-h per seed (the R4 D4 estimate
+  was 35-45), plus about 1 GPU-h smoke test. Labels exist: no CPU build.
+  (b) Causal-command ablation on M1-v2a, 1 seed: GPU 26-32 GPU-h (measured M1-v2a s2024 /
+  s123, train + dumps). CPU: past-only lanelet command (ego lane at t0 plus its outgoing
+  connector, existing STRtree map index; the CoC map pass over 29,049 rows took 51 s), or
+  NAVSIM-style from CAN route.json (val 150/150 scenes, train 635/650 = 0.977 of samples;
+  needs a fallback; route.json is the recorded drive route, so check causality). Build
+  < 0.1 CPU-h either way; with records rebuild and checks about 1 h.
+
+APPENDIX  Comfort, all six nuPlan bounds incl. jerk / yaw accel (2 Hz differencing; jerk
+  is crude): GT 0.415; no-cam VLA 0.777 / 0.700 / 0.892; B1 0.690 / 0.723 / 0.714; M1
+  0.654 / 0.772 / 0.685; M1-v2a 0.985 / 0.959 / 0.978; no-cam M1-v2a 0.989.
+Files (Alpamayo/): r6_part2, r6_f2, r6_f3, r6_part3, r6_verify, r6_check, r6_0b_coc_diff

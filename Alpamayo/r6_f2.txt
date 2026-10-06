@@ -1,0 +1,7 @@
+GT-stopped stationary val n 676; GT-moving stationary (missed-go base) n 283
+F2 2x2 (per-sample dumps; per run, then mean over seeds; * single seed)
+  cell                      n  L2@3s ADE@6s     FG     MG col aa col yaw  per-seed L2@3s
+  no camera / traj-only     3  1.954  2.930  0.022  0.628   1.45    1.56  1.894 2.001 1.967
+  no camera / +meta 2 Hz    1* 1.860  2.847  0.038  0.633   1.66    1.72  1.860
+  cameras / traj-only       3  2.091  3.048  0.307  0.409   1.23    1.32  2.165 2.048 2.061
+  cameras / +meta 2 Hz      3  1.942  2.891  0.119  0.512   1.57    1.54  1.877 1.968 1.980

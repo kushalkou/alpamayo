@@ -1,0 +1,5 @@
+GT-stopped stationary val n 676; GT-moving stationary (missed-go base) n 283
+  M1        false-go 214/676 = 0.317; slot-1 {'stop': 11, 'maintain': 180, 'gentle_acc': 23}
+  M1_s123   false-go 219/676 = 0.324; slot-1 {'gentle_acc': 14, 'maintain': 191, 'stop': 14}
+  M1_s2024  false-go 205/676 = 0.303; slot-1 {'maintain': 180, 'gentle_acc': 20, 'gentle_dec': 1, 'stop': 4}
+F3 old M1 pooled: false-go 638/2028 = 0.315; slot-1 word among false-gos: maintain 551 (0.864), gentle_acc 57 (0.089), other 30 (0.047) = {'stop': 29, 'gentle_dec': 1}
