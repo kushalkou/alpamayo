@@ -1,6 +1,6 @@
 # QUEUE_STATE -- R7 (2026-10-07)
 
-Running: tmux r7a = Alpamayo/code/ar1/run_r7a.sh: B1_NR s42 (train + holdout/val dumps)
+Running: tmux r7a = Alpamayo/code/ar1/run_r7a.sh: B1_NR s42 DONE 10:03 UTC (holdout best 2.058)
 -> M1v2a_NR s42 (train + dumps) -> Ego-MLP-NR (CPU). Ends R7A_DONE.
 Waiting: tmux r7c3 = ar1/run_r7c3.sh, starts on R7A_DONE: C3 blank-image control (B1 check
 200, B1 real/cams/blank, M1v2a blank; batched; cap 2 GPU-h; ledger Alpamayo/r7_gpu_ledger.txt).
