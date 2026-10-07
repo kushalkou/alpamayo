@@ -58,6 +58,7 @@ TICKS = (10, 20, 30, 40, 50, 60)
 
 
 LABELS = {'src': 'can', 'm2': None}
+XT = {'x': ['cmd']}                               # R7: --no_cmd -> [] (command token removed)
 NOVIS = {'on': False}                          # R6: --no_vision -> 0 visual tokens
 
 
@@ -132,7 +133,8 @@ class Meta(nn.Module):
 def build(dev, a):
     vla = load_model(lora_rank=CFG['lora_rank'], lora_alpha=CFG['lora_alpha'],
                      lora_dropout=CFG['lora_dropout'], device=dev)
-    vla = extra_tokens.install(vla, ['cmd'], records.N_CLS)
+    if XT['x']:
+        vla = extra_tokens.install(vla, XT['x'], records.N_CLS)
     if a.dump:
         vla = fixrun.install_fix(vla, torch.zeros(4), torch.ones(4))
     else:
@@ -226,6 +228,7 @@ def main():
     ap.add_argument('--batch_size', type=int, default=3)
     ap.add_argument('--max_steps', type=int, default=0)
     ap.add_argument('--dump', default='')
+    ap.add_argument('--no_cmd', action='store_true', help='R7: nav command token removed from the context')
     ap.add_argument('--no_vision', action='store_true', help='R6: visual tokens removed (no-camera recipe)')
     ap.add_argument('--labels', default='can', choices=('can', '2hz'),
                     help="R5: meta-action label source: 10 Hz CAN (R1.2) or 2 Hz GT trajectory (ar1/relabel_2hz.py)")
@@ -234,6 +237,7 @@ def main():
     a = ap.parse_args()
     LABELS['src'] = a.labels
     NOVIS['on'] = a.no_vision
+    XT['x'] = [] if a.no_cmd else ['cmd']
     import datetime
     dist.init_process_group('nccl', timeout=datetime.timedelta(hours=3))   # uneven decode times across ranks
     r = int(os.environ['LOCAL_RANK']); torch.cuda.set_device(r); dev = f'cuda:{r}'
@@ -252,7 +256,7 @@ def main():
         net.vla.load_state_dict(ck['model_state'], strict=False)
         net.vla.cosmos.model.language_model.gradient_checkpointing_disable(); net.eval()
         for split in a.dump.split(','):
-            R = records.build(split, ['cmd'], 0.0, n_fut=6)
+            R = records.build(split, XT['x'], 0.0, n_fut=6)
             stats = {'missing': 0}
             ds = DS(R, H, Mt, stats)
             out = {}; t0 = time.time()
@@ -274,13 +278,13 @@ def main():
                     M.update(p)
                 op = f'{RES}/w1_dump_{a.out_tag or a.tag}_{split}_f0.0.pkl'
                 pickle.dump({'order': [t['sample_token'] for t in R], 'data': M, 'ckpt_epoch': ck.get('epoch'),
-                             'extra': ['cmd'], 'meta_missing_ticks': stats['missing']}, open(op, 'wb'))
+                             'extra': XT['x'], 'meta_missing_ticks': stats['missing']}, open(op, 'wb'))
                 log(f'[meta] saved {op} n={len(M)}')
             dist.barrier()
         log('META_DUMP_DONE'); dist.destroy_process_group(); return
 
-    tr = records.build('train', ['cmd'], 0.0)
-    ho = records.build('holdout', ['cmd'], 0.0)
+    tr = records.build('train', XT['x'], 0.0)
+    ho = records.build('holdout', XT['x'], 0.0)
     stats = {'missing': 0}
     dtr = DS(tr, H, Mt, stats)
     weights, f0, wt = build_turn_weights(tr, CFG['turn_thresh'], CFG['turn_target_frac'])
