@@ -9,6 +9,7 @@ the same length, so no padding). Variants (one model load, sharded over ranks):
   force_maj  words forced to maintain x6 + keep straight x6
   force_s1   GT-stopped stationary samples only: slot-1 lon word forced to gentle_acc,
              the other 11 words generated
+  blank      R7 C3: every visual token = the per-dim train mean (data/r7_vis_train_mean.npy)
 Output: results/w1_dump_<tag>_<variant>_val_f0.0.pkl (gate_a format + 'meta_gen' = the 12
 word classes actually in the sequence).
   python -m torch.distributed.run --nproc_per_node=8 ar1/meta_decode_batched.py --tag M1v2a \
@@ -115,6 +116,7 @@ def main():
     if a.check:
         R = R[:a.check]
     perm = np.random.RandomState(99).permutation(len(R))
+    BLANK = torch.from_numpy(np.load(f'{DATA}/r7_vis_train_mean.npy')).to(torch.float16)
     for var in a.variants.split(','):
         idx = list(range(len(R)))
         if var == 'force_s1':
@@ -125,6 +127,8 @@ def main():
             b = mine[j:j + a.bs]
             src_c = [perm[i] if var == 'cams' else i for i in b]
             vt = torch.stack([vcache.gather(H[R[i]['sample_token']], (3,)) for i in src_c])
+            if var == 'blank':
+                vt = BLANK[None, None].expand_as(vt).clone()
             ego = torch.stack([R[i]['w1_ego'].clone() for i in b])
             if var == 'ego':
                 ego[:, :4] = torch.stack([R[perm[i]]['w1_ego'][:4] for i in b])
