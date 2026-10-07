@@ -33,3 +33,27 @@ Budget: ~26-32 GPU-h per arm (measured B1 / M1-v2a), ~60 GPU-h total, tmux r7a, 
    ar1/run_r7a.sh (resumable markers results/R7_<tag>_{TRAINED,DUMPED}).
 Part B (CoC arm) only if AUDIT_SIGNOFF.md exists when Part A finishes; its rules go in the
    R7B_REPORT.md header before any Part B compute.
+PART C rules (amendment; fixed before computing; C1, C2 CPU; C3 GPU after Part A):
+C1 Mediation. M1-v2a {s42, s123, s2024} pooled (sample x seed), GT-stopped stationary val
+   (R3: v0_can < 0.5, GT max disp. 3 s < 0.5 m; false-go = pred > 1.0 m). Table: per
+   generated slot-1 lon word, n and P(false-go). Go-words = gentle_acc, strong_acc,
+   maintain; stop = stop; other = gentle / strong dec, reverse. GM1: go-word share of
+   false-gos >= 0.80 AND P(false-go | slot-1 = stop) <= 0.05 -> "start decision is
+   mediated by the generated words"; else "not mediated". Old M1 (10 Hz) same table,
+   contrast only. B1: not applicable (no words).
+C2 Rule-defined strata (ADOPTED AFTER R4, labelled so in every table); v0 = v0_can,
+   g = GT max displacement over 3 s: STOPPED v0 <= 0.2 and g <= 1.0; START v0 <= 0.2 and
+   g > 1.0; MOVING v0 > 0.2. False-go (STOPPED) = pred max disp. 3 s > 1.0 m; missed-go
+   (START) = pred <= 1.0 m (prediction lands in the other stratum). Runs: CV, KIN, Ego-MLP
+   + cmd (3), no-cam VLA (3), B1 (3), B2 (s42), M1 (3), M1-v2a (3), no-cam M1-v2a (s42),
+   then B1-NR, M1-v2a-NR, Ego-MLP-NR (3) when done. Per stratum: n, L2@3s NoAvg, ADE@6s
+   (n_fut = 12), FG / MG; multi-seed = mean of per-run metrics. Paired scene bootstrap
+   (10,000) per stratum: M1-v2a 3s - B1 3s, M1-v2a 3s - no-cam VLA 3s. WSS secondary.
+C3 Blank-image control (inference, cap 2 GPU-h), BATCHED decoder for both models (a B1
+   per-sample val dump alone is ~2.7 GPU-h). Blank = every visual token replaced by one
+   3,584-d vector, the per-dimension mean over all TRAIN samples, all 3 cams and all 480
+   token positions (CPU, cached tokens). Variants per model, all batched: real, cameras
+   shuffled (perm RandomState(99), as R6 V1), blank. M1-v2a s42 reuses the R6 batched
+   real and shuffled dumps; B1 s42 gets all three. Report L2@3s, FG / MG per C2 stratum.
+   GBL: M1-v2a blank - real (paired scene bootstrap, L2@3s, all val) CI includes 0 ->
+   "cameras unused by M1-v2a"; else "cameras used by M1-v2a".
