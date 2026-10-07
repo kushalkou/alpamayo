@@ -1,0 +1,60 @@
+tau B1 0.3
+tau B1_NR 0.7
+tau M1v2a 0.3
+tau M1v2a_NR 0.9
+Ego-MLP holdout ADE@6s s42: + cmd 2.141, NR 2.279
+Ego-MLP holdout ADE@6s s123: + cmd 2.145, NR 2.282
+Ego-MLP holdout ADE@6s s2024: + cmd 2.142, NR 2.285
+
+L2@3s NoAvg / ADE@6s (n_fut = 12) per stratum
+  run                           all   excl. first frames            excl. WSS             WSS only
+  B1               2.165      3.125     1.872      2.763     2.188      3.220     1.849      1.823
+  B1_NR            2.175      3.150     1.874      2.780     2.217      3.261     1.587      1.624
+  M1v2a            1.877      2.808     1.558      2.415     2.008      3.005     0.063      0.088
+  M1v2a_NR         2.074      3.070     1.755      2.675     2.071      3.132     2.113      2.206
+  EgoMLP           1.637      2.437     1.310      2.025     1.754      2.612     0.010      0.013
+  EgoMLP_NR        1.740      2.594     1.370      2.126     1.865      2.781     0.010      0.013
+  EgoMLP per seed L2@3s 1.633 1.636 1.641
+  EgoMLP_NR per seed L2@3s 1.751 1.739 1.730
+
+Paired scene bootstrap (10,000), L2@3s NoAvg; ADE@6s after
+  GN1 B1-NR - B1 s42             all                 n 5119  +0.010 [-0.048,+0.067]   ADE6 +0.025 [-0.054,+0.104]
+  GN1 B1-NR - B1 s42             excl. first frames  n 4979  +0.002 [-0.056,+0.060]   ADE6 +0.017 [-0.063,+0.097]
+  GN1 B1-NR - B1 s42             excl. WSS           n 4774  +0.029 [-0.027,+0.087]   ADE6 +0.041 [-0.040,+0.123]
+  GN1 B1-NR - B1 s42             WSS only            n  345  -0.262 [-0.512,-0.053]   ADE6 -0.199 [-0.428,+0.004]
+  GN1 M1-v2a-NR - M1-v2a s42     all                 n 5119  +0.197 [+0.066,+0.354]   ADE6 +0.261 [+0.117,+0.428]
+  GN1 M1-v2a-NR - M1-v2a s42     excl. first frames  n 4979  +0.197 [+0.065,+0.356]   ADE6 +0.260 [+0.113,+0.428]
+  GN1 M1-v2a-NR - M1-v2a s42     excl. WSS           n 4774  +0.063 [+0.007,+0.117]   ADE6 +0.127 [+0.048,+0.203]
+  GN1 M1-v2a-NR - M1-v2a s42     WSS only            n  345  +2.050 [+0.523,+3.750]   ADE6 +2.117 [+0.525,+3.917]
+  GN2 M1-v2a-NR - B1-NR          all                 n 5119  -0.101 [-0.167,-0.032]   ADE6 -0.081 [-0.176,+0.020]
+  GN2 M1-v2a-NR - B1-NR          excl. first frames  n 4979  -0.119 [-0.185,-0.050]   ADE6 -0.105 [-0.204,-0.002]
+  GN2 M1-v2a-NR - B1-NR          excl. WSS           n 4774  -0.146 [-0.204,-0.089]   ADE6 -0.129 [-0.222,-0.034]
+  GN2 M1-v2a-NR - B1-NR          WSS only            n  345  +0.526 [+0.118,+0.981]   ADE6 +0.582 [+0.064,+1.136]
+  ref M1-v2a - B1 s42 (route)    all                 n 5119  -0.288 [-0.434,-0.160]   ADE6 -0.317 [-0.471,-0.175]
+  ref M1-v2a - B1 s42 (route)    excl. first frames  n 4979  -0.314 [-0.461,-0.185]   ADE6 -0.348 [-0.505,-0.205]
+  ref M1-v2a - B1 s42 (route)    excl. WSS           n 4774  -0.180 [-0.270,-0.098]   ADE6 -0.214 [-0.328,-0.105]
+  ref M1-v2a - B1 s42 (route)    WSS only            n  345  -1.786 [-3.179,-0.425]   ADE6 -1.734 [-3.108,-0.405]
+  Ego-MLP NR - + cmd (3 seeds)   all                 n 5119  +0.103 [+0.078,+0.131]   ADE6 +0.157 [+0.117,+0.199]
+  Ego-MLP NR - + cmd (3 seeds)   excl. first frames  n 4979  +0.059 [+0.041,+0.078]   ADE6 +0.101 [+0.068,+0.135]
+  Ego-MLP NR - + cmd (3 seeds)   excl. WSS           n 4774  +0.111 [+0.082,+0.139]   ADE6 +0.168 [+0.124,+0.212]
+  Ego-MLP NR - + cmd (3 seeds)   WSS only            n  345  -0.000 [-0.003,+0.002]   ADE6 +0.000 [-0.004,+0.003]
+
+Per run: false-go all / WSS / non-WSS (n GT-stopped stationary 676), missed-go (n 283); collision @3 s NoAvg / TemAvg vehicles, VAD port (aa) | yaw-aware
+  B1             FG 0.302 / 0.394 / 0.205  MG 0.424  Col aa 1.45/0.49 | yaw 1.50/0.52
+  B1_NR          FG 0.318 / 0.388 / 0.245  MG 0.314  Col aa 1.31/0.54 | yaw 1.31/0.55
+  M1v2a          FG 0.061 / 0.012 / 0.112  MG 0.530  Col aa 1.58/0.57 | yaw 1.54/0.58
+  M1v2a_NR       FG 0.243 / 0.362 / 0.118  MG 0.519  Col aa 1.35/0.56 | yaw 1.37/0.59
+  EgoMLP s42     FG 0.028 / 0.003 / 0.054  MG 0.650  Col aa 1.78/0.87 | yaw 1.70/0.84
+  EgoMLP s123    FG 0.028 / 0.003 / 0.054  MG 0.654  Col aa 1.76/0.75 | yaw 1.62/0.73
+  EgoMLP s2024   FG 0.030 / 0.003 / 0.057  MG 0.650  Col aa 1.86/0.98 | yaw 1.76/0.94
+  EgoMLP_NR s42  FG 0.030 / 0.003 / 0.057  MG 0.724  Col aa 1.25/0.51 | yaw 1.21/0.51
+  EgoMLP_NR s123 FG 0.028 / 0.003 / 0.054  MG 0.742  Col aa 1.93/0.93 | yaw 1.99/0.94
+  EgoMLP_NR s2024 FG 0.028 / 0.003 / 0.054  MG 0.735  Col aa 1.31/0.61 | yaw 1.31/0.62
+
+Words (val n_fut = 12, 2 Hz labels): collapse share, consistency, per-class F1 pooled over slots
+  M1v2a      collapse 0.408 (labels 0.023); consistency 0.854; F1: gentle_ac 0.32, strong_ac 0.00, gentle_de 0.33, strong_de 0.00, maintain 0.59, stop 0.75, steer_L 0.38, steer_R 0.43, sharp_L 0.13, sharp_R 0.27, straight 0.91
+  M1v2a_NR   collapse 0.420 (labels 0.023); consistency 0.840; F1: gentle_ac 0.32, strong_ac 0.01, gentle_de 0.34, strong_de 0.01, maintain 0.56, stop 0.66, steer_L 0.35, steer_R 0.40, sharp_L 0.14, sharp_R 0.18, straight 0.91
+
+GATES (one seed, indicative)
+  GN1 B1-NR - B1 s42 +0.010 [-0.048,+0.067]; M1-v2a-NR - M1-v2a s42 +0.197 [+0.066,+0.354]
+  GN2 M1-v2a-NR - B1-NR -0.101 [-0.167,-0.032] -> "meta helps without route"

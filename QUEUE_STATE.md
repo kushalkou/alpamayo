@@ -1,11 +1,6 @@
 # QUEUE_STATE -- R7 (2026-10-07)
 
-Running: tmux r7a = Alpamayo/code/ar1/run_r7a.sh: B1_NR s42 DONE 10:03 UTC (holdout best 2.058)
--> M1v2a_NR s42 (train + dumps) -> Ego-MLP-NR (CPU). Ends R7A_DONE.
-Waiting: tmux r7c3 = ar1/run_r7c3.sh, starts on R7A_DONE: C3 blank-image control (B1 check
-200, B1 real/cams/blank, M1v2a blank; batched; cap 2 GPU-h; ledger Alpamayo/r7_gpu_ledger.txt).
-Ends R7C3_DONE.
-Resume after reboot: cd Alpamayo/code && tmux new -d -s r7a "bash ar1/run_r7a.sh" &&
-tmux new -d -s r7c3 "bash ar1/run_r7c3.sh" (markers results/R7_*; done steps skip).
-Status: Alpamayo/r7_status.log. Then: ar1/r7a_eval.py, ar1/r7_c12.py (rerun with R7 runs),
-ar1/r7_c3_eval.py -> R7A_REPORT.md. Part B (CoC) only if AUDIT_SIGNOFF.md exists after C3.
+Idle. Nothing running, GPUs free. R7 Part A (B1_NR, M1v2a_NR, Ego-MLP-NR) and Part C
+(C1, C2, C3) done; R7A_REPORT.md final. Part B (CoC arm) NOT launched: AUDIT_SIGNOFF.md
+absent when Part A + C3 finished (14:05 UTC). R7B_REPORT.md holds the pre-registered
+Part B header only. Next GPU work only on a new instruction / sign-off.

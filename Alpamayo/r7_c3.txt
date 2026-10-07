@@ -1,0 +1,34 @@
+B1 decoder check, 200 val: identical 24-token sequences 0.800; L2@3s batched 1.8368 vs per-sample 1.8246
+
+C3 (BATCHED decoder; C2 strata adopted after R4). L2@3s NoAvg | FG (STOPPED: pred > 1.0 m) | MG (START: pred <= 1.0 m)
+  n: all 5119, STOPPED 679, START 231, MOVING 4209, WSS (sec.) 345
+  B1 s42 (tau 0.3)
+    real           all 2.166 STOPPED 1.389 START 8.860 MOVING 1.924 WSS (sec.) 1.848 | FG 0.290 | MG 0.537
+    cams shuffled  all 2.309 STOPPED 2.254 START 8.981 MOVING 1.952 WSS (sec.) 2.231 | FG 0.496 | MG 0.403
+    blank          all 2.625 STOPPED 0.048 START 10.725 MOVING 2.596 WSS (sec.) 0.002 | FG 0.000 | MG 0.996
+      cams shuffled - real all        +0.143 [+0.006,+0.283]
+      cams shuffled - real STOPPED    +0.865 [-0.130,+1.777]
+      cams shuffled - real START      +0.121 [-0.204,+0.454]
+      cams shuffled - real MOVING     +0.028 [-0.025,+0.081]
+      cams shuffled - real WSS (sec.) +0.383 [-1.215,+1.959]
+      blank - real all        +0.459 [+0.257,+0.647]
+      blank - real STOPPED    -1.341 [-2.229,-0.505]
+      blank - real START      +1.865 [+1.476,+2.319]
+      blank - real MOVING     +0.672 [+0.541,+0.811]
+      blank - real WSS (sec.) -1.846 [-3.257,-0.466]
+  M1-v2a s42 (tau 0.3)
+    real           all 1.871 STOPPED 0.292 START 9.346 MOVING 1.716 WSS (sec.) 0.063 | FG 0.052 | MG 0.662
+    cams shuffled  all 2.039 STOPPED 1.271 START 9.513 MOVING 1.752 WSS (sec.) 1.101 | FG 0.258 | MG 0.623
+    blank          all 2.115 STOPPED 0.224 START 9.776 MOVING 1.999 WSS (sec.) 0.002 | FG 0.049 | MG 0.753
+      cams shuffled - real all        +0.168 [+0.098,+0.246]
+      cams shuffled - real STOPPED    +0.979 [+0.638,+1.295]
+      cams shuffled - real START      +0.167 [-0.118,+0.463]
+      cams shuffled - real MOVING     +0.037 [-0.004,+0.076]
+      cams shuffled - real WSS (sec.) +1.038 [+0.531,+1.546]
+      blank - real all        +0.244 [+0.170,+0.316]
+      blank - real STOPPED    -0.068 [-0.227,+0.080]
+      blank - real START      +0.430 [+0.185,+0.699]
+      blank - real MOVING     +0.284 [+0.202,+0.366]
+      blank - real WSS (sec.) -0.061 [-0.110,-0.016]
+
+GBL M1-v2a blank - real, all val: +0.244 [+0.170,+0.316] -> "cameras used by M1-v2a"
