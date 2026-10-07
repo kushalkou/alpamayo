@@ -1,6 +1,8 @@
-# QUEUE_STATE -- R7 (2026-10-07)
+# QUEUE_STATE -- R8 (2026-10-07)
 
-Idle. Nothing running, GPUs free. R7 Part A (B1_NR, M1v2a_NR, Ego-MLP-NR) and Part C
-(C1, C2, C3) done; R7A_REPORT.md final. Part B (CoC arm) NOT launched: AUDIT_SIGNOFF.md
-absent when Part A + C3 finished (14:05 UTC). R7B_REPORT.md holds the pre-registered
-Part B header only. Next GPU work only on a new instruction / sign-off.
+Running: tmux r8b = Alpamayo/code/ar1/run_r8b.sh: M1v2a_NR_s123 -> B1_NR_s123 ->
+M1v2a_NR_s2024 -> B1_NR_s2024 (~3.2-3.8 h each, ~14 h). Markers results/R8_<tag>_
+{TRAINED,DUMPED}; resume after reboot: cd Alpamayo/code && tmux new -d -s r8b "bash
+ar1/run_r8b.sh". Status Alpamayo/r8_status.log (ends R8B_DONE). Before each run the queue
+stops with R8B_PAUSED_FOR_COC if AUDIT_SIGNOFF.md exists (then R7 Part B, then resume).
+Then: python ar1/r8b_eval.py -> R8_REPORT.md Part B. R8 Part A done (bd8869c).
