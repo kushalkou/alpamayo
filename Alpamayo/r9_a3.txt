@@ -1,0 +1,6 @@
+
+A3 Table 9 analog: consistency (trajectory-derived words vs generated words, 2 Hz rules); all-12-slot match | mean per-slot agreement; overall and per C2 stratum
+  M1 (10 Hz) (3)     all 0.497 | 0.918; STOPPED 0.796 | 0.970; START 0.709 | 0.956; MOVING 0.437 | 0.907  per seed all-12: 0.410 0.562 0.517
+  M1-v2a (3)         all 0.882 | 0.975; STOPPED 0.971 | 0.995; START 0.905 | 0.987; MOVING 0.867 | 0.971  per seed all-12: 0.854 0.884 0.908
+  M1-v2a-NR (3)      all 0.858 | 0.973; STOPPED 0.968 | 0.996; START 0.921 | 0.991; MOVING 0.836 | 0.969  per seed all-12: 0.840 0.868 0.864
+  no-cam M1-v2a (1)  all 0.830 | 0.964; STOPPED 0.982 | 0.998; START 0.965 | 0.997; MOVING 0.798 | 0.957
