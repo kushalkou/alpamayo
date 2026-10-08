@@ -58,7 +58,10 @@ B2 Table 12 analog, R5 A5 metric set (ar1/r5_a5c1.py definitions), val: token de
 
 =========================================================================================
 GATE VERDICTS
-  GE1, GE2, GE3: pending (Part B, flow expert on M1-v2a s42, tmux r9b, started 10:35 UTC).
+  GE1 M1-v2a expert mean-of-6 - token, ADE@6s -0.158 [-0.217,-0.098] -> "expert improves
+      the long horizon". GE2 hold 0.929 vs token 0.919 -> "expert holds stops".
+  GE3 nearest-to-token - token -0.166 [-0.221,-0.112] -> "expert adds value even when
+      anchored to the token decision". Caveat: 100-epoch cap hit, still improving.
   Part A has no gates. Headline: +meta beats traj-only with and without route (A1), but
   NOT on the HARD set (A2: M1-v2a - B1 HARD -0.008 [-0.078,+0.062]; REST -0.192).
 
@@ -136,3 +139,22 @@ A3 Table 9 analog (consistency, 2 Hz rules): all-12-slot match | mean per-slot a
   1.92m 0.85; SFT + RL (r_reason + r_consistency + r_safety) 1.94m 0.83.
   Direction: consistent labels (2 Hz) give 0.88 all-12 consistency without any RL, in the
   range AR1 reaches only after consistency-reward RL; 10 Hz labels give 0.50.
+
+B Flow expert on M1-v2a s42 (r9_b2.txt): 100 epochs (cap; best = last eval, holdout
+  median ADE@6s 1.425, still falling: NOT converged); 67.0 + 0.5 GPU-h (est. ~54).
+  readout           ADE3  ADE6  minADE6 3/6 spread3/6 hold  Col aa/yaw C2 STOP START MOVE
+  M1v2a token       0.884 2.808 -           -         0.919 1.58/1.54  0.292 9.348 1.723
+  M1v2a exp 1 draw  0.824 2.655 0.772/2.524 0.15/0.41 0.929 1.33/1.23  0.410 8.764 1.590
+  M1v2a exp mean6   0.822 2.651 -           -         0.929 1.33/1.23  0.410 8.762 1.585
+  M1v2a exp neartok 0.820 2.642 -           -         0.928 1.41/1.29  0.394 8.790 1.579
+  A3 token (no cam) 0.877 2.896 -           -         0.944 1.64/1.86  0.082 9.881 1.748
+  A3 exp mean6      0.895 2.760 0.576/1.714 1.94/7.42 0.506 1.50/1.54  0.715 9.201 1.661
+  A3 exp neartok    0.911 2.803 -           -         0.951 1.74/1.76  0.079 9.854 1.755
+  M1 token (10 Hz)  1.043 3.183 -           -         0.669 1.54/1.56  1.858 8.928 1.889
+  M1 exp mean6      1.022 3.046 0.871/2.656 0.49/1.36 0.678 2.34/2.25  2.559 8.539 1.686
+  AR1 Table 12 (quoted, route, D_overall): Auto-Regressive minADE6@6.4s 0.6811, AlpaSim
+  0.59+-0.17, Comfort (Accel) 44.05%; Flow Matching 0.6440, 1.27+-0.34, 97.38%.
+  Reading: same direction as AR1 (flow < AR at 6 s). Unlike the no-cam and M1 experts,
+  the M1-v2a expert is near-deterministic given the 2 Hz words (spread 0.15 m at 3 s vs
+  1.94 for A3), so it keeps stops (hold 0.929) and lowers collisions (1.33 vs 1.58 aa).
+  It is worse on STOPPED (+0.118) and better on START and MOVING.
