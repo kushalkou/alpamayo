@@ -44,8 +44,13 @@ GATE VERDICTS
   GL1 val P(cmd != straight | START) 0.121 (< 0.20); P(cmd != straight | STOPPED) 0.000
       -> "no start leak via command" by the pre-registered rule. [DIAGNOSTIC; but see A3:
       a one-sided leak exists for the 28 turn-command samples]
-  GN1-3, GN2-3: pending (Part B running, tmux r8b).
-GPU: Part A 0 GPU-h (tau needs no re-decoding).
+  GN1-3 M1-v2a-NR - M1-v2a (3 vs 3 seeds) +0.140 [+0.043,+0.253]: the route helps M1-v2a.
+        B1-NR - B1 +0.053 [+0.012,+0.091]: the route helps B1 a little (s42 alone: flat).
+  GN2-3 M1-v2a-NR - B1-NR -0.063 [-0.114,-0.008] -> "meta helps without route (3 seeds)".
+        Not the AR1 direction (AR1 0.5B no route: meta 0.291 / 0.988, traj 0.282 / 0.971).
+GPU: Part A 0 GPU-h (tau needs no re-decoding); Part B 4 runs 14.2 h x 8 = 113.8 GPU-h.
+CoC: AUDIT_SIGNOFF.md never appeared (checked before each run and at 09:25 UTC); the queue
+never paused; R7 Part B not launched.
 
 A1 HYBRID DECODE. The model decodes its 24 trajectory tokens (12 accel, 12 curvature
   slots) greedily: at each slot the argmax token is fed back. For every slot the dump also
@@ -85,3 +90,35 @@ A3 DIAGNOSTIC command [P] per C2 stratum (right / left / straight):
   command: right START n 18 MG 0.000; left START n 10 MG 0.000; straight START n 203 MG
   0.754, STOPPED n 679 FG 0.052. M1-v2a starts on every turn-command START and misses
   three in four straight STARTs: it uses the leak where present.
+
+PART B (r8b_eval.txt; per-sample dumps, holdout tau; 3-seed means, scene bootstrap 10,000)
+  Holdout tau: M1-v2a-NR 0.9 / 0.3 / 0.3; B1-NR 0.7 / 0.7 / 0.7 (A2: tau is immaterial).
+  L2@3s NoAvg per seed (s42 s123 s2024) | mean +- sd:
+    M1-v2a     1.877 1.968 1.980 | 1.942 +- 0.056
+    B1         2.165 2.048 2.061 | 2.091 +- 0.064
+    M1-v2a-NR  2.074 2.096 2.075 | 2.082 +- 0.012
+    B1-NR      2.175 2.119 2.139 | 2.144 +- 0.028
+  L2@3s [CI]     M1-v2a-NR - M1-v2a     B1-NR - B1             M1-v2a-NR - B1-NR
+    all          +0.140 [+0.043,+0.253] +0.053 [+0.012,+0.091] -0.063 [-0.114,-0.008]
+    excl. ff     +0.141 [+0.043,+0.256] +0.042 [+0.002,+0.080] -0.069 [-0.121,-0.013]
+    excl. WSS    +0.046 [-0.001,+0.100] +0.050 [+0.008,+0.090] -0.101 [-0.146,-0.056]
+    WSS only     +1.445 [+0.366,+2.606] +0.097 [-0.014,+0.230] +0.462 [+0.113,+0.855]
+    C2 STOPPED   +0.806 [+0.143,+1.507] +0.113 [+0.016,+0.226] +0.166 [-0.063,+0.410]
+    C2 START     +0.022 [-0.224,+0.285] +0.219 [+0.022,+0.438] +0.161 [+0.004,+0.322]
+    C2 MOVING    +0.039 [+0.011,+0.068] +0.034 [-0.008,+0.076] -0.112 [-0.160,-0.063]
+  ADE@6s: M1-v2a-NR - M1-v2a +0.181 [+0.072,+0.304]; B1-NR - B1 +0.092 [+0.028,+0.155];
+  M1-v2a-NR - B1-NR -0.068 [-0.147,+0.016] (CI includes 0 at 6 s).
+  Per run: C2 L2@3s STOPPED START MOVING | C2 FG MG | R3 FG all/WSS/non-WSS, MG |
+  collision @3 s NoAvg/TemAvg, aa ; yaw
+    M1v2a_NR      1.383 9.409 1.782|.234 .645|.243/.362/.118 .519|1.35/0.56;1.37/0.59
+    M1v2a_NR_s123 1.561 9.344 1.784|.258 .658|.268/.371/.160 .530|1.72/0.65;1.80/0.68
+    M1v2a_NR_s2024 1.295 9.134 1.814|.230 .554|.240/.368/.106 .449|1.76/0.66;1.78/0.68
+    B1_NR         1.246 8.955 1.952|.321 .411|.318/.388/.245 .314|1.31/0.54;1.31/0.55
+    B1_NR_s123    1.299 9.135 1.866|.311 .450|.311/.400/.218 .346|1.68/0.70;1.70/0.77
+    B1_NR_s2024   1.196 9.312 1.898|.311 .472|.321/.400/.239 .350|1.62/0.58;1.74/0.61
+    (with route: M1-v2a FG 0.061/0.198/0.098, WSS 0.012/0.290/0.070; B1 FG 0.30-0.32)
+  Reading. Without the route, all three M1-v2a seeds start wrongly in WSS (0.362-0.371),
+  and the seed spread vanishes (L2@3s sd 0.012 vs 0.056). The route mainly buys M1-v2a the
+  standstill decision (STOPPED +0.806, MOVING only +0.039). Words still help without the
+  route, but only while moving (MOVING -0.112); at standstill and on START, M1-v2a-NR is
+  no better than B1-NR. Collisions: no consistent route effect (1.35-1.76 vs 1.37-1.76).
