@@ -48,7 +48,11 @@ def main():
     ap.add_argument('--bpg', type=int, default=32)
     ap.add_argument('--predict_only', action='store_true',
                     help='reuse expert_best.pt (training finished); history parsed from the train log')
+    ap.add_argument('--labels', default='can', choices=('can', '2hz'),
+                    help='R9: training words from the 10 Hz CAN labels or the 2 Hz labels (M1-v2a)')
+    ap.add_argument('--train_log', default=None, help='R9: train log for --predict_only (default R3.3 name)')
     a = ap.parse_args()
+    FM.LABELS['src'] = a.labels
     import datetime
     dist.init_process_group('nccl', timeout=datetime.timedelta(hours=3))   # uneven decode times across ranks
     r = int(os.environ['LOCAL_RANK']); torch.cuda.set_device(r); dev = f'cuda:{r}'
@@ -113,7 +117,7 @@ def main():
     t_start = time.time(); os.makedirs(f'{CKR}/_ar1_expert_{a.tag}', exist_ok=True)
     if a.predict_only:
         import re
-        for l in open(f'/home/dgx1user/Alpamayo-Kushal/Alpamayo/ar1_r33_{a.tag}_expert.log'):
+        for l in open(a.train_log or f'/home/dgx1user/Alpamayo-Kushal/Alpamayo/ar1_r33_{a.tag}_expert.log'):
             mm = re.match(r'\[epoch +(\d+)\] fm_loss ([\d.]+) \| SELECT holdout ADE@6s median ([\d.]+) \(mean ([\d.]+)\).* (\d+)s', l)
             if mm:
                 hist.append({'epoch': int(mm[1]), 'fm_loss': float(mm[2]), 'ho_ade_med': float(mm[3]),
