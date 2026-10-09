@@ -60,7 +60,7 @@ B2 Table 12 analog (val; ADE@3s all 5,119; hold = GT-stopped stationary, n 676; 
   3-seed token        0.919 2.891 -           -         0.863 1.57/1.54  0.606 9.273 1.755
   3-seed exp 1 draw   0.874 2.738 -           -         0.871 1.57/1.50  0.906 8.685 1.617
   3-seed exp mean6    0.871 2.732 -           -         0.871 1.60/1.52  0.906 8.682 1.611
-  3-seed exp neartok 0.868 2.725 -           -         0.869 1.56/1.49  0.870 8.721 1.606
+  3-seed exp neartok  0.868 2.725 -           -         0.869 1.56/1.49  0.870 8.721 1.606
   Comparison rows (R9, single seed): A3 no-cam token 2.896 ADE6, hold 0.944; A3 expert
   mean6 2.760, hold 0.506, spread 1.94/7.42; M1 (10 Hz) token 3.183, expert mean6 3.046.
   AR1 Table 12 (quoted in R9): AR 0.6811 vs flow 0.6440 minADE6@6.4s.
