@@ -1,0 +1,28 @@
+R10 B2 Table 12 analog, M1-v2a token vs flow expert (val; ADE@3s all, ADE@6s n_fut = 12; hold n 676; Col @3 s NoAvg aa/yaw; C2 L2@3s STOPPED START MOVING)
+  run / readout            ADE3  ADE6  minADE6 3/6 spread3/6 hold  Col      | C2
+  [M1v2a] expert best epoch 100 (holdout 1.4252; evals 20; CAP); train 67.0 GPU-h
+  M1v2a token              0.884 2.808            (1 sample) 0.919 1.58/1.54 | 0.292 9.348 1.723
+  M1v2a exp 1 draw         0.824 2.655 0.772/2.524 0.15/0.41 0.929 1.33/1.23 | 0.410 8.764 1.590
+  M1v2a exp mean6          0.822 2.651                       0.929 1.33/1.23 | 0.410 8.762 1.585
+  M1v2a exp near-tok       0.820 2.642                       0.928 1.41/1.29 | 0.394 8.790 1.579
+  [M1v2a_s123] expert best epoch 95 (holdout 1.4787; evals 20; CAP); train 67.0 GPU-h
+  M1v2a_s123 token         0.935 2.915            (1 sample) 0.787 1.37/1.35 | 1.005 9.095 1.732
+  M1v2a_s123 exp 1 draw    0.914 2.813 0.865/2.693 0.13/0.36 0.793 1.22/1.15 | 1.554 8.597 1.599
+  M1v2a_s123 exp mean6     0.912 2.809                       0.793 1.23/1.13 | 1.554 8.596 1.595
+  M1v2a_s123 exp near-tok  0.908 2.802                       0.793 1.25/1.17 | 1.497 8.645 1.592
+  [M1v2a_s2024] expert best epoch 70 (holdout 1.5619; evals 18; patience); train 60.0 GPU-h
+  M1v2a_s2024 token        0.938 2.950            (1 sample) 0.885 1.76/1.72 | 0.522 9.378 1.809
+  M1v2a_s2024 exp 1 draw   0.883 2.747 0.798/2.525 0.24/0.72 0.892 2.17/2.11 | 0.754 8.695 1.663
+  M1v2a_s2024 exp mean6    0.878 2.735                       0.892 2.23/2.19 | 0.754 8.689 1.651
+  M1v2a_s2024 exp near-tok 0.876 2.732                       0.888 2.03/2.01 | 0.719 8.729 1.647
+  3-seed means:
+  3s token                 0.919 2.891                       0.863 1.57/1.54 | 0.606 9.273 1.755
+  3s draw                  0.874 2.738                       0.871 1.57/1.50 | 0.906 8.685 1.617
+  3s mean6                 0.871 2.732                       0.871 1.60/1.52 | 0.906 8.682 1.611
+  3s near                  0.868 2.725                       0.869 1.56/1.49 | 0.870 8.721 1.606
+
+GATES (3 seeds, paired scene bootstrap 10,000)
+  GE1-3 mean-of-6 - token ADE@6s -0.159 [-0.217,-0.099] -> "expert improves the long horizon"
+  GE2-3 hold mean-of-6 0.871 vs token 0.863 (per seed 0.929/0.919, 0.793/0.787, 0.892/0.885) -> "expert holds stops"
+  GE3-3 nearest-to-token - token ADE@6s -0.166 [-0.218,-0.113] -> "expert adds value even when anchored to the token decision"
+  STOPPED L2@3s mean-of-6 - token +0.300 [+0.141,+0.481]; per seed +0.118 [+0.039,+0.230]; +0.548 [+0.190,+0.963]; +0.232 [+0.110,+0.395]
