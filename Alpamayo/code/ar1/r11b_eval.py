@@ -15,12 +15,14 @@ from meta_actions import LON, LAT
 
 DATA = '/home/dgx1user/Alpamayo-Kushal/Alpamayo/data'
 RX = re.compile(r'^Driving decision: ([^;]+); ([^.]+)\. Critical components: (.+)\. Reasoning: (.+)$')
-MODES = (('(i) gen', 'COC'), ('(ii) none', 'COC_none'), ('(iii) shuf', 'COC_shuf'), ('(iv) gt [ORACLE]', 'COC_gt'))
+TAG = sys.argv[1] if len(sys.argv) > 1 else 'COC'          # R12: COC3 = v3 traces
+COCP = f'{DATA}/ar1_coc_2hz_v3.pkl' if TAG == 'COC3' else f'{DATA}/ar1_coc_2hz.pkl'
+MODES = (('(i) gen', TAG), ('(ii) none', TAG + '_none'), ('(iii) shuf', TAG + '_shuf'), ('(iv) gt [ORACLE]', TAG + '_gt'))
 
 
 def main():
     C = Q.ctx(); rva = C['rva']; W, V0, T = E.data(); occ = C['occ']; tokv = [r['sample_token'] for r in rva]
-    coc = pickle.load(open(f'{DATA}/ar1_coc_2hz.pkl', 'rb'))
+    coc = pickle.load(open(COCP, 'rb'))
     g = np.linalg.norm(np.stack([np.asarray(T[t]['P'])[:6] for t in tokv]), axis=2).max(1)
     v0 = np.array([V0[t]['v0_can'] for t in tokv])
     wss = pickle.load(open(f'{DATA}/r5_wss.pkl', 'rb')); w = np.array([wss[r['scene_name']] for r in rva])
@@ -28,11 +30,11 @@ def main():
     ALL = np.ones(len(rva), bool)
     S = {'all': ALL, 'excl. first frames': ~C['ff'], 'excl. WSS': ~w, 'WSS only': w,
          'C2 STOPPED': (v0 <= 0.2) & (g <= 1.0), 'C2 START': (v0 <= 0.2) & (g > 1.0), 'C2 MOVING': v0 > 0.2}
-    tau = Q.run('COC')['tau']
-    print(f'PROVISIONAL (CoC traces not signed off). CoC seed 42; holdout tau {tau} (mode i holdout dump)')
+    tau = Q.run(TAG)['tau']
+    print(f'PROVISIONAL (CoC traces not signed off). {TAG} = {COCP}; CoC seed 42; holdout tau {tau} (mode i holdout dump)')
     PS, PR, DV = {}, {}, {}
     for nm, src in MODES:
-        PS[nm] = Q.strip(Q.run('COC', src=src)); DV[nm] = load(src, 'val'); PR[nm] = preds(DV[nm], rva, 'hybrid', tau)
+        PS[nm] = Q.strip(Q.run(TAG, src=src)); DV[nm] = load(src, 'val'); PR[nm] = preds(DV[nm], rva, 'hybrid', tau)
     v2 = Q.strip(Q.run('M1v2a')); v23 = Q.avg([Q.run(t) for t in ('M1v2a', 'M1v2a_s123', 'M1v2a_s2024')]); b1 = Q.avg([Q.run(t) for t in ('B1', 'B1_s123', 'B1_s2024')])
     f = lambda c: f'{c[0]:+.3f} [{c[1]:+.3f},{c[2]:+.3f}]'
     bt = lambda A, B, m: E.scene_boot([r for r, x in zip(rva, m) if x], A['l2'][m, 5], B['l2'][m, 5])

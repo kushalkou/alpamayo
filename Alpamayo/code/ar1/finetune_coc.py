@@ -180,6 +180,7 @@ def main():
     ap.add_argument('--max_steps', type=int, default=0)
     ap.add_argument('--dump', default='')
     ap.add_argument('--mode', default='gen', choices=('gen', 'none', 'shuf', 'gt'))
+    ap.add_argument('--coc', default=f'{DATA}/ar1_coc_2hz.pkl', help='R12: CoC pickle (v3: ar1_coc_2hz_v3.pkl)')
     ap.add_argument('--smoke_decode', type=int, default=0, help='smoke test: decode N holdout samples after training')
     a = ap.parse_args()
     FM.LABELS['src'] = '2hz'
@@ -190,7 +191,8 @@ def main():
     torch.manual_seed(a.seed + r)
     net = build(dev, a)
     H = pickle.load(open(f'{DATA}/ar1_hist.pkl', 'rb')); Mt = None
-    coc = pickle.load(open(f'{DATA}/ar1_coc_2hz.pkl', 'rb'))
+    coc = pickle.load(open(a.coc, 'rb'))
+    log(f'[coc] traces {a.coc}')
     from transformers import AutoTokenizer
     tkt = AutoTokenizer.from_pretrained(TOKP)
     IDS = coc_ids(tkt, coc)
