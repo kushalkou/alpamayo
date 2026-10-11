@@ -1,0 +1,1123 @@
+{
+ "source": "data/ar1_coc_2hz_v3.pkl",
+ "rule": "R11 C1",
+ "quota": {
+  "Set speed tracking": 6,
+  "Lead obstacle following": 6,
+  "Stop for static constraints": 6,
+  "Yield (agent right-of-way)": 6,
+  "Speed adaptation (road events)": 6
+ },
+ "traces": [
+  {
+   "id": "A001",
+   "token": "29ba615932994396a7ee5b465f9ea5e9",
+   "part": "a",
+   "scene": "scene-0783",
+   "lon": "Lead obstacle following",
+   "lat": "Lane change right",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A002",
+   "token": "0a29d84ae38840e0b576626475c8b146",
+   "part": "a",
+   "scene": "scene-1072",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A003",
+   "token": "0c15e8d3127a4b88991c235095d800d2",
+   "part": "a",
+   "scene": "scene-0562",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A004",
+   "token": "26ce0c76786c43158b3bac999b27e76b",
+   "part": "a",
+   "scene": "scene-0564",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A005",
+   "token": "3a1dd258a83f44b6bd97e8cc426d7057",
+   "part": "a",
+   "scene": "scene-0014",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A006",
+   "token": "4208e9982fbb49329271ee6dc0dbcf64",
+   "part": "a",
+   "scene": "scene-0523",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A007",
+   "token": "43cdc169284546798f3a66b131ac7c91",
+   "part": "a",
+   "scene": "scene-0926",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A008",
+   "token": "4600f63ac85949c9a3123d1798888efb",
+   "part": "a",
+   "scene": "scene-0908",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A009",
+   "token": "4dad239b9fc048f7a6e69e2ba45b35b1",
+   "part": "a",
+   "scene": "scene-1073",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A010",
+   "token": "5dd248af969c406f9812c24fe4498974",
+   "part": "a",
+   "scene": "scene-0013",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A011",
+   "token": "6edc535af6e4466d93c99da08c7b6b58",
+   "part": "a",
+   "scene": "scene-0795",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A012",
+   "token": "83c7c252af754edb82e3e6e4a5f42100",
+   "part": "a",
+   "scene": "scene-0800",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A013",
+   "token": "cf21155eda904501bbc960d4766764c0",
+   "part": "a",
+   "scene": "scene-0564",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A014",
+   "token": "d3eeecca49a24b65aa5e86ec9c63a3bf",
+   "part": "a",
+   "scene": "scene-0626",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A015",
+   "token": "e443b4ca9e474278b7147c4daaf67eca",
+   "part": "a",
+   "scene": "scene-0799",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A016",
+   "token": "e4571b3d5c2e47178cc767b3f9d2a4e3",
+   "part": "a",
+   "scene": "scene-0794",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A017",
+   "token": "ef183f507ce945519cc458276a8ae6e2",
+   "part": "a",
+   "scene": "scene-0798",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A018",
+   "token": "2ab5ae2167d94c37987a69ef23b3cb6b",
+   "part": "a",
+   "scene": "scene-0095",
+   "lon": "Lead obstacle following",
+   "lat": "None",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A019",
+   "token": "5369488db9e94abcaacb56ed00a0def6",
+   "part": "a",
+   "scene": "scene-0095",
+   "lon": "Lead obstacle following",
+   "lat": "None",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A020",
+   "token": "eb60a132b3b844788070acf04596941d",
+   "part": "a",
+   "scene": "scene-0781",
+   "lon": "Lead obstacle following",
+   "lat": "None",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A021",
+   "token": "dfde680850a348f79e05d215229b8539",
+   "part": "a",
+   "scene": "scene-1069",
+   "lon": "Set speed tracking",
+   "lat": "Lane change left",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A022",
+   "token": "09f3a3ce512a442db7dd47f9ed39e64f",
+   "part": "a",
+   "scene": "scene-0038",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A023",
+   "token": "27f53c7168584747bdbaff8ae8d758c5",
+   "part": "a",
+   "scene": "scene-0925",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A024",
+   "token": "2b78a8099c93418097ce1f2807e23618",
+   "part": "a",
+   "scene": "scene-0917",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A025",
+   "token": "2beac07fddfa49f38f5380f1ae761d6d",
+   "part": "a",
+   "scene": "scene-0907",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A028",
+   "token": "4ee219c4638949de9d994bc792fd0a69",
+   "part": "a",
+   "scene": "scene-0796",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A032",
+   "token": "6582e60293a44278bbf3358225db11d4",
+   "part": "a",
+   "scene": "scene-0555",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A034",
+   "token": "841dd6709e9b4d7c9d6bf888f1fe6d7e",
+   "part": "a",
+   "scene": "scene-0916",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn left",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A035",
+   "token": "8b17a8d9c23a4a849ec471da90fec39e",
+   "part": "a",
+   "scene": "scene-0094",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A036",
+   "token": "92abf540e437448da253d88821abedb2",
+   "part": "a",
+   "scene": "scene-0520",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A037",
+   "token": "b988f7f03263462d94d39a722dc820ca",
+   "part": "a",
+   "scene": "scene-0106",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A040",
+   "token": "dfa48a639ca54273906096ebbd03660e",
+   "part": "a",
+   "scene": "scene-0524",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A041",
+   "token": "19ccc1fa32844e0c9e4eb9d7e741a43f",
+   "part": "a",
+   "scene": "scene-0917",
+   "lon": "Stop for static constraints",
+   "lat": "Turn left",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A042",
+   "token": "5bdba79e793f4133981f352b450b50c3",
+   "part": "a",
+   "scene": "scene-0917",
+   "lon": "Stop for static constraints",
+   "lat": "Turn left",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A043",
+   "token": "656b5571b0c647f5bc103ceef3bfe661",
+   "part": "a",
+   "scene": "scene-0962",
+   "lon": "Set speed tracking",
+   "lat": "Turn left",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A044",
+   "token": "661e92f2f19f44c283f0b540e68fdef8",
+   "part": "a",
+   "scene": "scene-0962",
+   "lon": "Set speed tracking",
+   "lat": "Turn left",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A045",
+   "token": "73ac66237c854ee69fc29e9b24860e41",
+   "part": "a",
+   "scene": "scene-0018",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn left",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A047",
+   "token": "ffced1bcacb046af9928fe92d99fdb23",
+   "part": "a",
+   "scene": "scene-1060",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn left",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A048",
+   "token": "0cb0b2de67684cab83278bc2add2a0ec",
+   "part": "a",
+   "scene": "scene-0928",
+   "lon": "Set speed tracking",
+   "lat": "Turn right",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A049",
+   "token": "188e7d58e565459096ad682313f93902",
+   "part": "a",
+   "scene": "scene-0920",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A050",
+   "token": "50e62add1dd7476c9ab223655ffb9f5e",
+   "part": "a",
+   "scene": "scene-1061",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A052",
+   "token": "8dffb9bba025425e9d03fd0384ed1d1f",
+   "part": "a",
+   "scene": "scene-0928",
+   "lon": "Set speed tracking",
+   "lat": "Turn right",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A053",
+   "token": "967fb73bdd20468495b1ac6de9159404",
+   "part": "a",
+   "scene": "scene-0928",
+   "lon": "Set speed tracking",
+   "lat": "Turn right",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A055",
+   "token": "ac0ed47350fd4fa9a2e9e5cfab4db259",
+   "part": "a",
+   "scene": "scene-1061",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A056",
+   "token": "ac9313c735754711a28d2da611b007ff",
+   "part": "a",
+   "scene": "scene-1061",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A057",
+   "token": "b16163568a0e472791b837c0ecad1e5b",
+   "part": "a",
+   "scene": "scene-0928",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A058",
+   "token": "caccb9f684a14ff0a17f35c9f822f259",
+   "part": "a",
+   "scene": "scene-0920",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A060",
+   "token": "f267aa43c6904cf7b43b3d493012b43a",
+   "part": "a",
+   "scene": "scene-1061",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": true
+  },
+  {
+   "id": "A061",
+   "token": "022b90e4ad174f848690f010cc06f404",
+   "part": "a",
+   "scene": "scene-0921",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A063",
+   "token": "1745a8aa698a4c798a8102135d7e1142",
+   "part": "a",
+   "scene": "scene-0925",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A064",
+   "token": "4af258d64bc749b29cb771304aa4cd14",
+   "part": "a",
+   "scene": "scene-0797",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A065",
+   "token": "7ff89b70dc764d9b98b84e5e2a3e5d44",
+   "part": "a",
+   "scene": "scene-0778",
+   "lon": "Stop for static constraints",
+   "lat": "Turn left",
+   "cause_type": "unexplained stop",
+   "v2_audit": true
+  },
+  {
+   "id": "A067",
+   "token": "87091b64b814472f8d4dbac04de8d3fc",
+   "part": "a",
+   "scene": "scene-0925",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A069",
+   "token": "b9b511c212f041358c3654276401f8ab",
+   "part": "a",
+   "scene": "scene-0963",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A070",
+   "token": "ff771831a0b243169b037f4659e23a9d",
+   "part": "a",
+   "scene": "scene-0276",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A073",
+   "token": "781696f733bf458ca2a588fdec64a1b0",
+   "part": "a",
+   "scene": "scene-0561",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A074",
+   "token": "89bc1e54d10a47f8bbb13552df6fc114",
+   "part": "a",
+   "scene": "scene-0346",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A076",
+   "token": "93071f98339b40279937bafd206cb42e",
+   "part": "a",
+   "scene": "scene-0560",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A077",
+   "token": "942c0bdb5e1b48628fb9d4bf3435511d",
+   "part": "a",
+   "scene": "scene-0784",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A078",
+   "token": "a364a98930634dd7b0885e922421e5fe",
+   "part": "a",
+   "scene": "scene-0784",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A080",
+   "token": "9c40f85f7e0340bfb535de1478ec1864",
+   "part": "a",
+   "scene": "scene-0921",
+   "lon": "Stop for static constraints",
+   "lat": "Turn left",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A081",
+   "token": "70ea11fab78d40d89ee2915fcc20bd9a",
+   "part": "a",
+   "scene": "scene-0332",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "Lane keeping & centering",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A082",
+   "token": "779690ce8de54dc292f1e47bb1bd348c",
+   "part": "a",
+   "scene": "scene-0519",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": true
+  },
+  {
+   "id": "A083",
+   "token": "982b03dbf8e84f14a851e1d1512ba03a",
+   "part": "a",
+   "scene": "scene-0521",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "Lane keeping & centering",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A084",
+   "token": "de8043171d774855a2a0059c4c0e14f6",
+   "part": "a",
+   "scene": "scene-0917",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "Lane keeping & centering",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A085",
+   "token": "05bc09f952ab4cf8b754405f20d503c5",
+   "part": "a",
+   "scene": "scene-0553",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A086",
+   "token": "1c4e3d00204344b5a373df3ade9916bb",
+   "part": "a",
+   "scene": "scene-0557",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "stop line",
+   "v2_audit": true
+  },
+  {
+   "id": "A087",
+   "token": "317fba7a6afb4dac8974af0d61afe325",
+   "part": "a",
+   "scene": "scene-0771",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "unexplained stop",
+   "v2_audit": true
+  },
+  {
+   "id": "A088",
+   "token": "31812a5e8d514b5f8d2fbc50fc007475",
+   "part": "a",
+   "scene": "scene-0553",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A089",
+   "token": "32e2619879854a83953c08ec8557f3bb",
+   "part": "a",
+   "scene": "scene-0553",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A090",
+   "token": "3a064c48e47b489a8b442b8081f877b6",
+   "part": "a",
+   "scene": "scene-0553",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A091",
+   "token": "3b79884e7686499b847fd7ece438c229",
+   "part": "a",
+   "scene": "scene-0554",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A092",
+   "token": "44046f30e7b5484e945279176eef203b",
+   "part": "a",
+   "scene": "scene-0777",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "unexplained stop",
+   "v2_audit": true
+  },
+  {
+   "id": "A093",
+   "token": "8398a7b012a04b00a72951ce2792e9d6",
+   "part": "a",
+   "scene": "scene-0332",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A094",
+   "token": "9917500ef64c454581306b77eb6ffcb2",
+   "part": "a",
+   "scene": "scene-0777",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "unexplained stop",
+   "v2_audit": true
+  },
+  {
+   "id": "A095",
+   "token": "b92ee1ed90c242d18bce9a8fdbbeb8d8",
+   "part": "a",
+   "scene": "scene-0332",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A096",
+   "token": "cbbfb7a9e034467cba128f38c9b29d91",
+   "part": "a",
+   "scene": "scene-0777",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "unexplained stop",
+   "v2_audit": true
+  },
+  {
+   "id": "A097",
+   "token": "d11353f29481498487eef6a6661060a4",
+   "part": "a",
+   "scene": "scene-0332",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A098",
+   "token": "d2ae3c5bbb5343a393882b44d56f8da3",
+   "part": "a",
+   "scene": "scene-0553",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": true
+  },
+  {
+   "id": "A099",
+   "token": "e3ca1a55038c406fab27d3b533831636",
+   "part": "a",
+   "scene": "scene-0771",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "unexplained stop",
+   "v2_audit": true
+  },
+  {
+   "id": "A100",
+   "token": "feeca927e64541709fbad93ad6bbe4c5",
+   "part": "a",
+   "scene": "scene-0777",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "unexplained stop",
+   "v2_audit": true
+  },
+  {
+   "id": "B01",
+   "token": "5e89b644b90d4955a33ffeb69a7ab62a",
+   "part": "b",
+   "scene": "scene-0971",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": null
+  },
+  {
+   "id": "B02",
+   "token": "ccd7c315063047ddb231fceb7ceff64b",
+   "part": "b",
+   "scene": "scene-0638",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn left",
+   "cause_type": "turn",
+   "v2_audit": null
+  },
+  {
+   "id": "B03",
+   "token": "7d8ff41747b74252ac3fb6efb0e0b120",
+   "part": "b",
+   "scene": "scene-0972",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": null
+  },
+  {
+   "id": "B04",
+   "token": "a79fa282647740b0959e6e4cd852ce07",
+   "part": "b",
+   "scene": "scene-0919",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn left",
+   "cause_type": "turn",
+   "v2_audit": null
+  },
+  {
+   "id": "B05",
+   "token": "a29623dd054b4177a9d98b83c0fd23bd",
+   "part": "b",
+   "scene": "scene-0345",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn right",
+   "cause_type": "turn",
+   "v2_audit": null
+  },
+  {
+   "id": "B06",
+   "token": "22ab3af73df642b2ad319411f6622dd6",
+   "part": "b",
+   "scene": "scene-0556",
+   "lon": "Speed adaptation (road events)",
+   "lat": "Turn left",
+   "cause_type": "turn",
+   "v2_audit": null
+  },
+  {
+   "id": "B07",
+   "token": "13aeffb591ab4ed3b2ddff22c8652236",
+   "part": "b",
+   "scene": "scene-0968",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B08",
+   "token": "5c7c23122dd94c70b8ab5528f27ba117",
+   "part": "b",
+   "scene": "scene-0331",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B09",
+   "token": "b70d359986c74a008d7e9f957521b213",
+   "part": "b",
+   "scene": "scene-0270",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "Lane keeping & centering",
+   "cause_type": "yield agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B10",
+   "token": "864f2bd660ba4d5b83fc5dee443801ce",
+   "part": "b",
+   "scene": "scene-0274",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "Lane keeping & centering",
+   "cause_type": "yield agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B11",
+   "token": "92bf51f4b2c447b5a8e068e25cf1f980",
+   "part": "b",
+   "scene": "scene-0344",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "None",
+   "cause_type": "yield agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B12",
+   "token": "14684fc1b81a43888b992d553add01cf",
+   "part": "b",
+   "scene": "scene-0017",
+   "lon": "Yield (agent right-of-way)",
+   "lat": "Lane keeping & centering",
+   "cause_type": "yield agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B13",
+   "token": "aa9848eff6fd40a88148dadfa611b10b",
+   "part": "b",
+   "scene": "scene-0552",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": null
+  },
+  {
+   "id": "B14",
+   "token": "bd0a172dbc9045d5a11b1980ccfb0d53",
+   "part": "b",
+   "scene": "scene-0275",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": null
+  },
+  {
+   "id": "B15",
+   "token": "148acc8b5751400c84ae272a96bf2bf7",
+   "part": "b",
+   "scene": "scene-0634",
+   "lon": "Stop for static constraints",
+   "lat": "Turn left",
+   "cause_type": "unexplained stop",
+   "v2_audit": null
+  },
+  {
+   "id": "B16",
+   "token": "dc4d4f9243464c08838ba54c9e532c92",
+   "part": "b",
+   "scene": "scene-0629",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": null
+  },
+  {
+   "id": "B17",
+   "token": "03a9cc3384ea4d25968a6e0afa4278bf",
+   "part": "b",
+   "scene": "scene-0630",
+   "lon": "Stop for static constraints",
+   "lat": "Lane keeping & centering",
+   "cause_type": "stop line",
+   "v2_audit": null
+  },
+  {
+   "id": "B18",
+   "token": "b687f913edb34294ba1c34f5f35d52d0",
+   "part": "b",
+   "scene": "scene-0770",
+   "lon": "Stop for static constraints",
+   "lat": "None",
+   "cause_type": "unexplained stop",
+   "v2_audit": null
+  },
+  {
+   "id": "B19",
+   "token": "f55ddd57d92944fdbfd0da838aaaf5b0",
+   "part": "b",
+   "scene": "scene-1070",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B20",
+   "token": "9ed18ab8b4c2468ea0dfa3b7c6ced37e",
+   "part": "b",
+   "scene": "scene-0780",
+   "lon": "Lead obstacle following",
+   "lat": "None",
+   "cause_type": "lead agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B21",
+   "token": "8d4ef2af6b394e5e8ccfd6e2e90156dc",
+   "part": "b",
+   "scene": "scene-0268",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B22",
+   "token": "4f26f58e358741069b137e90cdede275",
+   "part": "b",
+   "scene": "scene-0039",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B23",
+   "token": "99a4c956cb4f44cc975680994c6bb40a",
+   "part": "b",
+   "scene": "scene-1066",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B24",
+   "token": "6a467240b14745cd8ab11701bd4f08d3",
+   "part": "b",
+   "scene": "scene-0105",
+   "lon": "Lead obstacle following",
+   "lat": "Lane keeping & centering",
+   "cause_type": "lead agent",
+   "v2_audit": null
+  },
+  {
+   "id": "B25",
+   "token": "2c253adbce79406c962b9382236768da",
+   "part": "b",
+   "scene": "scene-0522",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": null
+  },
+  {
+   "id": "B26",
+   "token": "ba27f0e4ca2a40d88ef1d44d2ebdc9e4",
+   "part": "b",
+   "scene": "scene-0329",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": null
+  },
+  {
+   "id": "B27",
+   "token": "aefc56d4c6294812a61190b16cd50ded",
+   "part": "b",
+   "scene": "scene-0923",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": null
+  },
+  {
+   "id": "B28",
+   "token": "ca7db2bbb0c0413e80a942a0e3ff3773",
+   "part": "b",
+   "scene": "scene-0107",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": null
+  },
+  {
+   "id": "B29",
+   "token": "b1b386f4a6d04987975d36525ff9f772",
+   "part": "b",
+   "scene": "scene-0931",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": null
+  },
+  {
+   "id": "B30",
+   "token": "611ea36ff17946968fb4231c46485239",
+   "part": "b",
+   "scene": "scene-0565",
+   "lon": "Set speed tracking",
+   "lat": "Lane keeping & centering",
+   "cause_type": "clear lane",
+   "v2_audit": null
+  }
+ ]
+}

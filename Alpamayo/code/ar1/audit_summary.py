@@ -1,41 +1,56 @@
-"""ar1/audit_summary.py -- R11 A3: summarise coc_audit_results.csv against the pre-registered
-sign-off rule (R11_REPORT.md header). PRINTS ONLY; never writes AUDIT_SIGNOFF.md.
-  PASS if wrong decisions <= 2 AND no single cause error type appears >= 3 times
-  (cause error = Causes "wrong" or "missing"; type = the trace's cause type in
-  audit/coc_audit_meta.json).
-  python ar1/audit_summary.py [path/to/coc_audit_results.csv]"""
+"""ar1/audit_summary.py -- summarise a CoC audit CSV against the pre-registered sign-off rule.
+PRINTS ONLY; never writes AUDIT_SIGNOFF.md (Kushal writes it himself).
+  --v3 (R11 C2): audit/coc_audit_v3.html CSV (sample_id, decision, causes, peeking, note; OK /
+       wrong / unsure) + audit/coc_audit_v3_meta.json. PASS if wrong decisions <= 2 AND no
+       single cause error type >= 3 among (a)+(b); cause error = Causes "wrong"; type = the
+       trace's cause type in the sidecar. "unsure" is counted separately.
+  default (earlier R11 40-trace page): CSV id, decision, causes, notes (ok / wrong / missing) +
+       audit/coc_audit_meta.json; cause error = wrong or missing.
+  python ar1/audit_summary.py --v3 path/to/coc_audit_results.csv"""
 import sys, csv, json, collections
 
 ROOT = '/home/dgx1user/Alpamayo-Kushal'
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else f'{ROOT}/audit/coc_audit_results.csv'
-    meta = {m['id']: m for m in json.load(open(f'{ROOT}/audit/coc_audit_meta.json'))['traces']}
-    rows = {r['id']: r for r in csv.DictReader(open(path, newline=''))}
-    unknown = sorted(set(rows) - set(meta))
-    missing = sorted(i for i in meta if not (rows.get(i, {}).get('decision') and rows.get(i, {}).get('causes')))
-    dec = collections.Counter(rows[i]['decision'] or '(blank)' for i in meta if i in rows)
-    cau = collections.Counter(rows[i]['causes'] or '(blank)' for i in meta if i in rows)
+    v3 = '--v3' in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    path = args[0] if args else f'{ROOT}/audit/coc_audit_results.csv'
+    meta_p = f'{ROOT}/audit/coc_audit_v3_meta.json' if v3 else f'{ROOT}/audit/coc_audit_meta.json'
+    traces = json.load(open(meta_p))['traces']
+    key = 'token' if v3 else 'id'
+    meta = {m[key]: m for m in traces}
+    rows = {(r['sample_id'] if v3 else r['id']): r for r in csv.DictReader(open(path, newline=''))}
+    note = (lambda r: r.get('note', '')) if v3 else (lambda r: r.get('notes', ''))
+    err_vals = ('wrong',) if v3 else ('wrong', 'missing')
+    lab = lambda k: meta[k]['id']
+    missing = [lab(k) for k in meta if not (rows.get(k, {}).get('decision') and rows.get(k, {}).get('causes'))]
+    unknown = [k for k in rows if k not in meta]
     print(f'file {path}: {len(rows)} rows; traces {len(meta)}; unanswered {len(missing)}'
-          + (f' ({", ".join(missing)})' if missing else '') + (f'; unknown ids {unknown}' if unknown else ''))
-    print('Decision: ' + ', '.join(f'{k} {v}' for k, v in sorted(dec.items())))
-    print('Causes:   ' + ', '.join(f'{k} {v}' for k, v in sorted(cau.items())))
-    wrong_dec = [i for i in meta if rows.get(i, {}).get('decision') == 'wrong']
-    errs = [i for i in meta if rows.get(i, {}).get('causes') in ('wrong', 'missing')]
-    by_type = collections.Counter(meta[i]['cause_type'] for i in errs)
-    print(f'\nwrong decisions: {len(wrong_dec)} ' + str(wrong_dec))
-    for i in wrong_dec:
-        print(f'  {i} {meta[i]["pool"]:16} {meta[i]["lon"]}; {meta[i]["lat"]} | note: {rows[i]["notes"]}')
-    print(f'cause errors (wrong or missing): {len(errs)}; by cause type: ' +
-          (', '.join(f'{k} {v}' for k, v in by_type.most_common()) or 'none'))
-    for i in errs:
-        print(f'  {i} {rows[i]["causes"]:7} {meta[i]["cause_type"]:16} {meta[i]["pool"]:16} | note: {rows[i]["notes"]}')
-    by_pool = collections.defaultdict(lambda: [0, 0, 0])
-    for i in meta:
-        p = by_pool[meta[i]['pool'].split()[0]]; p[0] += 1
-        p[1] += rows.get(i, {}).get('decision') == 'wrong'; p[2] += i in errs
-    print('per pool (n, wrong decisions, cause errors): ' + '; '.join(f'{k} {v[0]}/{v[1]}/{v[2]}' for k, v in by_pool.items()))
+          + (f' ({", ".join(missing[:20])}{" ..." if len(missing) > 20 else ""})' if missing else '')
+          + (f'; rows not on this page {len(unknown)}' if unknown else ''))
+    for fld in ('decision', 'causes') + (('peeking',) if v3 else ()):
+        c = collections.Counter(rows[k].get(fld) or '(blank)' for k in meta if k in rows)
+        print(f'{fld:9}: ' + ', '.join(f'{a} {b}' for a, b in sorted(c.items())))
+    wrong_dec = [k for k in meta if rows.get(k, {}).get('decision') == 'wrong']
+    errs = [k for k in meta if rows.get(k, {}).get('causes') in err_vals]
+    by_type = collections.Counter(meta[k]['cause_type'] for k in errs)
+    print(f'\nwrong decisions: {len(wrong_dec)}')
+    for k in wrong_dec:
+        m = meta[k]
+        print(f'  {m["id"]} {m.get("part", m.get("pool", "")):4} {m["lon"]}; {m["lat"]} | note: {note(rows[k])}')
+    print(f'cause errors ({" or ".join(err_vals)}): {len(errs)}; by cause type: '
+          + (', '.join(f'{a} {b}' for a, b in by_type.most_common()) or 'none'))
+    for k in errs:
+        m = meta[k]
+        print(f'  {m["id"]} {rows[k]["causes"]:7} {m["cause_type"]:16} {m["lon"]}; {m["lat"]} | note: {note(rows[k])}')
+    uns = [meta[k]['id'] for k in meta if 'unsure' in (rows.get(k, {}).get('decision'), rows.get(k, {}).get('causes'))]
+    if v3:
+        print(f'unsure (decision or causes), not counted by the rule: {len(uns)} {uns}')
+        for part in ('a', 'b'):
+            ks = [k for k in meta if meta[k]['part'] == part]
+            print(f'  part ({part}) n {len(ks)}: wrong decisions {sum(k in wrong_dec for k in ks)}, cause errors '
+                  f'{sum(k in errs for k in ks)}')
     worst = by_type.most_common(1)[0] if by_type else ('none', 0)
     ok = len(wrong_dec) <= 2 and worst[1] < 3
     print(f'\nRULE: wrong decisions {len(wrong_dec)} (<= 2) AND max cause error type "{worst[0]}" {worst[1]} (< 3) -> '

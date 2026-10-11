@@ -1,7 +1,6 @@
 # QUEUE_STATE -- R11 (2026-10-11)
 
-Running: tmux r11b = Alpamayo/code/ar1/run_r11b.sh: CoC arm seed 42 (PROVISIONAL) train
-(~3.6 h) then dumps holdout+val gen, val none / shuf / gt (~1.6 h); ~42 GPU-h. Markers
-results/R11_COC_<step>_DONE; status Alpamayo/r11_status.log (ends R11B_DONE). Resume after
-reboot: cd Alpamayo/code && tmux new -d -s r11b "bash ar1/run_r11b.sh".
-Seeds 123 / 2024 NOT launched until AUDIT_SIGNOFF.md exists. Audit page audit/coc_audit.html.
+Idle. Nothing running, GPUs free. The earlier R11 CoC seed-42 run was stopped (13:37 UTC,
+epoch 5) and discarded. R11: bugs verified, CoC v3 traces data/ar1_coc_2hz_v3.pkl (v2
+kept), re-audit page audit/coc_audit_v3.html (111 traces) sent to Kushal. Waiting for the
+v3 audit CSV (run ar1/audit_summary.py --v3 <csv>) and AUDIT_SIGNOFF.md. CoC arm NOT launched.
