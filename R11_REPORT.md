@@ -38,6 +38,32 @@ A3 ar1/audit_summary.py reads coc_audit_results.csv (+ the sidecar) and prints c
    appears >= 3 times, where a cause error = Causes "wrong" or "missing", and its type =
    the trace's cause type above. It prints only; it never writes AUDIT_SIGNOFF.md.
 
+PART B rules (R7B pre-registration, SEED 42 ONLY; every CoC number PROVISIONAL: traces
+   not signed off; discarded if the audit reports a systematic cause bug; seeds 123 / 2024
+   only after AUDIT_SIGNOFF.md exists). Code ar1/finetune_coc.py (new; M1-v2a code reused
+   unchanged). Sequence: [480 cam + 4 ego + cmd] [CoC ids + <|im_end|>] [18 words] [24
+   traj]; CoC = the pickle's full 'coc' string (decision, critical components = causes,
+   reasoning); right-padded after the trajectory (exact positions, no mask). Loss = mean
+   CE over all target tokens (CoC + terminator + words + traj), as M1. Recipe, selection
+   (holdout AR median ADE@6s, 400 fixed, CoC generated greedily <= 200 tokens) and tau
+   (holdout dump of mode i) as M1-v2a.
+B1 Smoke (<= 1 GPU-h; 4 GPUs, 200 steps, decode 16 holdout): loss first-20 vs last-20
+   steps decreases; generated CoC parses (regex of the template); 24 traj tokens decode.
+   No metrics. Then the full run (8 GPUs, tmux r11b) and dumps: holdout (i); val (i) gen,
+   (ii) none = no CoC tokens, (iii) shuf = teacher-forced CoC whose text after "Driving
+   decision: <lon>; <lat>. " comes from a donor val sample with the same GT (lon, lat)
+   (RandomState(11) derangement; singletons keep their own), (iv) gt = GT CoC [ORACLE].
+B2 Gates, ONE SEED, indicative (paired scene bootstrap 10,000, L2@3s NoAvg, all val):
+   GC1 CoC (i) - M1-v2a s42 (also reported vs the 3-seed M1-v2a mean); GC2 (i) - (ii);
+   GC3 consistency >= 0.70, = share with all 12 generated words equal to the trajectory-
+   derived words AND the generated decision agreeing with them (lon "Stop for static
+   constraints" <-> a derived lon "stop" in some slot; lat "Turn left/right" -> a derived
+   lat word of that side in some slot); generated CoC that does not parse = inconsistent;
+   GC4 R3 false-go (i) <= 0.119; GC5 share of the most frequent GENERATED lon decision
+   <= its val label share + 0.10; GC6 (iii) - (i). Wording as R7B. Also parse rate,
+   decision accuracy vs GT, per-class word F1, collisions aa / yaw, C2 + WSS strata,
+   first-order comfort. Decision-only conditional arm: cost only.
+
 PART A RESULTS
 A0 Existing AR1_COC_AUDIT.html (8.8 MB, ar1/build_audit_html_v2.py): 100 val traces
    (stratified by lon decision); reads no CoC pickle: it recomputes rows with
