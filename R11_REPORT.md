@@ -1,88 +1,48 @@
-# R11_REPORT -- CoC audit page (40 traces); CoC arm seed 42 (PROVISIONAL)
+# R11_REPORT -- CoC audit bugs verified and fixed (v3); re-audit page
 
-HEADER (all rules fixed and committed BEFORE computing; val read for analysis only).
-A0 Existing AR1_COC_AUDIT.html (ar1/build_audit_html_v2.py) is inspected and reported; it
-   is kept unchanged. A new page is built if it does not match A1-A2.
-A1 Sample (val split, data/ar1_coc_2hz.pkl). First the 8 traces whose decision changed in
-   R6 0b (A031, A041, A042, A043, A044, A048, A052, A053; tokens from AR1_COC_AUDIT.txt).
-   Then 4 per pool, pools in this order, one np.random.RandomState(7) for all draws,
-   rng.choice(4, replace=False) over the pool's sample tokens sorted ascending, minus
-   tokens already chosen:
-     WSS        scene in the R5 A2 WSS list (data/r5_wss.pkl)
-     START      C2 START (v0_can <= 0.2 m/s, GT max displacement 3 s > 1.0 m)
-     TURN       |dpsi| > 30 deg (R9 A2 H_TURN, data/r9_hard_val.pkl)
-     AGENT      in-path agent 0 < x < 20 m (R9 A2 H_AGENT)
-     INT        R9 A2 H_INT (on an intersection segment or stop line ahead < 20 m)
-     RAIN/NIGHT nuScenes scene description contains "rain" or "night" (case-insensitive)
-     MOVING STRAIGHT  v0_can > 0.2 m/s and |dpsi| <= 10 deg (my rule)
-     RANDOM     all val samples in the pickle
-   40 traces, no duplicates; ids R01-R40 in draw order (the 8 also show their A-id).
-A2 audit/coc_audit.html: one self-contained file (images as base64 JPEG, SVG inline, no
-   network), opens on a Mac browser. Per trace: CAM_FRONT_LEFT / CAM_FRONT /
-   CAM_FRONT_RIGHT at t0; CAM_FRONT at t0+3 s (6 keyframes later) labelled "future, for
-   checking only"; BEV in the ego frame at t0 (x forward = up): ego past 2 s (keyframe
-   poses), GT future 6 s, ALL annotated agents at t0 within 50 m with their class
-   (nuScenes category), stop lines, crosswalks, intersection road segments; the trace text
-   from the 2 Hz pickle (decision, causes, trace); radios Decision (ok / wrong) and Causes
-   (ok / wrong / missing); a Notes box. Progress counter (traces with both radios
-   answered) at the top; one "Download CSV" button writing coc_audit_results.csv with
-   columns id, decision, causes, notes. Answers kept in the browser's localStorage when
-   available. A sidecar audit/coc_audit_meta.json holds id, token, pool, decision and
-   cause type.
-   Cause type (my rule, for the sign-off count): Yield -> "yield agent"; Lead -> "lead
-   agent"; lane change past a lead -> "passing lead"; Stop with stop line -> "stop line";
-   Stop with crosswalk -> "crosswalk"; Stop without either -> "unexplained stop"; Speed
-   adaptation -> "turn"; Set speed -> "clear lane".
-A3 ar1/audit_summary.py reads coc_audit_results.csv (+ the sidecar) and prints counts and
-   the pre-registered rule: PASS if wrong decisions <= 2 AND no single cause error type
-   appears >= 3 times, where a cause error = Causes "wrong" or "missing", and its type =
-   the trace's cause type above. It prints only; it never writes AUDIT_SIGNOFF.md.
-
-PART B rules (R7B pre-registration, SEED 42 ONLY; every CoC number PROVISIONAL: traces
-   not signed off; discarded if the audit reports a systematic cause bug; seeds 123 / 2024
-   only after AUDIT_SIGNOFF.md exists). Code ar1/finetune_coc.py (new; M1-v2a code reused
-   unchanged). Sequence: [480 cam + 4 ego + cmd] [CoC ids + <|im_end|>] [18 words] [24
-   traj]; CoC = the pickle's full 'coc' string (decision, critical components = causes,
-   reasoning); right-padded after the trajectory (exact positions, no mask). Loss = mean
-   CE over all target tokens (CoC + terminator + words + traj), as M1. Recipe, selection
-   (holdout AR median ADE@6s, 400 fixed, CoC generated greedily <= 200 tokens) and tau
-   (holdout dump of mode i) as M1-v2a.
-B1 Smoke (<= 1 GPU-h; 4 GPUs, 200 steps, decode 16 holdout): loss first-20 vs last-20
-   steps decreases; generated CoC parses (regex of the template); 24 traj tokens decode.
-   No metrics. Then the full run (8 GPUs, tmux r11b) and dumps: holdout (i); val (i) gen,
-   (ii) none = no CoC tokens, (iii) shuf = teacher-forced CoC whose text after "Driving
-   decision: <lon>; <lat>. " comes from a donor val sample with the same GT (lon, lat)
-   (RandomState(11) derangement; singletons keep their own), (iv) gt = GT CoC [ORACLE].
-B2 Gates, ONE SEED, indicative (paired scene bootstrap 10,000, L2@3s NoAvg, all val):
-   GC1 CoC (i) - M1-v2a s42 (also reported vs the 3-seed M1-v2a mean); GC2 (i) - (ii);
-   GC3 consistency >= 0.70, = share with all 12 generated words equal to the trajectory-
-   derived words AND the generated decision agreeing with them (lon "Stop for static
-   constraints" <-> a derived lon "stop" in some slot; lat "Turn left/right" -> a derived
-   lat word of that side in some slot); generated CoC that does not parse = inconsistent;
-   GC4 R3 false-go (i) <= 0.119; GC5 share of the most frequent GENERATED lon decision
-   <= its val label share + 0.10; GC6 (iii) - (i). Wording as R7B. Also parse rate,
-   decision accuracy vs GT, per-class word F1, collisions aa / yaw, C2 + WSS strata,
-   first-order comfort. Decision-only conditional arm: cost only.
-
-PART A RESULTS
-A0 Existing AR1_COC_AUDIT.html (8.8 MB, ar1/build_audit_html_v2.py): 100 val traces
-   (stratified by lon decision); reads no CoC pickle: it recomputes rows with
-   coc_template.build_rows using the 10 Hz CAN meta-actions (the OLD decisions, as
-   data/ar1_coc.pkl), not data/ar1_coc_2hz.pkl. Against A2 it has: CAM_FRONT at t0 (not
-   FRONT_LEFT / FRONT_RIGHT); CAM_FRONT t0+3 s inside a 7-frame filmstrip; top-down with
-   past 2 s, GT future, lanes, stop lines, crosswalks, but only the NAMED agents (lead /
-   yield) and no intersection polygons; trace text; radios OK / wrong / unsure for
-   decision, causes, no-peeking (no "missing"); note; counts; CSV download. -> does not
-   match; new page built, old file kept unchanged.
-A1 40 traces drawn (pool sizes after removals: WSS 345, START 231, TURN 570, AGENT 881,
-   INT 2,943, RAIN/NIGHT 1,331, MOVING STRAIGHT 3,026, RANDOM 5,083). Decisions of all 40
-   recomputed rows equal the pickle (asserted). Sample decisions: Set speed 18, Lead 11,
-   Stop 9, Yield 1, Speed adaptation 1 (lon); ids and pools in audit/coc_audit_meta.json.
-A2 audit/coc_audit.html (3.3 MB, one file, 160 base64 JPEGs, 40 inline SVG BEVs, no
-   network references; JS syntax-checked with esprima, not run in a browser here: no
-   browser on the DGX). Map fact found while checking a BEV: many nuScenes crossings
-   have no ped_crossing polygon, only PED_CROSSING-type stop lines, so the BEV draws those
-   stop lines in blue dashes (other stop-line types red dashes; hover shows the type).
-A3 Alpamayo/code/ar1/audit_summary.py [csv]: counts per answer, wrong decisions, cause
-   errors by cause type, per pool, and the PASS / FAIL rule (tested on a synthetic CSV).
-   Prints only.
+Replaces the earlier R11 (its text is in git at c378628). The earlier R11's CoC seed-42 run
+(launched 11:47 UTC) was STOPPED at 13:37 UTC (epoch 5 of 10) on this prompt and is
+discarded; no CoC numbers exist. Nothing is launched by this R11.
+HEADER (rules fixed and committed BEFORE computing). Input: Kushal's audit CSV (100 rows,
+AR1_COC_AUDIT.html v2; ids mapped to A001-A100 by token via AR1_COC_AUDIT.txt). v2 traces
+= data/ar1_coc_2hz.pkl, rows recomputed by coc_template (speed_src 2hz), all 29,049.
+A1 Command [P]: quote w1/build_data.py; P(cmd = straight | v2 lateral decision = Turn
+   left / Turn right), train and val (pickle split field).
+A2 v2 agent frame = nuScenes ego_pose (rear-axle midpoint). Count v2 traces whose lead or
+   yield candidate has x < 3.5 m, or |y| > agent half-width (size[0] / 2) + 1.5 m; list
+   the audit ids among them.
+A3 Count v2 traces with |dpsi| (GT yaw at the last future keyframe <= 6 s minus yaw at t0)
+   > 45 deg and lateral decision not a turn; list audit ids.
+A4 Quote AR1 Table 5 exactly; also check AR1 Table 1 (the decision taxonomy our CoC
+   decision field follows) for nudge classes.
+B  v3 = ar1/coc_template_v3.py (v2 code unchanged; imported and overridden) ->
+   data/ar1_coc_2hz_v3.pkl (v2 pickle kept). Fixes:
+   B1 "route: <cmd>" removed from the critical components (cmd stays a model input).
+   B2 Front bumper x_f = x - 3.528 m (ego box of the yaw-aware metric: length 4.084 m,
+      centre 0.5 m ahead of the LiDAR, LiDAR 0.986 m ahead of the rear axle). Lead / yield candidates: centre ahead of the
+      bumper (x_f > 0) and inside the corridor: distance from the agent centre to the
+      realized GT path (polyline from the front bumper) <= 0.925 (ego half-width) + 0.5
+      + agent half-width; if the GT path is < 5 m long, a straight corridor |y| <= that
+      bound. Distances in the text are x_f. Lead x_f < 40 m, yield x_f < 25 m (as v2).
+      Stationary for the whole horizon (v0_can < 0.2 m/s and GT max displacement over the
+      available future <= 0.5 m): action wording "stay stopped" (never "slow down").
+   B3 Lateral turn if |heading change inside intersections| > 30 deg (v2) OR |dpsi| > 45
+      deg (side from the sign of the triggering quantity).
+   B4 AR1 Table 1 has "In-lane nudge" and "Out-of-lane nudge"; added as "In-lane nudge
+      left/right" (my rule): not a turn and not a lane change; GT path lateral offset y
+      (ego frame at t0, x_f in (0, 40] m) reaches max |y| >= 0.5 m and its end offset is
+      <= 0.5 x that max (returns); a stationary vehicle / object outside the corridor but
+      within 3 m of it on the opposite side, x_f in (0, 30] m, is the cause.
+   B5 Report share changed per fix (decision field, causes field; each fix alone vs v2),
+      class distributions v2 vs v3, and which of the 100 audit ids change.
+C1 audit/coc_audit_v3.html (v2 layout: filmstrip, speed chart, top-down, rule evidence,
+   decision, causes, trace, radios OK / wrong / unsure, note, CSV with the v2 columns
+   sample_id, decision, causes, peeking, note). (a) every audit id whose v3 trace differs
+   from v2, with v2 text beside v3; (b) 30 fresh val traces, one per scene, scenes not in
+   the v2 audit, stratified over v3 lon decision classes: RandomState(11); classes in
+   descending size order; quota = 30 split as evenly as possible (each class <= its size,
+   remainder to the largest classes); within a class, scenes drawn without replacement and
+   one random sample per scene.
+C2 ar1/audit_summary.py --v3 on the new CSV: PASS if wrong decisions <= 2 AND no single
+   cause error type >= 3 among (a)+(b); cause error = Causes "wrong"; type = the trace's
+   cause type (R11-earlier categories). "unsure" counted separately. Prints only.
