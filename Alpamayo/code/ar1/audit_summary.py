@@ -4,6 +4,8 @@ PRINTS ONLY; never writes AUDIT_SIGNOFF.md (Kushal writes it himself).
        wrong / unsure) + audit/coc_audit_v3_meta.json. PASS if wrong decisions <= 2 AND no
        single cause error type >= 3 among (a)+(b); cause error = Causes "wrong"; type = the
        trace's cause type in the sidecar. "unsure" is counted separately.
+  --v3short (R12 A3): audit/coc_audit_v3_short.html CSV (same format as --v3) +
+       audit/coc_audit_v3_short_meta.json; same rule over parts (a)-(d).
   default (earlier R11 40-trace page): CSV id, decision, causes, notes (ok / wrong / missing) +
        audit/coc_audit_meta.json; cause error = wrong or missing.
   python ar1/audit_summary.py --v3 path/to/coc_audit_results.csv"""
@@ -13,10 +15,12 @@ ROOT = '/home/dgx1user/Alpamayo-Kushal'
 
 
 def main():
-    v3 = '--v3' in sys.argv
+    short = '--v3short' in sys.argv
+    v3 = '--v3' in sys.argv or short
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     path = args[0] if args else f'{ROOT}/audit/coc_audit_results.csv'
-    meta_p = f'{ROOT}/audit/coc_audit_v3_meta.json' if v3 else f'{ROOT}/audit/coc_audit_meta.json'
+    meta_p = (f'{ROOT}/audit/coc_audit_v3_short_meta.json' if short else f'{ROOT}/audit/coc_audit_v3_meta.json' if v3
+              else f'{ROOT}/audit/coc_audit_meta.json')
     traces = json.load(open(meta_p))['traces']
     key = 'token' if v3 else 'id'
     meta = {m[key]: m for m in traces}
@@ -47,7 +51,7 @@ def main():
     uns = [meta[k]['id'] for k in meta if 'unsure' in (rows.get(k, {}).get('decision'), rows.get(k, {}).get('causes'))]
     if v3:
         print(f'unsure (decision or causes), not counted by the rule: {len(uns)} {uns}')
-        for part in ('a', 'b'):
+        for part in (('a', 'b', 'c', 'd') if short else ('a', 'b')):
             ks = [k for k in meta if meta[k]['part'] == part]
             print(f'  part ({part}) n {len(ks)}: wrong decisions {sum(k in wrong_dec for k in ks)}, cause errors '
                   f'{sum(k in errs for k in ks)}')

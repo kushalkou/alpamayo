@@ -29,3 +29,27 @@ B  CoC seed 42 on data/ar1_coc_2hz_v3.pkl: ar1/finetune_coc.py unchanged except 
    definitions, (iii) donors from the v3 pickle). Every number PROVISIONAL; GC1-GC6 one
    seed, indicative; discarded if the short re-audit reports a new systematic bug; seeds
    123 / 2024 only after AUDIT_SIGNOFF.md. Queue ar1/run_r12b.sh (tmux r12b).
+
+=========================================================================================
+PART A RESULTS
+A1 Mechanical check of the 68 text-only changes (r12_a1.txt): PASS 60 / 68. Explained by
+   (ii) same lead for A001-A022 (22), same yield candidate for A081 A084 A093 A095, and
+   route / map distances only for the other 34. NOT PASS (8), all intended v3 rules but
+   outside (i)-(iii):
+     A088 A089 A090 A091 A098  "Slow down and yield" -> "Stay stopped and yield" (B2
+                               stationary wording; same agent, distance -3.528)
+     A083 A097                 a different, closer pedestrian is now the yield candidate
+                               (the v2 one fails the narrower corridor; v3 picks the
+                               nearest in-corridor pedestrian)
+     A045                      "construction zone" dropped: the >= 3 cones within 30 m
+                               count now uses bumper distances (x_f), so cones between the
+                               rear axle and the bumper no longer count
+   No unexplained diff remains: no case changed agents or map items for another reason.
+A2 audit/coc_audit_v3_short.html, 32 cards (2.6 MB; title and header show 32), v3
+   layout and CSV; JS parses, no network refs; coc_audit_v3.html unchanged.
+   (a) 13 decision changes; (b) the 8 A1 non-PASS ids; (c) 4 turns only from the > 45 deg
+   rule (val pool 133: S01-S04) and 3 in-lane nudges: val has 6 nudges in 5 scenes, only
+   2 unseen (S05 scene-0271, S06 scene-0914), so S07 is a TRAIN nudge (scene-0527);
+   (d) 4 fresh, not 5: "Speed adaptation" had 0 unseen val scenes after (c) (pools Set
+   speed 1,253, Lead 422, Stop 43, Yield 5).
+A3 ar1/audit_summary.py --v3short <csv> (tested on a synthetic CSV). Prints only.
