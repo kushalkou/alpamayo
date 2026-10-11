@@ -1,6 +1,6 @@
 # R11_REPORT -- CoC audit bugs verified and fixed (v3); re-audit page
 
-Replaces the earlier R11 (its text is in git at c378628). The earlier R11's CoC seed-42 run
+Replaces the earlier R11 (text in git at c378628). The earlier R11's CoC seed-42 run
 (launched 11:47 UTC) was STOPPED at 13:37 UTC (epoch 5 of 10) on this prompt and is
 discarded; no CoC numbers exist. Nothing is launched by this R11.
 HEADER (rules fixed and committed BEFORE computing). Input: Kushal's audit CSV (100 rows,
@@ -19,8 +19,8 @@ B  v3 = ar1/coc_template_v3.py (v2 code unchanged; imported and overridden) ->
    data/ar1_coc_2hz_v3.pkl (v2 pickle kept). Fixes:
    B1 "route: <cmd>" removed from the critical components (cmd stays a model input).
    B2 Front bumper x_f = x - 3.528 m (ego box of the yaw-aware metric: length 4.084 m,
-      centre 0.5 m ahead of the LiDAR, LiDAR 0.986 m ahead of the rear axle). Lead / yield candidates: centre ahead of the
-      bumper (x_f > 0) and inside the corridor: distance from the agent centre to the
+      centre 0.5 m ahead of the LiDAR, LiDAR 0.986 m ahead of the rear axle). Lead /
+      yield candidates: centre ahead of the bumper (x_f > 0) and inside the corridor: distance from the agent centre to the
       realized GT path (polyline from the front bumper) <= 0.925 (ego half-width) + 0.5
       + agent half-width; if the GT path is < 5 m long, a straight corridor |y| <= that
       bound. Distances in the text are x_f. Lead x_f < 40 m, yield x_f < 25 m (as v2).
