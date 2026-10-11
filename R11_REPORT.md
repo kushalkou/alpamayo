@@ -20,9 +20,9 @@ B  v3 = ar1/coc_template_v3.py (v2 code unchanged; imported and overridden) ->
    B1 "route: <cmd>" removed from the critical components (cmd stays a model input).
    B2 Front bumper x_f = x - 3.528 m (ego box of the yaw-aware metric: length 4.084 m,
       centre 0.5 m ahead of the LiDAR, LiDAR 0.986 m ahead of the rear axle). Lead /
-      yield candidates: centre ahead of the bumper (x_f > 0) and inside the corridor: distance from the agent centre to the
-      realized GT path (polyline from the front bumper) <= 0.925 (ego half-width) + 0.5
-      + agent half-width; if the GT path is < 5 m long, a straight corridor |y| <= that
+      yield candidates: centre ahead of the bumper (x_f > 0) and inside the corridor:
+      distance from the agent centre to the realized GT path (polyline from the front
+      bumper) <= 0.925 (ego half-width) + 0.5 + agent half-width; if the GT path is < 5 m long, a straight corridor |y| <= that
       bound. Distances in the text are x_f. Lead x_f < 40 m, yield x_f < 25 m (as v2).
       Stationary for the whole horizon (v0_can < 0.2 m/s and GT max displacement over the
       available future <= 0.5 m): action wording "stay stopped" (never "slow down").
