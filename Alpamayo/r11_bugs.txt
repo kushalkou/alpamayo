@@ -1,0 +1,74 @@
+loading sample_annotation.json ...
+  return lib.distance(a, b, **kwargs)
+  return lib.distance(a, b, **kwargs)
+v2 rows 29049 (= pickle, decisions identical); audit CSV 100 rows, all mapped to A-ids
+
+A1 command [P] vs v2 lateral turn decision: P(cmd = straight | lat = Turn left / right)
+  train   Turn left  n  633: straight 0.382, right 0.002, left 0.616
+  train   Turn right n  892: straight 0.331, right 0.668, left 0.001
+  holdout Turn left  n   42: straight 0.333, right 0.000, left 0.667
+  holdout Turn right n   60: straight 0.500, right 0.433, left 0.067
+  val     Turn left  n  140: straight 0.421, right 0.000, left 0.579
+  val     Turn right n  173: straight 0.353, right 0.647, left 0.000
+  audit ids with a turn decision but a contradicting command: ['A041', 'A042', 'A043', 'A045', 'A048', 'A051', 'A052', 'A053', 'A054', 'A056', 'A057', 'A059', 'A080']
+  audit ids whose note mentions the route command: ['A012', 'A043', 'A044', 'A045', 'A046', 'A051', 'A052', 'A053', 'A054', 'A056', 'A057', 'A059', 'A080']
+
+A2 lead / yield candidate geometry (v2: rear-axle origin)
+  traces with a lead 4091, with a yield candidate 1624; traces with a flagged lead / yield 1265 (0.044); by role and reason: yc |y|>hw+1.5 785, lead |y|>hw+1.5 357, yc x<3.5 50, yc x<3.5,|y|>hw+1.5 47, lead x<3.5,|y|>hw+1.5 43, lead x<3.5 21
+  yield decisions whose cause is a flagged yield candidate: 620 of 1286 yield decisions
+  A006 Lead obstacle following      | lead car x 29.0 y -8.1 (|y|>hw+1.5) | audit: OK/unsure
+  A022 Set speed tracking           | lead car x 24.6 y +3.4 (|y|>hw+1.5) | audit: wrong/OK
+  A082 Yield (agent right-of-way)   | yc pedestrian x 1.2 y -7.3 (x<3.5,|y|>hw+1.5) | audit: wrong/unsure
+  A085 Yield (agent right-of-way)   | yc pedestrian x 8.2 y +3.6 (|y|>hw+1.5) | audit: OK/OK
+  A086 Yield (agent right-of-way)   | yc pedestrian x 7.0 y +8.2 (|y|>hw+1.5) | audit: OK/OK
+  A087 Yield (agent right-of-way)   | yc pedestrian x 1.6 y -1.0 (x<3.5) | audit: unsure/unsure
+  A092 Yield (agent right-of-way)   | yc pedestrian x 1.3 y +1.1 (x<3.5) | audit: unsure/unsure
+  A094 Yield (agent right-of-way)   | lead pedestrian x 0.9 y -1.1 (x<3.5); yc pedestrian x 1.2 y +1.0 (x<3.5) | audit: unsure/unsure
+  A096 Yield (agent right-of-way)   | lead pedestrian x 0.5 y -1.2 (x<3.5); yc pedestrian x 1.0 y +1.1 (x<3.5) | audit: unsure/unsure
+  A097 Yield (agent right-of-way)   | yc pedestrian x 6.0 y +2.6 (|y|>hw+1.5) | audit: OK/OK
+  A099 Yield (agent right-of-way)   | yc pedestrian x 1.5 y -1.1 (x<3.5) | audit: unsure/unsure
+  A100 Yield (agent right-of-way)   | yc pedestrian x 1.2 y +1.2 (x<3.5) | audit: unsure/unsure
+
+A3 |dpsi over the future| > 45 deg but lateral decision not a turn
+  606 of 29049 traces (0.021); 606 of 2261 with |dpsi| > 45; their lat: Lane keeping & centering 606
+  audit ids: A025 (dpsi -49, in-int -11, Lane keeping & centering), A034 (dpsi +63, in-int +0, Lane keeping & centering), A065 (dpsi +111, in-int +0, Lane keeping & centering)
+
+Audit notes, all rows with a non-OK answer or a note:
+  A006 OK     unsure Lead obstacle followin Lane keeping & c | 
+  A012 OK     unsure Lead obstacle followin Lane keeping & c | route command in causes says turn left while its just a curve and foll
+  A021 unsure unsure Set speed tracking     Lane change left | 
+  A022 wrong  OK     Set speed tracking     Lane keeping & c | doesnt recongnize the parker van on the left and no instructions to ke
+  A024 unsure OK     Set speed tracking     Lane keeping & c | pedestrian not recongnized in the present frame
+  A025 unsure OK     Set speed tracking     Lane keeping & c | complete the right turn instruction is not present. 
+  A027 OK     OK     Set speed tracking     Lane keeping & c | again, there's a curve and that isnt mentioned anywhere
+  A029 OK     OK     Set speed tracking     Lane keeping & c | parked van not recognized
+  A031 wrong  wrong  Stop for static constr Lane keeping & c | parked van not recognized. not avoided in the decision or the causes. 
+  A032 OK     unsure Set speed tracking     Lane keeping & c | 
+  A035 unsure OK     Set speed tracking     Lane keeping & c | prepare to slow down and stop because of the red light
+  A038 unsure unsure Set speed tracking     Lane keeping & c | the stoplights are red and the cars are stopped, so our car must prepa
+  A043 OK     wrong  Set speed tracking     Turn left        | route command says go straight while the car turns left in practice. t
+  A044 OK     wrong  Set speed tracking     Turn left        | route command says go straight while the car turns left in practice. t
+  A045 OK     wrong  Speed adaptation (road Turn left        | decision and trace are correct, while causes are wrong because of the 
+  A046 OK     wrong  Speed adaptation (road Turn left        | decision and trace are correct, while causes are wrong because of the 
+  A047 unsure OK     Speed adaptation (road Turn left        | cant see properly, but doesnt look like there is an intersection.
+  A051 OK     wrong  Speed adaptation (road Turn right       | route command in the causes is wrong
+  A052 OK     wrong  Set speed tracking     Turn right       | route command in the causes is wrong
+  A053 OK     wrong  Set speed tracking     Turn right       | route command in the causes is wrong
+  A054 OK     wrong  Speed adaptation (road Turn right       | route command in the causes is wrong
+  A056 OK     wrong  Speed adaptation (road Turn right       | route command in the causes is wrong
+  A057 OK     wrong  Speed adaptation (road Turn right       | route command in the causes is wrong
+  A059 OK     OK     Speed adaptation (road Turn right       | route command in the causes is incorrect
+  A062 OK     OK     Stop for static constr Lane keeping & c | lil bit confusing the decipher the decision and the causes
+  A065 unsure unsure Stop for static constr Lane keeping & c | very confusing scene and what the driver does vs the annotations
+  A068 OK     OK     Stop for static constr Lane keeping & c | truck obstructing the road, so stop is correct.
+  A074 OK     unsure Stop for static constr None             | red light not addressed
+  A075 unsure unsure Stop for static constr None             | 
+  A076 OK     unsure Stop for static constr None             | red light not addressed
+  A080 OK     unsure Stop for static constr Turn left        | route command confusing
+  A082 wrong  unsure Yield (agent right-of- Lane keeping & c | dont see pedestrian in the CAM_FRONT feed
+  A087 unsure unsure Yield (agent right-of- None             | dont see the pedestrian in the CAM_FRONT
+  A092 unsure unsure Yield (agent right-of- None             | dont see the pedestrian in the CAM_FRONT
+  A094 unsure unsure Yield (agent right-of- None             | dont see the pedestrian in the CAM_FRONT
+  A096 unsure unsure Yield (agent right-of- None             | dont see the pedestrian in the CAM_FRONT
+  A099 unsure unsure Yield (agent right-of- None             | dont see the pedestrian in the CAM_FRONT
+  A100 unsure unsure Yield (agent right-of- None             | dont see the pedestrian in the CAM_FRONT

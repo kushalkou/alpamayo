@@ -39,7 +39,8 @@ B  v3 = ar1/coc_template_v3.py (v2 code unchanged; imported and overridden) ->
 C1 audit/coc_audit_v3.html (v2 layout: filmstrip, speed chart, top-down, rule evidence,
    decision, causes, trace, radios OK / wrong / unsure, note, CSV with the v2 columns
    sample_id, decision, causes, peeking, note). (a) every audit id whose v3 trace differs
-   from v2, with v2 text beside v3; (b) 30 fresh val traces, one per scene, scenes not in
+   from v2 (decision field, or causes / trace text after deleting "; route: <cmd>" from
+   the v2 causes, since B1 alone changes every trace), with v2 text beside v3; (b) 30 fresh val traces, one per scene, scenes not in
    the v2 audit, stratified over v3 lon decision classes: RandomState(11); classes in
    descending size order; quota = 30 split as evenly as possible (each class <= its size,
    remainder to the largest classes); within a class, scenes drawn without replacement and
