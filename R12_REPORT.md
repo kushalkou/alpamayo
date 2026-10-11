@@ -42,8 +42,8 @@ A1 Mechanical check of the 68 text-only changes (r12_a1.txt): PASS 60 / 68. Expl
                                (the v2 one fails the narrower corridor; v3 picks the
                                nearest in-corridor pedestrian)
      A045                      "construction zone" dropped: the >= 3 cones within 30 m
-                               count now uses bumper distances (x_f), so cones between the
-                               rear axle and the bumper no longer count
+                               window is now 0 < x_f < 30 m (3.5-33.5 m from the rear
+                               axle), so the cones near the ego no longer count
    No unexplained diff remains: no case changed agents or map items for another reason.
 A2 audit/coc_audit_v3_short.html, 32 cards (2.6 MB; title and header show 32), v3
    layout and CSV; JS parses, no network refs; coc_audit_v3.html unchanged.
