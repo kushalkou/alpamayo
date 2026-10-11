@@ -1,5 +1,7 @@
-# QUEUE_STATE -- R10 (2026-10-09)
+# QUEUE_STATE -- R11 (2026-10-11)
 
-Idle. Nothing running, GPUs free. R10 experts on M1-v2a s123 / s2024 done (127.8 GPU-h;
-results/ar1_expert_M1v2a_s123.pkl, _s2024.pkl); R10_REPORT.md final. AUDIT_SIGNOFF.md
-absent: R7 Part B (CoC) still not launched. Next GPU work only on a new instruction.
+Running: tmux r11b = Alpamayo/code/ar1/run_r11b.sh: CoC arm seed 42 (PROVISIONAL) train
+(~3.6 h) then dumps holdout+val gen, val none / shuf / gt (~1.6 h); ~42 GPU-h. Markers
+results/R11_COC_<step>_DONE; status Alpamayo/r11_status.log (ends R11B_DONE). Resume after
+reboot: cd Alpamayo/code && tmux new -d -s r11b "bash ar1/run_r11b.sh".
+Seeds 123 / 2024 NOT launched until AUDIT_SIGNOFF.md exists. Audit page audit/coc_audit.html.
