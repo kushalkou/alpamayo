@@ -1,0 +1,11 @@
+loading sample_annotation.json ...
+route strings in v2 causes: Counter({'go straight': 25041, 'turn right': 2249, 'turn left': 1759})
+B1 route only    decision changed 0.0000; causes changed 1.0000 (vs v2 minus route 0.0000); trace changed 0.0000  [33 s]
+B2 bumper only   decision changed 0.0498; causes changed 0.6717 (vs v2 minus route 1.0000); trace changed 0.2037  [46 s]
+B3 turn only     decision changed 0.0209; causes changed 0.0000 (vs v2 minus route 1.0000); trace changed 0.0209  [58 s]
+B4 nudge only    decision changed 0.0017; causes changed 0.0017 (vs v2 minus route 1.0000); trace changed 0.0017  [71 s]
+v3 all fixes     decision changed 0.0721; causes changed 1.0000 (vs v2 minus route 0.6726); trace changed 0.2246  [83 s]
+check: B1-only rows == v2 with the route clause deleted (decisions, causes, traces): OK
+wrote /home/dgx1user/Alpamayo-Kushal/Alpamayo/data/ar1_coc_2hz_v3.pkl (29049; v2 kept) and r11_rows_v3.pkl; 84 s
+lon distribution v2 -> v3: Set speed tracking 0.6582 -> 0.6412; Stop for static constraints 0.1607 -> 0.1556; Lead obstacle following 0.1204 -> 0.1401; Yield (agent right-of-way) 0.0443 -> 0.0392; Speed adaptation (road events) 0.0162 -> 0.0236; Acceleration for passing/overtaking 0.0003 -> 0.0003
+lat distribution v2 -> v3: Lane keeping & centering 0.7656 -> 0.7431; None 0.1459 -> 0.1459; Turn right 0.0387 -> 0.0484; Turn left 0.0281 -> 0.0393; Lane change right 0.0123 -> 0.0123; Lane change left 0.0094 -> 0.0094; In-lane nudge left 0.0000 -> 0.0009; In-lane nudge right 0.0000 -> 0.0008

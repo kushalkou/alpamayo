@@ -1,0 +1,106 @@
+A001 audit OK/OK | dec same causes CHANGED trace CHANGED
+A002 audit OK/OK | dec same causes CHANGED trace CHANGED
+A003 audit OK/OK | dec same causes CHANGED trace CHANGED
+A004 audit OK/OK | dec same causes CHANGED trace CHANGED
+A005 audit OK/OK | dec same causes CHANGED trace CHANGED
+A006 audit OK/unsure | dec same causes CHANGED trace CHANGED
+A007 audit OK/OK | dec same causes CHANGED trace CHANGED
+A008 audit OK/OK | dec same causes CHANGED trace CHANGED
+A009 audit OK/OK | dec same causes CHANGED trace CHANGED
+A010 audit OK/OK | dec same causes CHANGED trace CHANGED
+A011 audit OK/OK | dec same causes CHANGED trace CHANGED
+A012 audit OK/unsure | dec same causes CHANGED trace CHANGED
+A013 audit OK/OK | dec same causes CHANGED trace CHANGED
+A014 audit OK/OK | dec same causes CHANGED trace CHANGED
+A015 audit OK/OK | dec same causes CHANGED trace CHANGED
+A016 audit OK/OK | dec same causes CHANGED trace CHANGED
+A017 audit OK/OK | dec same causes CHANGED trace CHANGED
+A018 audit OK/OK | dec same causes CHANGED trace CHANGED
+A019 audit OK/OK | dec same causes CHANGED trace CHANGED
+A020 audit OK/OK | dec same causes CHANGED trace CHANGED
+A021 audit unsure/unsure | dec same causes CHANGED trace same
+A022 audit wrong/OK | dec same causes CHANGED trace same
+A023 audit OK/OK | dec same causes CHANGED trace same
+A024 audit unsure/OK | dec same causes CHANGED trace same
+A025 audit unsure/OK | dec CHANGED causes CHANGED trace CHANGED
+   v2 Set speed tracking; Lane keeping & centering  ->  v3 Speed adaptation (road events); Turn right
+A028 audit OK/OK | dec same causes CHANGED trace same
+A032 audit OK/unsure | dec same causes CHANGED trace same
+A034 audit OK/OK | dec CHANGED causes same trace CHANGED
+   v2 Set speed tracking; Lane keeping & centering  ->  v3 Speed adaptation (road events); Turn left
+A035 audit unsure/OK | dec same causes CHANGED trace same
+A036 audit OK/OK | dec same causes CHANGED trace same
+A037 audit OK/OK | dec same causes CHANGED trace same
+A040 audit OK/OK | dec same causes CHANGED trace same
+A041 audit OK/OK | dec same causes CHANGED trace same
+A042 audit OK/OK | dec same causes CHANGED trace same
+A043 audit OK/wrong | dec same causes CHANGED trace same
+A044 audit OK/wrong | dec same causes CHANGED trace same
+A045 audit OK/wrong | dec same causes CHANGED trace same
+A047 audit unsure/OK | dec same causes CHANGED trace same
+A048 audit OK/OK | dec same causes CHANGED trace same
+A049 audit OK/OK | dec same causes CHANGED trace same
+A050 audit OK/OK | dec same causes CHANGED trace same
+A052 audit OK/wrong | dec same causes CHANGED trace same
+A053 audit OK/wrong | dec same causes CHANGED trace same
+A055 audit OK/OK | dec same causes CHANGED trace same
+A056 audit OK/wrong | dec same causes CHANGED trace same
+A057 audit OK/wrong | dec same causes CHANGED trace same
+A058 audit OK/OK | dec same causes CHANGED trace same
+A060 audit OK/OK | dec same causes CHANGED trace same
+A061 audit OK/OK | dec same causes CHANGED trace same
+A063 audit OK/OK | dec same causes CHANGED trace same
+A064 audit OK/OK | dec same causes CHANGED trace same
+A065 audit unsure/unsure | dec CHANGED causes same trace CHANGED
+   v2 Stop for static constraints; Lane keeping & centering  ->  v3 Stop for static constraints; Turn left
+A067 audit OK/OK | dec same causes CHANGED trace same
+A069 audit OK/OK | dec CHANGED causes CHANGED trace CHANGED
+   v2 Stop for static constraints; Lane keeping & centering  ->  v3 Lead obstacle following; Lane keeping & centering
+A070 audit OK/OK | dec same causes CHANGED trace same
+A073 audit OK/OK | dec same causes CHANGED trace same
+A074 audit OK/unsure | dec same causes CHANGED trace same
+A076 audit OK/unsure | dec same causes CHANGED trace same
+A077 audit OK/OK | dec same causes CHANGED trace same
+A078 audit OK/OK | dec same causes CHANGED trace same
+A080 audit OK/unsure | dec same causes CHANGED trace same
+A081 audit OK/OK | dec same causes CHANGED trace CHANGED
+A082 audit wrong/unsure | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); Lane keeping & centering  ->  v3 Set speed tracking; Lane keeping & centering
+A083 audit OK/OK | dec same causes CHANGED trace CHANGED
+A084 audit OK/OK | dec same causes CHANGED trace CHANGED
+A085 audit OK/OK | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); None  ->  v3 Stop for static constraints; None
+A086 audit OK/OK | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); None  ->  v3 Stop for static constraints; None
+A087 audit unsure/unsure | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); None  ->  v3 Stop for static constraints; None
+A088 audit OK/OK | dec same causes CHANGED trace CHANGED
+A089 audit OK/OK | dec same causes CHANGED trace CHANGED
+A090 audit OK/OK | dec same causes CHANGED trace CHANGED
+A091 audit OK/OK | dec same causes CHANGED trace CHANGED
+A092 audit unsure/unsure | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); None  ->  v3 Stop for static constraints; None
+A093 audit OK/OK | dec same causes CHANGED trace CHANGED
+A094 audit unsure/unsure | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); None  ->  v3 Stop for static constraints; None
+A095 audit OK/OK | dec same causes CHANGED trace CHANGED
+A096 audit unsure/unsure | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); None  ->  v3 Stop for static constraints; None
+A097 audit OK/OK | dec same causes CHANGED trace CHANGED
+A098 audit OK/OK | dec same causes CHANGED trace CHANGED
+A099 audit unsure/unsure | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); None  ->  v3 Stop for static constraints; None
+A100 audit unsure/unsure | dec CHANGED causes CHANGED trace CHANGED
+   v2 Yield (agent right-of-way); None  ->  v3 Stop for static constraints; None
+
+81 of 100 audit ids change (decision, or causes/trace beyond the route clause); decision changes 13
+A082: v3 Set speed tracking; Lane keeping & centering | ego 9.0 m/s (1 s ago 8.3), turn signal off; 4 lane(s); crosswalk 1 m ahead
+A087: v3 Stop for static constraints; None | ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s)
+A092: v3 Stop for static constraints; None | ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s)
+A094: v3 Stop for static constraints; None | ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s)
+A096: v3 Stop for static constraints; None | ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s)
+A099: v3 Stop for static constraints; None | ego 0.0 m/s (1 s ago 0.0), turn signal left; 1 lane(s)
+A100: v3 Stop for static constraints; None | ego 0.0 m/s (1 s ago 0.0), turn signal left; 1 lane(s)
+A025: v3 Speed adaptation (road events); Turn right | ego 5.7 m/s (1 s ago 5.6), turn signal off; 1 lane(s), in an intersection; turn stop line 0 m ahead; crosswalk 6 m ahead
+A065: v3 Stop for static constraints; Turn left | ego 0.0 m/s (1 s ago 0.0), turn signal off; 1 lane(s)
+A034: v3 Speed adaptation (road events); Turn left | ego 5.2 m/s (1 s ago 6.0), turn signal off; 1 lane(s)
