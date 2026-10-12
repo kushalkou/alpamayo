@@ -1,1 +1,6 @@
 smoke gpus=4 wall_s=378
+train gpus=8 wall_s=15647
+dump_gen gpus=8 wall_s=7091
+dump_none gpus=8 wall_s=1866
+dump_shuf gpus=8 wall_s=2410
+dump_gt gpus=8 wall_s=2402

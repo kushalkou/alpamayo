@@ -1,0 +1,54 @@
+PROVISIONAL (CoC traces not signed off). COC3 = /home/dgx1user/Alpamayo-Kushal/Alpamayo/data/ar1_coc_2hz_v3.pkl; CoC seed 42; holdout tau 0.5 (mode i holdout dump)
+
+L2@3s NoAvg / ADE@6s by mode and stratum
+  (i) gen           all 2.048 | excl. first frames 1.727 | excl. WSS 2.179 | WSS only 0.229 | C2 STOPPED 0.576 | C2 START 9.407 | C2 MOVING 1.881 | ADE6 2.980
+  (ii) none         all 7.425 | excl. first frames 7.281 | excl. WSS 7.512 | WSS only 6.228 | C2 STOPPED 5.948 | C2 START 9.005 | C2 MOVING 7.577 | ADE6 10.205
+  (iii) shuf        all 1.934 | excl. first frames 1.659 | excl. WSS 2.074 | WSS only 0.002 | C2 STOPPED 0.190 | C2 START 8.183 | C2 MOVING 1.872 | ADE6 2.763
+  (iv) gt [ORACLE]  all 1.827 | excl. first frames 1.562 | excl. WSS 1.959 | WSS only 0.002 | C2 STOPPED 0.131 | C2 START 7.854 | C2 MOVING 1.770 | ADE6 2.591
+  M1-v2a s42        all 1.877 | excl. first frames 1.558 | excl. WSS 2.008 | WSS only 0.063 | C2 STOPPED 0.292 | C2 START 9.348 | C2 MOVING 1.723 | ADE6 2.808
+  M1-v2a 3-seed     all 1.942 | excl. first frames 1.626 | excl. WSS 2.035 | WSS only 0.657 | C2 STOPPED 0.606 | C2 START 9.273 | C2 MOVING 1.755 | ADE6 2.891
+  B1 3-seed         all 2.091 | excl. first frames 1.793 | excl. WSS 2.131 | WSS only 1.542 | C2 STOPPED 1.134 | C2 START 8.915 | C2 MOVING 1.871 | ADE6 3.048
+
+Paired scene bootstrap, L2@3s (ADE@6s for all val after |)
+  GC1 (i) - M1-v2a s42       all +0.171 [+0.101,+0.255] | ADE6 +0.171 [+0.074,+0.281]
+                             excl. first frames +0.169 [+0.099,+0.254]; excl. WSS +0.171 [+0.099,+0.262]; WSS only +0.166 [-0.006,+0.412]; C2 STOPPED +0.285 [-0.160,+0.829]; C2 START +0.059 [-0.176,+0.306]; C2 MOVING +0.158 [+0.112,+0.207]
+  GC1b (i) - M1-v2a 3-seed   all +0.106 [+0.028,+0.199] | ADE6 +0.089 [-0.013,+0.206]
+                             excl. first frames +0.101 [+0.023,+0.196]; excl. WSS +0.145 [+0.074,+0.240]; WSS only -0.428 [-0.898,-0.001]; C2 STOPPED -0.030 [-0.526,+0.611]; C2 START +0.134 [-0.083,+0.363]; C2 MOVING +0.126 [+0.083,+0.171]
+  (i) - B1 3-seed            all -0.044 [-0.160,+0.060] | ADE6 -0.068 [-0.190,+0.046]
+                             excl. first frames -0.066 [-0.185,+0.039]; excl. WSS +0.048 [-0.015,+0.118]; WSS only -1.314 [-2.393,-0.340]; C2 STOPPED -0.558 [-1.244,+0.108]; C2 START +0.492 [+0.261,+0.750]; C2 MOVING +0.010 [-0.049,+0.069]
+  GC2 (i) - (ii)             all -5.378 [-5.870,-4.927] | ADE6 -7.226 [-7.821,-6.663]
+                             excl. first frames -5.554 [-6.060,-5.090]; excl. WSS -5.333 [-5.845,-4.858]; WSS only -5.999 [-6.514,-5.243]; C2 STOPPED -5.372 [-6.058,-4.604]; C2 START +0.402 [-0.174,+1.065]; C2 MOVING -5.696 [-6.258,-5.175]
+  GC6 (iii) - (i)            all -0.114 [-0.213,-0.039] | ADE6 -0.217 [-0.338,-0.117]
+                             excl. first frames -0.068 [-0.168,+0.005]; excl. WSS -0.106 [-0.209,-0.027]; WSS only -0.227 [-0.508,-0.015]; C2 STOPPED -0.386 [-0.985,+0.005]; C2 START -1.224 [-1.626,-0.854]; C2 MOVING -0.009 [-0.062,+0.043]
+  (iv) - (i) [ORACLE]        all -0.220 [-0.315,-0.152] | ADE6 -0.388 [-0.508,-0.288]
+                             excl. first frames -0.165 [-0.261,-0.096]; excl. WSS -0.220 [-0.319,-0.149]; WSS only -0.227 [-0.508,-0.015]; C2 STOPPED -0.445 [-1.039,-0.071]; C2 START -1.553 [-1.965,-1.189]; C2 MOVING -0.111 [-0.160,-0.063]
+
+Per mode: R3 FG all / WSS / non-WSS, MG | C2 FG MG | Col @3 s NoAvg aa / yaw | comfort first-order (n_fut 12)
+  (i) gen           FG 0.132 / 0.055 / 0.211, MG 0.523 | C2 0.125 0.645 | 1.54 / 1.56 | 0.979
+  (ii) none         FG 0.999 / 1.000 / 0.997, MG 0.000 | C2 0.999 0.009 | 7.79 / 8.42 | 0.635
+  (iii) shuf        FG 0.052 / 0.000 / 0.106, MG 0.187 | C2 0.052 0.255 | 1.89 / 1.88 | 0.979
+  (iv) gt [ORACLE]  FG 0.036 / 0.000 / 0.073, MG 0.194 | C2 0.034 0.251 | 1.33 / 1.33 | 0.974
+
+Generated CoC (mode i): parse, decision accuracy, collapse
+  parse 1.000; length mean 69.2 max 121; decision accuracy lon 0.668, lat 0.859, both 0.584
+  generated lon: Set speed tracking 0.780 (label 0.572), Stop for static constraints 0.190 (label 0.136), Lead obstacle following 0.030 (label 0.255)
+  generated lat: Lane keeping & centering 0.786, None 0.136, Turn right 0.043, Turn left 0.035
+  by GT lon class, accuracy: Lead obstacle following n 1304 0.103; Set speed tracking n 2928 0.954; Speed adaptation (road events) n 94 0.000; Stop for static constraints n 696 0.707; Yield (agent right-of-way) n 97 0.000
+
+Words: consistency (12 slots) and decision agreement; per-class F1 (val n_fut = 12)
+  (i) gen           words 0.867; decision agrees 0.929 (stop <-> derived stop; turn side); GC3 both 0.845; [diagnostic, one-way stop -> derived stop: 0.867]
+                    collapse 0.422 (labels 0.023); F1 gentle_ac 0.33, strong_ac 0.00, gentle_de 0.32, strong_de 0.00, maintain 0.58, stop 0.72, steer_L 0.37, steer_R 0.44, sharp_L 0.15, sharp_R 0.21, straight 0.91
+  (ii) none         words 0.014
+                    collapse 0.000 (labels 0.023); F1 gentle_ac 0.31, strong_ac 0.09, gentle_de 0.13, strong_de 0.00, maintain 0.23, stop 0.01, steer_L 0.11, steer_R 0.15, sharp_L 0.03, sharp_R 0.01, straight 0.10
+  (iii) shuf        words 0.843
+                    collapse 0.386 (labels 0.023); F1 gentle_ac 0.37, strong_ac 0.00, gentle_de 0.33, strong_de 0.00, maintain 0.58, stop 0.83, steer_L 0.45, steer_R 0.50, sharp_L 0.22, sharp_R 0.29, straight 0.92
+  (iv) gt [ORACLE]  words 0.845
+                    collapse 0.399 (labels 0.023); F1 gentle_ac 0.44, strong_ac 0.01, gentle_de 0.35, strong_de 0.00, maintain 0.60, stop 0.91, steer_L 0.48, steer_R 0.51, sharp_L 0.32, sharp_R 0.27, straight 0.92
+
+GATES (ONE SEED, INDICATIVE, PROVISIONAL)
+  GC1 (i) - M1-v2a s42 +0.171 [+0.101,+0.255] -> "CoC hurts"; vs 3-seed mean +0.106 [+0.028,+0.199]
+  GC2 (i) - (ii) -5.378 [-5.870,-4.927] -> CI excludes 0
+  GC3 consistency 0.845 (>= 0.70) -> PASS
+  GC4 false-go (i) 0.132 (<= 0.119) -> FAIL
+  GC5 majority generated decision Set speed tracking 0.780 vs label 0.572 + 0.10 -> FAIL (collapse)
+  GC6 (iii) - (i) -0.114 [-0.213,-0.039] -> CI excludes 0

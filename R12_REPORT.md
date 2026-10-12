@@ -31,6 +31,20 @@ B  CoC seed 42 on data/ar1_coc_2hz_v3.pkl: ar1/finetune_coc.py unchanged except 
    123 / 2024 only after AUDIT_SIGNOFF.md. Queue ar1/run_r12b.sh (tmux r12b).
 
 =========================================================================================
+PART B GATES -- PROVISIONAL (traces not signed off), ONE SEED, INDICATIVE (r12b_eval.txt)
+  GC1 CoC (i) - M1-v2a s42 L2@3s +0.171 [+0.101,+0.255] -> "CoC hurts" (vs 3-seed M1-v2a
+      +0.106 [+0.028,+0.199]; ADE@6s +0.171 [+0.074,+0.281]).
+  GC2 (i) - (ii) -5.378 [-5.870,-4.927] -> CI excludes 0. Not informative: the model
+      never saw a sequence without reasoning; with it removed it fails completely (L2@3s
+      7.43, false-go 0.999).
+  GC3 consistency 0.845 (>= 0.70) -> PASS (words 0.867, decision agrees 0.929).
+  GC4 false-go (i) 0.132 (> 0.119) -> FAIL (WSS 0.055, non-WSS 0.211).
+  GC5 "Set speed tracking" generated 0.780 vs label 0.572 + 0.10 -> FAIL (collapse).
+  GC6 (iii) - (i) -0.114 [-0.213,-0.039] -> CI excludes 0: forced shuffled causes are
+      BETTER than generated ones, because (iii) also forces the GT decision field.
+GPU: smoke 0.42 + train 34.8 + dumps 30.6 = 65.8 GPU-h. AUDIT_SIGNOFF.md absent.
+
+=========================================================================================
 PART A RESULTS
 A1 Mechanical check of the 68 text-only changes (r12_a1.txt): PASS 60 / 68. Explained by
    (ii) same lead for A001-A022 (22), same yield candidate for A081 A084 A093 A095, and
@@ -53,3 +67,21 @@ A2 audit/coc_audit_v3_short.html, 32 cards (2.6 MB; title and header show 32), v
    (d) 4 fresh, not 5: "Speed adaptation" had 0 unseen val scenes after (c) (pools Set
    speed 1,253, Lead 422, Stop 43, Yield 5).
 A3 ar1/audit_summary.py --v3short <csv> (tested on a synthetic CSV). Prints only.
+
+PART B DETAIL (PROVISIONAL; seed 42; v3 traces; holdout tau 0.5; best epoch 6 of 10,
+  holdout median ADE@6s 1.858 vs M1-v2a s42 1.732)
+  L2@3s     all    excl.WSS WSS    STOPPED START  MOVING ADE@6s FG    MG    Col aa/yaw
+  (i) gen   2.048  2.179    0.229  0.576   9.407  1.881  2.980  0.132 0.523 1.54/1.56
+  (ii) none 7.425  7.512    6.228  5.948   9.005  7.577  10.205 0.999 0.000 7.79/8.42
+  (iii) shuf 1.934 2.074    0.002  0.190   8.183  1.872  2.763  0.052 0.187 1.89/1.88
+  (iv) GT   1.827  1.959    0.002  0.131   7.854  1.770  2.591  0.036 0.194 1.33/1.33
+  M1-v2a s42 1.877 2.008    0.063  0.292   9.348  1.723  2.808  0.061 0.530 1.58/1.54
+  (i) - B1 3-seed -0.044 [-0.160,+0.060]; MOVING (i) - M1-v2a s42 +0.158 [+0.112,+0.207].
+  Generated CoC: parse 1.000, 69 tokens mean; decision accuracy lon 0.668, lat 0.859.
+  By GT class: Set speed 0.954, Stop 0.707, Lead 0.103, Yield 0.000, Speed adaptation
+  0.000: leads and yields (annotation-derived) are almost never generated.
+  First-order comfort 0.979 (i); word collapse 0.422; stop F1 0.72 (i) vs 0.91 (iv).
+  Reading: with the GT CoC forced (iv) the arm reaches 1.827 (M1-v2a s42 1.877; (iii)
+  with the GT decision but shuffled causes 1.934), but its own decision is wrong 33% of
+  the time and collapses to Set speed: the limit is predicting the annotation-derived
+  decision, not using it.
