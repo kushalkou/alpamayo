@@ -34,14 +34,14 @@ B  CoC seed 42 on data/ar1_coc_2hz_v3.pkl: ar1/finetune_coc.py unchanged except 
 PART B GATES -- PROVISIONAL (traces not signed off), ONE SEED, INDICATIVE (r12b_eval.txt)
   GC1 CoC (i) - M1-v2a s42 L2@3s +0.171 [+0.101,+0.255] -> "CoC hurts" (vs 3-seed M1-v2a
       +0.106 [+0.028,+0.199]; ADE@6s +0.171 [+0.074,+0.281]).
-  GC2 (i) - (ii) -5.378 [-5.870,-4.927] -> CI excludes 0. Not informative: the model
+  GC2 (i) - (ii) -5.378 [-5.870,-4.927] -> UNINFORMATIVE BY DESIGN (R13 A3): the model
       never saw a sequence without reasoning; with it removed it fails completely (L2@3s
       7.43, false-go 0.999).
   GC3 consistency 0.845 (>= 0.70) -> PASS (words 0.867, decision agrees 0.929).
   GC4 false-go (i) 0.132 (> 0.119) -> FAIL (WSS 0.055, non-WSS 0.211).
   GC5 "Set speed tracking" generated 0.780 vs label 0.572 + 0.10 -> FAIL (collapse).
-  GC6 (iii) - (i) -0.114 [-0.213,-0.039] -> CI excludes 0: forced shuffled causes are
-      BETTER than generated ones, because (iii) also forces the GT decision field.
+  GC6 (iii) - (i) -0.114 [-0.213,-0.039] -> UNINFORMATIVE BY DESIGN (R13 A3): (iii)
+      also forces the GT decision field; see R13 GC6b for the causes test.
 GPU: smoke 0.42 + train 34.8 + dumps 30.6 = 65.8 GPU-h. AUDIT_SIGNOFF.md absent.
 
 =========================================================================================

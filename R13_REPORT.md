@@ -34,3 +34,26 @@ B2 CoC-AUX seed 42 (tag COC3AUX), after B1 regardless of outcome: same recipe, b
    auxiliary supervision"; lower > 0 "hurts"; else "no effect". One seed, indicative.
 Every run: collisions aa / yaw, R3 FG / MG, C2 + WSS strata, per-class word F1,
    consistency (as R12). Queue ar1/run_r13b.sh (tmux r13b): s123, s2024, then AUX.
+
+=========================================================================================
+GATE VERDICTS
+  GC6b (seed 42) (iii) shuffled causes - (iv) GT CoC, both with the true decision:
+       +0.107 [+0.071,+0.145] (ADE@6s +0.172) -> "causes matter".
+  GC1-3, GC4-3, GC5-3, GC6b-3, GX1: pending (queue r13b: CoC s123, s2024, then CoC-AUX).
+
+A1 Causes test by stratum (r13_partA.txt): excl. WSS +0.114 [+0.075,+0.156]; MOVING
+   +0.102 [+0.063,+0.142]; START +0.329 [+0.126,+0.540]; STOPPED +0.059 [-0.008,+0.152];
+   WSS +0.000 (both hold perfectly). With the right decision forced, the true causes
+   still lower L2@3s by 0.11 m vs another sample's causes of the same decision class.
+A2 Seed 42, mode (i): decision correct (lon AND lat) 0.584 (2,991 of 5,119).
+   lon recall: Set speed 0.954, Stop 0.707, Lead 0.103, Yield 0.000, Speed adaptation
+   0.000 (Lead -> Set speed 893, -> Stop 277; Yield -> Stop 70; Speed adapt. -> Set
+   speed 92). The model never generates Yield or Speed adaptation.
+   lat recall: Lane keeping 0.926, None 0.832, Turn left 0.522, Turn right 0.561, Lane
+   change 0.000 (left 51, right 68 -> mostly Lane keeping), In-lane nudge 0.000 (6).
+   L2@3s: correct 1.649 (M1-v2a s42 1.590), wrong 2.608 (M1-v2a 2.280).
+   CoC - M1-v2a s42: correct decisions +0.059 [-0.010,+0.120]; wrong +0.328
+   [+0.202,+0.496]. Share of the GC1 gap from wrong decisions 0.798 (697 of 874 m summed
+   L2@3s); by GT class: Lead +0.301, Set speed +0.244, Stop +0.197, Speed adaptation
+   +0.032, Yield +0.024. When the decision is right, CoC is not measurably worse.
+A3 R12_REPORT.md: GC2 and GC6 now read "UNINFORMATIVE BY DESIGN" with the reasons.

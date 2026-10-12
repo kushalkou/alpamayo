@@ -1,0 +1,41 @@
+A1 causes test, seed 42: (iii) shuffled causes [true decision] - (iv) GT CoC [true decision], L2@3s
+  all                 n 5119  +0.107 [+0.071,+0.145]   (ADE@6s +0.172 [+0.115,+0.229])
+  excl. first frames  n 4979  +0.097 [+0.061,+0.136]
+  excl. WSS           n 4774  +0.114 [+0.075,+0.156]
+  WSS only            n  345  +0.000 [+0.000,+0.000]
+  C2 STOPPED          n  679  +0.059 [-0.008,+0.152]
+  C2 START            n  231  +0.329 [+0.126,+0.540]
+  C2 MOVING           n 4209  +0.102 [+0.063,+0.142]
+GC6b +0.107 [+0.071,+0.145] -> "causes matter"
+
+A2 confusion lon (rows GT, cols generated; seed 42 mode i):
+  GT / gen                    Sst    Lof   Sfsc  Yarow   Sare      n  recall
+  Set speed tracking         2794      3    131      0      0   2928  0.954
+  Lead obstacle following     893    134    277      0      0   1304  0.103
+  Stop for static constrai    191     13    492      0      0    696  0.707
+  Yield (agent right-of-wa     23      4     70      0      0     97  0.000
+  Speed adaptation (road e     92      0      2      0      0     94  0.000
+  key: Sst = Set speed tracking, Lof = Lead obstacle following, Sfsc = Stop for static constraints, Yarow = Yield (agent right-of-way), Sare = Speed adaptation (road events)
+
+A2 confusion lat (rows GT, cols generated; seed 42 mode i):
+  GT / gen                   Lk&c      N     Tl     Tr    Lcl    Lcr   Ilnl   Ilnr      n  recall
+  Lane keeping & centering   3650    162     60     68      0      0      0      0   3940  0.926
+  None                        100    506      0      2      0      0      0      0    608  0.832
+  Turn left                    73     17    109     10      0      0      0      0    209  0.522
+  Turn right                   87     11      6    133      0      0      0      0    237  0.561
+  Lane change left             49      0      2      0      0      0      0      0     51  0.000
+  Lane change right            59      0      0      9      0      0      0      0     68  0.000
+  In-lane nudge left            1      0      0      0      0      0      0      0      1  0.000
+  In-lane nudge right           4      1      0      0      0      0      0      0      5  0.000
+  key: Lk&c = Lane keeping & centering, N = None, Tl = Turn left, Tr = Turn right, Lcl = Lane change left, Lcr = Lane change right, Ilnl = In-lane nudge left, Ilnr = In-lane nudge right
+
+A2 decision correct (lon AND lat): 0.584 (2991 of 5119)
+  L2@3s CoC (i): correct 1.649 | wrong 2.608;  M1-v2a s42 on the same samples: correct 1.590 | wrong 2.280
+  CoC - M1-v2a s42 on correct decisions (n 2991): +0.059 [-0.010,+0.120]
+  CoC - M1-v2a s42 on wrong   decisions (n 2128): +0.328 [+0.202,+0.496]
+  GC1 gap (sum over val) 873.6 m; from wrong decisions 697.4 m = share 0.798; from correct 176.2 m
+    wrong decisions with GT Set speed tracking    : n  420, gap contribution +0.244
+    wrong decisions with GT Lead obstacle followin: n 1215, gap contribution +0.301
+    wrong decisions with GT Stop for static constr: n  302, gap contribution +0.197
+    wrong decisions with GT Yield (agent right-of-: n   97, gap contribution +0.024
+    wrong decisions with GT Speed adaptation (road: n   94, gap contribution +0.032
