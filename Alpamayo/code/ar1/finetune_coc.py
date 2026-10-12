@@ -66,11 +66,16 @@ def shuffled_text(coc, toks):
 
 
 class DSC(FM.DS):
-    def __init__(self, R, H, Mt, stats, ids):
-        super().__init__(R, H, Mt, stats); self.ids = ids
+    def __init__(self, R, H, Mt, stats, ids, keep=None):
+        super().__init__(R, H, Mt, stats); self.ids = ids; self.keep = keep   # R13 AUX: per-sample CoC mask
 
     def __getitem__(self, i):
-        d = super().__getitem__(i); d['coc'] = torch.tensor(self.ids[self.R[i]['sample_token']]); return d
+        d = super().__getitem__(i)
+        if self.keep is not None and not self.keep[i]:
+            d['coc'] = torch.zeros(0, dtype=torch.long)                         # words follow the context
+        else:
+            d['coc'] = torch.tensor(self.ids[self.R[i]['sample_token']])
+        return d
 
 
 def collate(B):
@@ -153,13 +158,13 @@ def decode(net, vt, ego, tk, dev, mode='gen', forced=None, gt=None):
             'coc_ids': cg, 'coc_len': len(cg)}
 
 
-def ade6_select(net, R, H, idx, dev, tk, rank, ws):
+def ade6_select(net, R, H, idx, dev, tk, rank, ws, mode='gen'):
     net.eval(); out = {}
     for i in idx[rank::ws]:
         t = R[int(i)]
         if len(t['future_positions']) < 12:
             continue
-        d = decode(net, FM.vis_tokens(H, t['sample_token']), t['w1_ego'], tk, dev, 'gen')
+        d = decode(net, FM.vis_tokens(H, t['sample_token']), t['w1_ego'], tk, dev, mode)
         a = np.array(d['argmax'])
         P, _ = unicycle_rollout(a[:12], a[12:], float(t['future_speeds'][0]), float(t['w1_ego'][3, 1]))
         out[int(i)] = float(np.linalg.norm(P - np.asarray(t['future_positions'])[:12], axis=1).mean())
@@ -181,6 +186,8 @@ def main():
     ap.add_argument('--dump', default='')
     ap.add_argument('--mode', default='gen', choices=('gen', 'none', 'shuf', 'gt'))
     ap.add_argument('--coc', default=f'{DATA}/ar1_coc_2hz.pkl', help='R12: CoC pickle (v3: ar1_coc_2hz_v3.pkl)')
+    ap.add_argument('--aux', type=float, default=0.0, help='R13: CoC kept per sample with this p (0 = always kept)')
+    ap.add_argument('--select_mode', default='gen', choices=('gen', 'none'), help='R13: holdout selection decode mode')
     ap.add_argument('--smoke_decode', type=int, default=0, help='smoke test: decode N holdout samples after training')
     a = ap.parse_args()
     FM.LABELS['src'] = '2hz'
@@ -239,7 +246,10 @@ def main():
 
     tr = records.build('train', ['cmd'], 0.0); ho = records.build('holdout', ['cmd'], 0.0)
     L = np.array([len(IDS[t['sample_token']]) for t in tr])
-    dtr = DSC(tr, H, Mt, {'missing': 0}, IDS)
+    keep = (np.random.RandomState(42).rand(len(tr)) < a.aux) if a.aux > 0 else None
+    dtr = DSC(tr, H, Mt, {'missing': 0}, IDS, keep)
+    if keep is not None:
+        log(f'[coc] AUX: CoC kept on {keep.sum()} of {len(tr)} train samples (p {a.aux}); selection mode {a.select_mode}')
     weights, f0, wt = build_turn_weights(tr, CFG['turn_thresh'], CFG['turn_target_frac'])
     samp = DistributedWeightedSampler(weights, ws, r, seed=a.seed)
     dl = torch.utils.data.DataLoader(dtr, batch_size=a.batch_size, sampler=samp, num_workers=4, pin_memory=True,
@@ -299,7 +309,7 @@ def main():
                 for x in R_[:4]:
                     log(f'  [smoke text] {x[3][:300]}')
             break
-        med, mean, n = ade6_select(raw, ho, H, idx, dev, tk, r, ws)
+        med, mean, n = ade6_select(raw, ho, H, idx, dev, tk, r, ws, a.select_mode)
         raw.vla.cosmos.model.language_model.gradient_checkpointing_enable()
         log(f'[epoch {ep + 1}] SELECT holdout AR ADE@6s median={med:.4f} (mean={mean:.4f}, n={n}) best={min(best, med):.4f} '
             f'| train loss {tot / (bi + 1):.4f} (text {tc / (bi + 1):.4f} traj {tj / (bi + 1):.4f}) | {time.time() - t_ep:.0f}s')
