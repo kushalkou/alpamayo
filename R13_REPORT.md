@@ -43,7 +43,7 @@ GATE VERDICTS
   GC4-3  pooled false-go 0.153 (> 0.119) -> FAIL (seeds 0.132 / 0.166 / 0.163).
   GC5-3  generated "Set speed tracking" 0.775 vs label 0.572 + 0.10 -> FAIL (collapse).
   GC6b-3 (iii) - (iv), 3 seeds: +0.098 [+0.074,+0.123] (ADE@6s +0.154) -> "causes matter".
-  GX1    CoC-AUX (reasoning OFF) - M1-v2a s42: +0.060 [+0.013,+0.107] -> "hurts" (one seed,
+  GX1    CoC-AUX (reasoning OFF) - M1-v2a s42 +0.060 [+0.013,+0.107] -> "hurts" (one seed,
          indicative), although its holdout selection score is better (1.685 vs 1.732).
 GPU: Part B 173.6 GPU-h (s123 53.5, s2024 62.3, AUX 57.8, AUX code check 0.06).
 
@@ -92,7 +92,7 @@ B2 CoC-AUX seed 42 (CoC kept on 9,196 of 18,313 train samples; selection with re
    ON          2.305  2.231   3.318 2.599 8.459 1.919 3.283 0.571 0.276 2.32/2.38  0.646
    M1-v2a s42  1.877  2.008   0.063 0.292 9.348 1.723 2.808 0.061 0.530 1.58/1.54  0.854
    GX1 strata (OFF - M1-v2a s42): MOVING +0.069 [+0.014,+0.122], STOPPED -0.025 (n.s.),
-   START +0.147 (n.s.), WSS +0.064 [+0.010,+0.127]. ON - M1-v2a s42 +0.428 [+0.264,+0.614];
+   START +0.147 (n.s.), WSS +0.064 [+0.010,+0.127]. ON - M1-v2a s42 +0.428 [+0.264,+0.614]
    ON parses only 0.763 of its reasoning (decision accuracy lon 0.489) and starts at
    standstill (FG 0.571). Word F1 (OFF): stop 0.72, straight 0.91, maintain 0.58.
    Reading: half-time CoC supervision does not improve the word + trajectory decoder;
