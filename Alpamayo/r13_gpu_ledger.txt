@@ -3,3 +3,10 @@ COC3_s123 train gpus=8 wall_s=13899
 COC3_s123 dump_gen gpus=8 wall_s=6396
 COC3_s123 dump_shuf gpus=8 wall_s=1885
 COC3_s123 dump_gt gpus=8 wall_s=1891
+COC3_s2024 train gpus=8 wall_s=15291
+COC3_s2024 dump_gen gpus=8 wall_s=8338
+COC3_s2024 dump_shuf gpus=8 wall_s=2478
+COC3_s2024 dump_gt gpus=8 wall_s=1919
+COC3AUX train gpus=8 wall_s=12709
+COC3AUX dump_none gpus=8 wall_s=2545
+COC3AUX dump_gen gpus=8 wall_s=10739
